@@ -59,7 +59,7 @@ create table reactions (
     emotion text not null, -- laugh, wow, cry, heart, fire, thumbs up, thumbs down
     creation_time text,
     creator integer,
-    messaged integer,
+    message integer,
     foreign key(creator) references users(id),
     foreign key(message) references messasges(id)
 );
@@ -95,6 +95,5 @@ create table participation (
     -- can come from participant snapshots or participantsJoin events;
     -- if those aren't there then the user was there from the beginning of the chat
     start_time text,
-    end_time text, -- if null they never left
-
-)
+    end_time text -- if null they never left
+);
