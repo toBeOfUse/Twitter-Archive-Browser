@@ -46,7 +46,7 @@ create virtual table messages_text_search using fts5(
     sent_time unindexed,
     sender unindexed,
     conversation unindexed,
-    text,
+    content,
     content = messages,
     content_rowid = id
 );
@@ -55,8 +55,8 @@ create virtual table messages_text_search using fts5(
 create trigger message_add
 after
 insert on messages begin
-insert into messages_text_search(rowid, text)
-values(new.id, new.text);
+insert into messages_text_search(rowid, content)
+values(new.id, new.content);
 
 end;
 

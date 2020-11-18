@@ -1,6 +1,7 @@
 api_keys.json
 
 *.db
+*.db-journal
 
 # at least until sanitized test data exists
 testdata/*
