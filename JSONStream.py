@@ -88,5 +88,6 @@ def test(path):
 if __name__ == "__main__":
     print("------------ Individual DMs Test ------------")
     test("./testdata/individual_dms_test.js")
+    print()
     print("------------ Group DMs Test ------------")
     test("./testdata/group_dms_test.js")

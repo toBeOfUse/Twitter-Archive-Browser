@@ -1,6 +1,8 @@
 create table conversations (
     id text primary key,
     type text not null check(type in ("group", "individual")),
+    notes text,
+    -- the below is pretty much just relevant for group chats
     join_time text,
     -- if we created the chat then this should be set to the first message's timestamp
     added_by integer -- if this is null then we created the chat
@@ -17,10 +19,13 @@ create unique index convo_starttime_idx on conversations (join_time);
 create table users (
     id integer primary key,
     loaded_full_data integer check(loaded_full_data in (0, 1)),
-    -- if false, handle and avatar will be null
+    -- if false, the rest of these will be null (except maybe nickname and notes)
     handle text,
+    display_name text,
+    bio text,
     avatar blob,
-    nickname text
+    nickname text,
+    notes text
 );
 
 create table messages (
@@ -84,16 +89,18 @@ create table name_updates (
     update_time text not null,
     initiator integer not null,
     new_name text not null,
-    conversation_id text not null,
+    conversation text not null,
     foreign key(initiator) references users(id),
-    foreign key(conversation_id) references conversations(id)
+    foreign key(conversation) references conversations(id)
 );
 
 create table participation (
     participant integer not null,
     conversation text not null,
-    -- can come from participant snapshots or participantsJoin events;
-    -- if those aren't there then the user was there from the beginning of the chat
+    -- start_time should come from participant snapshots or participantsJoin events (if those aren't there then
+    -- the user was there from the beginning of the chat and the chat was created by us and they have to be
+    -- detected from the messages they send)
     start_time text,
-    end_time text -- if null they never left
+    end_time text, -- if null they never left
+    unique(participant, conversation)
 );
