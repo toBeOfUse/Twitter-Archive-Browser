@@ -3,9 +3,10 @@ create table conversations (
     type text not null check(type in ("group", "individual")),
     notes text,
     -- the below is pretty much just relevant for group chats
-    join_time text,
+    created_by_me integer check(created_by_me in (0, 1)), -- should be not null by end of transaction
+    join_time text, -- shouldn't be null at end of transaction
     -- if we created the chat then this should be set to the first message's timestamp
-    added_by integer -- if this is null then we created the chat
+    added_by integer -- if we created the chat then this is null
     /* if we created the chat then participant info might not be comprehensive (the data doesn't show the
      initial members in that case fsr) */
 );
@@ -52,21 +53,19 @@ create virtual table messages_text_search using fts5(
 );
 
 -- messages don't get updated or deleted lol
-create trigger message_add
-after
-insert on messages begin
-insert into messages_text_search(rowid, content)
-values(new.id, new.content);
-
+create trigger message_add after insert on messages
+begin
+    insert into messages_text_search(rowid, content) values(new.id, new.content);
 end;
 
 create table reactions (
     emotion text not null, -- laugh, wow, cry, heart, fire, thumbs up, thumbs down
-    creation_time text,
-    creator integer,
-    message integer,
+    creation_time text not null,
+    creator integer not null,
+    message integer not null,
     foreign key(creator) references users(id),
     foreign key(message) references messasges(id)
+    -- twitter also gives reactions a specific id but letting sqlite use rowid should be fine
 );
 
 create table media (
@@ -100,7 +99,7 @@ create table participation (
     -- start_time should come from participant snapshots or participantsJoin events (if those aren't there then
     -- the user was there from the beginning of the chat and the chat was created by us and they have to be
     -- detected from the messages they send)
-    start_time text,
+    start_time text, -- shouldn't be null at the end of transaction
     end_time text, -- if null they never left
     unique(participant, conversation)
 );

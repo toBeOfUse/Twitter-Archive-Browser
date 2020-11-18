@@ -20,7 +20,7 @@ class PrefixedJSONArray:
 
 # returns messageCreate and other channel event objects for either a group dm or individual dm .js file with
 # the small modification of placing the conversation ids and event names in each message instead of having
-# them outside (in the "conversationID" and "type" fields respectively)
+# them outside (in the "conversationId" and "type" fields respectively)
 def message_stream(path):
     with PrefixedJSONArray(path) as json_file:
         parser = ijson.parse(json_file)

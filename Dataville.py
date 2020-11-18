@@ -133,10 +133,10 @@ class TwitterDataWriter(sqlite3.Connection):
 
 
 async def writer_test():
-    if Path("test.db").exists():
-        Path("test.db").unlink()
-    if Path("test.db-journal").exists():
-        Path("test.db-journal").unlink()
+    if (prev_db := Path("test.db")).exists():
+        prev_db.unlink()
+    if (prev_journal := Path("test.db-journal")).exists():
+        prev_journal.unlink()
     db = TwitterDataWriter("test")
     for message in JSONStream.message_stream("./testdata/individual_dms_test.js"):
         db.add_message(message, group_dm=False)
