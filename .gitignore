@@ -1,3 +1,5 @@
+api_keys.json
+
 *.db
 
 # at least until sanitized test data exists
