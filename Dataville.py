@@ -34,6 +34,8 @@ class TwitterDataWriter(sqlite3.Connection):
         self.queued_users = []
         self.queued_requests = []  # contains tasks that must be awaited before the database closes
 
+        self.added_messages = 0
+
     # asynchronously look up users' data by their ids, add said data to the db
     async def send_twitter_user_request(self, users):
         url = "https://api.twitter.com/1.1/users/lookup.json?user_id=" + \
@@ -43,8 +45,10 @@ class TwitterDataWriter(sqlite3.Connection):
         try:
             resp = await self.http_client.fetch(req)
             user_data = json.loads(str(resp.body, encoding="utf-8"))
+            print("retrieved data for {} twitter accounts".format(len(user_data)))
             for user in user_data:
                 try:
+                    print("saving avatar for user @{}".format(user_data["screen_name"]))
                     avatar = (await self.http_client.fetch(user["profile_image_url_https"])).body
                 except HTTPClientError as e:
                     print(repr(e))
@@ -66,6 +70,7 @@ class TwitterDataWriter(sqlite3.Connection):
         if user:  # user may be None if this is a last_call
             self.queued_users.append(user)
         if len(self.queued_users) == 100 or (last_call and len(self.queued_users) > 0):
+            print("queueing API request for data on {} twitter accounts".format(len(self.queued_users)))
             self.queued_requests.append(
                 asyncio.create_task(
                     self.send_twitter_user_request(self.queued_users))
@@ -155,6 +160,10 @@ class TwitterDataWriter(sqlite3.Connection):
                 self.add_participant_if_necessary(
                     user_id, message["conversationId"], start_time=message["createdAt"]
                 )
+        
+        self.added_messages += 1
+        if self.added_messages % 1000 == 0:
+            print("{} messages added...".format(self.added_messages))
 
 
     async def finalize(self):
