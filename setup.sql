@@ -2,8 +2,9 @@ create table conversations (
     id text primary key,
     type text not null check(type in ("group", "individual")),
     notes text,
+    other_person integer, -- just usable for individual chats
     -- the below is pretty much just relevant for group chats
-    created_by_me integer check(created_by_me in (0, 1)), -- should be not null by end of transaction
+    created_by_me integer check(created_by_me in (0, 1)) default 1, -- should be not null by end of transaction
     join_time text, -- shouldn't be null at end of transaction
     -- if we created the chat then this should be set to the first message's timestamp
     added_by integer -- if we created the chat then this is null
@@ -68,6 +69,8 @@ create table reactions (
     -- twitter also gives reactions a specific id but letting sqlite use rowid should be fine
 );
 
+create index reactions_by_message_idx on reactions (message);
+
 create table media (
     id integer primary key,
     orig_url text not null, -- this breaks down into the three other fields (hopefully. i think)
@@ -76,6 +79,8 @@ create table media (
     foreign key(message) references messages(id)
 );
 
+create index media_by_message_idx on media (message);
+
 create table links (
     orig_url text not null,
     url_preview text not null,
@@ -83,6 +88,8 @@ create table links (
     message integer not null,
     foreign key(message) references messages(id)
 );
+
+create index links_by_message_idx on links (message);
 
 create table name_updates (
     update_time text not null,
@@ -93,13 +100,21 @@ create table name_updates (
     foreign key(conversation) references conversations(id)
 );
 
-create table participation (
+create index name_updates_convo_chronological_idx on name_updates (conversation, update_time);
+
+-- stores a record for each instance of a specific user being in a specific chat
+create table participants (
     participant integer not null,
     conversation text not null,
     -- start_time should come from participant snapshots or participantsJoin events (if those aren't there then
     -- the user was there from the beginning of the chat and the chat was created by us and they have to be
     -- detected from the messages they send)
     start_time text, -- shouldn't be null at the end of transaction
-    end_time text, -- if null they never left
-    unique(participant, conversation)
+    end_time text, -- if null they never left,
+    added_by integer, -- null unless the user was added while we were already in the chat
+    unique(participant, conversation),
+    foreign key (added_by) references users(id)
 );
+
+create index participation_start_idx on participants (start_time);
+create index participation_end_idx on participants (end_time);

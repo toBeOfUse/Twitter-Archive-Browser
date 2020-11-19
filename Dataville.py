@@ -27,11 +27,12 @@ class TwitterDataWriter(sqlite3.Connection):
         # contains tuples of the form (user_id, conversation_id)
         self.added_particpants_cache = set()
 
+        # used to retrieve live info from the twitter api esp for users given user ids
         self.http_client = AsyncHTTPClient()
         with open("api_keys.json") as keys:
             self.twitter_api_keys = json.load(keys)
         self.queued_users = []
-        self.queued_requests = []
+        self.queued_requests = []  # contains tasks that must be awaited before the database closes
 
     # asynchronously look up users' data by their ids, add said data to the db
     async def send_twitter_user_request(self, users):
@@ -57,14 +58,14 @@ class TwitterDataWriter(sqlite3.Connection):
             print(repr(e))
             print("warning: no active users retrieved for "+str(users))
 
-    # store user ids until 50 accumulate; then, schedule a task that will request the data for those ids and
+    # store user ids until 100 accumulate; then, schedule a task that will request the data for those ids and
     # add it to the database, then store the task in self.queued_requests so it can be awaited to ensure it
     # finishes before program exit. call with last_call=True to force it to act on all available user ids
     # without waiting for the 50th
     def queue_twitter_user_request(self, user, last_call=False):
         if user:  # user may be None if this is a last_call
             self.queued_users.append(user)
-        if len(self.queued_users) >= 50 or (last_call and len(self.queued_users) > 0):
+        if len(self.queued_users) == 100 or (last_call and len(self.queued_users) > 0):
             self.queued_requests.append(
                 asyncio.create_task(
                     self.send_twitter_user_request(self.queued_users))
@@ -78,17 +79,26 @@ class TwitterDataWriter(sqlite3.Connection):
                     "insert into users (id, loaded_full_data) values(?, 0);", (user_id, ))
                 self.queue_twitter_user_request(user_id)
                 self.added_users_cache.add(user_id)
+    
+    def add_participant_if_necessary(self, user_id, conversation_id, start_time=None, added_by=None):
+        if (user_id, conversation_id) not in self.added_conversations_cache:
+            self.execute("""insert into participants
+                            (participant, conversation, start_time, added_by) values (?, ?, ?, ?);""",
+                (user_id, conversation_id, start_time, added_by))
+            self.added_conversations_cache.add((user_id, conversation_id))
 
     def add_message(self, message, group_dm=False):
         if message["conversationId"] not in self.added_conversations_cache:
-            self.execute("insert into conversations (id, type) values (?, ?);",
-                         (message["conversationId"], "group" if group_dm else "individual"))
+            self.execute("insert into conversations (id, type, other_person) values (?, ?, ?);",
+                         (message["conversationId"], "group" if group_dm else "individual",
+                         None if group_dm else message["recipientId"]))
             self.added_conversations_cache.add(message["conversationId"])
 
         if message["type"] == "messageCreate":
-            self.add_user_if_necessary(message["senderId"])
-            if not group_dm:
-                self.add_user_if_necessary(message["recipientId"])
+            participant_ids = [message["senderId"]] + [message["recipientId"]] if not group_dm else []
+            for user_id in participant_ids:
+                self.add_user_if_necessary(user_id)
+                self.add_participant_if_necessary(user_id, message["conversationId"])                
 
             self.execute("""insert into messages (id, sent_time, sender, conversation, content)
                             values (?, ?, ?, ?, ?);""",
@@ -121,8 +131,61 @@ class TwitterDataWriter(sqlite3.Connection):
                             values (?, ?, ?, ?);""", (message["createdAt"], message["initiatingUserId"],
                                                       message["name"], message["conversationId"]))
 
+        elif message["type"] == "participantsJoin" or message["type"] == "participantsLeave":
+            if message["type"] == "participantsJoin":
+                self.add_user_if_necessary(message["initiatingUserId"])
+            for user_id in message["userIds"]:
+                self.add_user_if_necessary(user_id)
+                self.add_participant_if_necessary(user_id, message["conversationId"])
+                if message["type"] == "participantsJoin":
+                    self.execute("""update participants
+                                    set start_time=?, added_by=? where participant=? and conversation=?;""",
+                                (message["createdAt"], message["initiatingUserId"],
+                                    user_id, message["conversationId"]))
+                else:
+                    self.execute("""update participants 
+                                    set end_time=? where participant=? and conversation=?;""",
+                                (message["createdAt"], user_id, message["conversationId"]))
+        
+        elif message["type"] == "joinConversation":
+            self.execute("update conversations set join_time=?, added_by=?, created_by_me=0 where id=?;",
+                (message["createdAt"], message["initiatingUserId"], message["conversationId"]))
+            for user_id in message["participantsSnapshot"]:
+                self.add_user_if_necessary(user_id)
+                self.add_participant_if_necessary(
+                    user_id, message["conversationId"], start_time=message["createdAt"]
+                )
+
+
     async def finalize(self):
-        # todo: update self-created conversation start times and hence null participant start times
+        for conversation in self.execute("select id from conversations where join_time is null;"):
+            cur = self.cursor()
+            firsts = []
+            cur.execute(
+                "select sent_time from messages where conversation=? order by sent_time asc limit 1;",
+                (conversation[0], )
+            )
+            first_message = cur.fetchone()
+            firsts += [first_message[0]] if first_message else []
+            cur.execute(
+                "select update_time from name_updates where conversation=? order by update_time asc limit 1;",
+                (conversation[0], )
+            )
+            first_name_update = cur.fetchone()
+            firsts += [first_name_update[0]] if first_name_update else []
+            cur.execute(
+                """select start_time from participants
+                    where start_time is not null and conversation=?
+                    order by start_time asc limit 1;""",
+                    (conversation[0], )
+            )
+            first_participant = cur.fetchone()
+            firsts += [first_participant[0]] if first_participant else []
+            first = sorted(firsts)[0]
+            cur.execute("update conversations set join_time=? where id=?;", (first, conversation[0]))
+        self.execute("""update participants 
+            set start_time=(select join_time from conversations where id=participants.conversation)
+            where start_time is null;""")
         self.queue_twitter_user_request(None, last_call=True)
         await asyncio.gather(*self.queued_requests)
         self.execute("PRAGMA optimize;")
@@ -130,6 +193,7 @@ class TwitterDataWriter(sqlite3.Connection):
         self.execute("VACUUM")
         self.added_users_cache = set()
         self.added_conversations_cache = set()
+        self.added_particpants_cache = set()
 
 
 async def writer_test():
