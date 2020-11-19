@@ -43,9 +43,6 @@ create table messages (
     foreign key(conversation) references conversations(id)
 );
 
--- hopefully this will index queries using "where conversation=? order by sent_time"
-create index convos_chronological_idx on messages (conversation, sent_time);
-
 -- not actually sure if all the unindexed columns need to be listed out? probably tho
 create virtual table messages_text_search using fts5(
     sent_time unindexed,
@@ -72,17 +69,14 @@ create table reactions (
     -- twitter also gives reactions a specific id but letting sqlite use rowid should be fine
 );
 
-create index reactions_by_message_idx on reactions (message);
-
 create table media (
     id integer primary key,
-    orig_url text not null, -- this breaks down into the three other fields (hopefully. i think)
+    orig_url text not null, -- this breaks down into the other four fields (hopefully. i think)
+    type string not null check(type in ("image", "video", "gif")),
     filename text not null,
     message integer not null,
     foreign key(message) references messages(id)
 );
-
-create index media_by_message_idx on media (message);
 
 create table links (
     orig_url text not null,
@@ -92,8 +86,6 @@ create table links (
     foreign key(message) references messages(id)
 );
 
-create index links_by_message_idx on links (message);
-
 create table name_updates (
     update_time text not null,
     initiator integer not null,
@@ -102,8 +94,6 @@ create table name_updates (
     foreign key(initiator) references users(id),
     foreign key(conversation) references conversations(id)
 );
-
-create index name_updates_convo_chronological_idx on name_updates (conversation, update_time);
 
 -- stores a record for each instance of a specific user being in a specific chat
 create table participants (
@@ -118,6 +108,3 @@ create table participants (
     unique(participant, conversation),
     foreign key (added_by) references users(id)
 );
-
-create index participation_start_idx on participants (start_time);
-create index participation_end_idx on participants (end_time);
