@@ -13,13 +13,23 @@ class TwitterDataWriter(sqlite3.Connection):
     def __init__(self, account_name, account_id):
         filename = account_name+".db"
         if Path(filename).exists():
-            raise RuntimeError("database for this account already exists")
+            if input("database for this account name already exists. overwrite? (y/n) ").lower() == "y":
+                if (prev_db := Path(filename)).exists():
+                    prev_db.unlink()
+                if (prev_journal := Path(filename+"-journal")).exists():
+                    prev_journal.unlink()
+            else:
+                raise RuntimeError("Database for {} already exists".format(account_name))
         super(TwitterDataWriter, self).__init__(filename)
         self.account = account_name
+
+        self.isolation_level = None
         
         with open("setup.sql") as setup:
             self.executescript(setup.read())
         self.commit()
+
+        self.execute("begin")
 
         self.execute("insert into me (id) values (?);", (account_id, ))
         self.account_id = account_id
@@ -39,6 +49,14 @@ class TwitterDataWriter(sqlite3.Connection):
         self.queued_requests = []  # contains tasks that must be awaited before the database closes
 
         self.added_messages = 0
+    
+    @property
+    def added_conversations(self):
+        return len(self.added_conversations_cache)
+    
+    @property
+    def added_users(self):
+        return len(self.added_users_cache)
 
     # asynchronously look up users' data by their ids, add said data to the db
     async def send_twitter_user_request(self, users):
@@ -122,13 +140,29 @@ class TwitterDataWriter(sqlite3.Connection):
                                                           reaction["createdAt"], reaction["senderId"], message["id"]))
 
             for url in message["mediaUrls"]:
-                if not url.startswith("https://ton.twitter.com/dm/"):
-                    raise RuntimeError("Unsupported media url format: "+url)
-                else:
-                    message_id, attachment_id, filename = tuple(
-                        url[27:].split("/"))
-                    self.execute("""insert into media (id, orig_url, filename, message)
-                                    values (?, ?, ?, ?);""", (attachment_id, url, filename, message_id))
+                url_prefixes = {
+                    "image": "https://ton.twitter.com/dm/",
+                    "gif": "https://video.twimg.com/dm_gif/",
+                    "video": "https://video.twimg.com/dm_video/"
+                }
+                try:
+                    type, url_comps = next(
+                        (x, url[len(y):].split("/")) for x, y in url_prefixes.items() if url.startswith(y)
+                    )
+                except StopIteration:
+                    print("Unsupported media url format {} found in message {}".format(url, message))
+                    raise RuntimeError("unsupported url format "+url)
+
+                if type == "image":
+                    message_id, media_id, filename = url_comps
+                    assert message_id == message["id"]  # honestly just out of curiosity
+                elif type == "gif":
+                    media_id, filename = url_comps
+                elif type == "video":
+                    media_id, _, _, filename = url_comps
+                self.execute("""insert into media (id, orig_url, filename, message, type)
+                                    values (?, ?, ?, ?, ?);""", (media_id, url, filename, message["id"],
+                                    type))
 
             for link in message["urls"]:
                 self.execute("""insert into links (orig_url, url_preview, twitter_shortened_url, message)
@@ -167,9 +201,6 @@ class TwitterDataWriter(sqlite3.Connection):
                 )
         
         self.added_messages += 1
-        if self.added_messages % 1000 == 0:
-            print("{} messages added...".format(self.added_messages))
-
 
     async def finalize(self):
         # group dms that you start don't come with data on their start time or initial participants, so we
@@ -216,11 +247,21 @@ class TwitterDataWriter(sqlite3.Connection):
             set created_by_me=((select sender from messages where conversation=conversations.id order by sent_time asc limit 1) == ?)
             where type=="individual"
         """, (self.account_id, ))
+        
         self.queue_twitter_user_request(None, last_call=True)
         await asyncio.gather(*self.queued_requests)
-        self.execute("PRAGMA optimize;")
+        
+        self.execute("pragma optimize;")
         self.commit()
-        self.execute("VACUUM")
+
+        print("indexing data...")
+        with open("indexes.sql") as index_script:
+            self.executescript(index_script.read())
+        self.commit()
+
+        print("smallifying database size...")
+        self.execute("vacuum")
+        
         self.added_users_cache = set()
         self.added_conversations_cache = set()
         self.added_particpants_cache = set()
