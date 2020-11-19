@@ -1,3 +1,6 @@
+-- a one-row table to store the archive owner's account's id
+create table me (id integer primary key);
+
 create table conversations (
     id text primary key,
     type text not null check(type in ("group", "individual")),

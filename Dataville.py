@@ -10,15 +10,19 @@ import JSONStream
 # this class is intended to be used once to create and populate the database in one clean sweep; it has
 # limited protections against adding duplicate records and the like.
 class TwitterDataWriter(sqlite3.Connection):
-    def __init__(self, account_name):
+    def __init__(self, account_name, account_id):
         filename = account_name+".db"
         if Path(filename).exists():
             raise RuntimeError("database for this account already exists")
-        super(TwitterDataWriter, self).__init__(account_name+".db")
+        super(TwitterDataWriter, self).__init__(filename)
         self.account = account_name
+        
         with open("setup.sql") as setup:
             self.executescript(setup.read())
         self.commit()
+
+        self.execute("insert into me (id) values (?);", (account_id, ))
+        self.account_id = account_id
 
         # keep track of some records that we've just added so we don't have to check if they're there in the
         # database every time a message references them
@@ -38,8 +42,9 @@ class TwitterDataWriter(sqlite3.Connection):
 
     # asynchronously look up users' data by their ids, add said data to the db
     async def send_twitter_user_request(self, users):
-        url = "https://api.twitter.com/1.1/users/lookup.json?user_id=" + \
+        url = "https://api.twitter.com/1.1/users/lookup.json?user_id={}".format(
             ",".join(str(x) for x in users)
+        )
         req = HTTPRequest(
             url, "GET", {"Authorization": "Bearer "+self.twitter_api_keys["bearer_token"]})
         try:
@@ -48,7 +53,7 @@ class TwitterDataWriter(sqlite3.Connection):
             print("retrieved data for {} twitter accounts".format(len(user_data)))
             for user in user_data:
                 try:
-                    print("saving avatar for user @{}".format(user_data["screen_name"]))
+                    print("saving avatar for user @{}".format(user["screen_name"]))
                     avatar = (await self.http_client.fetch(user["profile_image_url_https"])).body
                 except HTTPClientError as e:
                     print(repr(e))
@@ -100,7 +105,7 @@ class TwitterDataWriter(sqlite3.Connection):
             self.added_conversations_cache.add(message["conversationId"])
 
         if message["type"] == "messageCreate":
-            participant_ids = [message["senderId"]] + [message["recipientId"]] if not group_dm else []
+            participant_ids = [message["senderId"]] + ([message["recipientId"]] if not group_dm else [])
             for user_id in participant_ids:
                 self.add_user_if_necessary(user_id)
                 self.add_participant_if_necessary(user_id, message["conversationId"])                
@@ -167,34 +172,50 @@ class TwitterDataWriter(sqlite3.Connection):
 
 
     async def finalize(self):
+        # group dms that you start don't come with data on their start time or initial participants, so we
+        # have to do some deduction to try to recover that data.
+        # select conversations with unclear start times:
         for conversation in self.execute("select id from conversations where join_time is null;"):
+            # select earliest records corresponding to all possible first recorded events:
             cur = self.cursor()
             firsts = []
-            cur.execute(
+            first_message = cur.execute(
                 "select sent_time from messages where conversation=? order by sent_time asc limit 1;",
                 (conversation[0], )
-            )
-            first_message = cur.fetchone()
+            ).fetchone()
             firsts += [first_message[0]] if first_message else []
-            cur.execute(
+            first_name_update = cur.execute(
                 "select update_time from name_updates where conversation=? order by update_time asc limit 1;",
                 (conversation[0], )
-            )
-            first_name_update = cur.fetchone()
+            ).fetchone()
             firsts += [first_name_update[0]] if first_name_update else []
-            cur.execute(
+            # this is for when the first event is a participantsJoin
+            first_entrant = cur.execute(
                 """select start_time from participants
                     where start_time is not null and conversation=?
                     order by start_time asc limit 1;""",
                     (conversation[0], )
-            )
-            first_participant = cur.fetchone()
-            firsts += [first_participant[0]] if first_participant else []
-            first = sorted(firsts)[0]
-            cur.execute("update conversations set join_time=? where id=?;", (first, conversation[0]))
+            ).fetchone()
+            firsts += [first_entrant[0]] if first_entrant else []
+            first_exiter = cur.execute(
+                """select end_time from participants
+                    where end_time is not null and conversation=?
+                    order by end_time asc limit 1;""",
+                    (conversation[0], )
+            ).fetchone()
+            firsts += [first_exiter[0]] if first_exiter else []
+            convo_start_time = min(firsts)
+            cur.execute("update conversations set join_time=? where id=?;", (convo_start_time, conversation[0]))
+        # participants without an explicit start time set by a joinConversation snapshot or participantsJoin
+        # event can be assumed to have been there since the beginning of the conversation (note: this indicates
+        # the case that this is a conversation that you started)
         self.execute("""update participants 
             set start_time=(select join_time from conversations where id=participants.conversation)
             where start_time is null;""")
+        self.execute("""update conversations
+            set created_by_me=((select sender from messages where conversation=conversations.id order by sent_time asc limit 1) == ?)
+            where type=="individual"
+        """, (self.account_id, ))
         self.queue_twitter_user_request(None, last_call=True)
         await asyncio.gather(*self.queued_requests)
         self.execute("PRAGMA optimize;")
@@ -210,7 +231,7 @@ async def writer_test():
         prev_db.unlink()
     if (prev_journal := Path("test.db-journal")).exists():
         prev_journal.unlink()
-    db = TwitterDataWriter("test")
+    db = TwitterDataWriter("test", 846137120209190912)
     for message in JSONStream.message_stream("./testdata/individual_dms_test.js"):
         db.add_message(message, group_dm=False)
     for message in JSONStream.message_stream("./testdata/group_dms_test.js"):
