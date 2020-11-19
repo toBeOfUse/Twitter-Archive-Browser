@@ -3,9 +3,7 @@ api_keys.json
 *.db
 *.db-journal
 
-# at least until sanitized test data exists
-testdata/*
-
+*testresults.txt
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
