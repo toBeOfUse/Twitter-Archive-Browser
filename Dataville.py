@@ -119,7 +119,10 @@ class TwitterDataWriter(sqlite3.Connection):
         if message["conversationId"] not in self.added_conversations_cache:
             self.execute("insert into conversations (id, type, other_person) values (?, ?, ?);",
                          (message["conversationId"], "group" if group_dm else "individual",
-                         None if group_dm else message["recipientId"]))
+                         None if group_dm else
+                         (message["recipientId"] if message["senderId"] == str(self.account_id)
+                         else message["senderId"]))
+            )
             self.added_conversations_cache.add(message["conversationId"])
 
         if message["type"] == "messageCreate":
