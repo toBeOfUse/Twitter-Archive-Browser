@@ -1,6 +1,6 @@
 from JSONStream import PrefixedJSON, MessageStream
 import json
-from Dataville import TwitterDataWriter
+from DBWrite import TwitterDataWriter
 from pathlib import Path
 from tornado.ioloop import IOLoop
 
@@ -13,18 +13,19 @@ async def main(manifest_path):
         manifest["userInfo"]["userName"], manifest["userInfo"]["accountId"])
     
     def process_file(file_dict, group_dm):
-        print(f"processing file {file_dict['fileName']}\n")
+        print(f"processing file {file_dict['fileName']}")
         for message in (s:=MessageStream(Path(base_path, file_dict["fileName"]))):
             db_store.add_message(message, group_dm)
             if db_store.added_messages % 1000 == 0:
                 print(f"\r{db_store.added_messages:,} total messages added; " +
-                        f"{s.percentage:.2f}% of the way through {individual_dm_file['fileName']}", end="")
-        print()
+                        f"{s.percentage:.2f}% of the way through {file_dict['fileName']}", end="")
+        print(f"\r{db_store.added_messages:,} total messages added; " +
+                        f"{s.percentage:.2f}% of the way through {file_dict['fileName']}\n")
 
     for individual_dm_file in manifest["dataTypes"]["directMessages"]["files"]:
         process_file(individual_dm_file, False)
 
-    print("\nadded {:,} direct messages from {:,} users across {:,} conversations".format(
+    print("added {:,} direct messages from {:,} users across {:,} conversations\n".format(
         dms := db_store.added_messages, dm_users := db_store.added_users,
         dm_convos := db_store.added_conversations)
     )
@@ -32,7 +33,7 @@ async def main(manifest_path):
     for group_dm_file in manifest["dataTypes"]["directMessagesGroup"]["files"]:
         process_file(group_dm_file, True)
 
-    print("\nadded {:,} group chat messages from {:,} users across {:,} conversations".format(
+    print("added {:,} group chat messages from {:,} users across {:,} conversations\n".format(
         db_store.added_messages-dms, db_store.added_users-dm_users,
         db_store.added_conversations-dm_convos)
     )

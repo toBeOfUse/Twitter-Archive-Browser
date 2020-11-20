@@ -5,6 +5,7 @@ from tornado.ioloop import IOLoop
 import json
 import asyncio
 import JSONStream
+from collections import deque
 
 
 # this class is intended to be used once to create and populate the database in one clean sweep; it has
@@ -46,7 +47,11 @@ class TwitterDataWriter(sqlite3.Connection):
         with open("api_keys.json") as keys:
             self.twitter_api_keys = json.load(keys)
         self.queued_users = []
-        self.queued_requests = []  # contains tasks that must be awaited before the database closes
+        self.queued_tasks = []  # contains tasks that must be awaited before the database closes
+
+        # contains coroutine objects corresponding to http requests, only the first 10 of which are live
+        # (being awaited) at a time; all the rest are awaiting the one in front of them before they start
+        self.queued_http_requests = deque()
 
         self.added_messages = 0
     
@@ -57,6 +62,15 @@ class TwitterDataWriter(sqlite3.Connection):
     @property
     def added_users(self):
         return len(self.added_users_cache)
+    
+    async def queue_http_request(self, url_or_req):
+        coroutine_object = self.http_client.fetch(url_or_req)
+        self.queued_http_requests.append(coroutine_object)
+        if len(self.queued_http_requests) > 10:
+            await self.queued_http_requests[-2]
+        resp = await coroutine_object
+        self.queued_http_requests.popleft()
+        return resp
 
     # asynchronously look up users' data by their ids, add said data to the db
     async def send_twitter_user_request(self, users):
@@ -66,17 +80,17 @@ class TwitterDataWriter(sqlite3.Connection):
         req = HTTPRequest(
             url, "GET", {"Authorization": "Bearer "+self.twitter_api_keys["bearer_token"]})
         try:
-            resp = await self.http_client.fetch(req)
+            resp = await self.queue_http_request(req)
             user_data = json.loads(str(resp.body, encoding="utf-8"))
             print("retrieved data for {} twitter accounts".format(len(user_data)))
             for user in user_data:
                 try:
                     print("saving avatar for user @{}".format(user["screen_name"]))
-                    avatar = (await self.http_client.fetch(user["profile_image_url_https"])).body
+                    avatar = (await self.queue_http_request(user["profile_image_url_https"])).body
                 except HTTPClientError as e:
                     print(repr(e))
                     print("warning: could not retrieve avatar from " +
-                          user["profile_image_url_https"] + " for "+user["id"])
+                          f'{user["profile_image_url_https"]} for {user["id"]}')
                     avatar = bytes()
                 self.execute("""update users 
                     set loaded_full_data=1, handle=?, display_name=?, bio=?, avatar=? where id=?;""",
@@ -94,7 +108,7 @@ class TwitterDataWriter(sqlite3.Connection):
             self.queued_users.append(user)
         if len(self.queued_users) == 100 or (last_call and len(self.queued_users) > 0):
             print("queueing API request for data on {} twitter accounts".format(len(self.queued_users)))
-            self.queued_requests.append(
+            self.queued_tasks.append(
                 asyncio.create_task(
                     self.send_twitter_user_request(self.queued_users))
             )
@@ -252,7 +266,7 @@ class TwitterDataWriter(sqlite3.Connection):
         """, (self.account_id, ))
         
         self.queue_twitter_user_request(None, last_call=True)
-        await asyncio.gather(*self.queued_requests)
+        await asyncio.gather(*self.queued_tasks)
         
         self.execute("pragma optimize;")
         self.commit()
@@ -276,9 +290,9 @@ async def writer_test():
     if (prev_journal := Path("test.db-journal")).exists():
         prev_journal.unlink()
     db = TwitterDataWriter("test", 846137120209190912)
-    for message in JSONStream.message_stream("./testdata/individual_dms_test.js"):
+    for message in JSONStream.MessageStream("./testdata/individual_dms_test.js"):
         db.add_message(message, group_dm=False)
-    for message in JSONStream.message_stream("./testdata/group_dms_test.js"):
+    for message in JSONStream.MessageStream("./testdata/group_dms_test.js"):
         db.add_message(message, group_dm=True)
     await db.finalize()
 

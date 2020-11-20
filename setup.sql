@@ -5,7 +5,7 @@ create table conversations (
     id text primary key,
     type text not null check(type in ("group", "individual")),
     notes text,
-    other_person integer, -- just usable for individual chats
+    other_person integer unique, -- just usable for individual chats
     -- the below is pretty much just relevant for group chats
     created_by_me integer check(created_by_me in (0, 1)) default 1, -- should be not null by end of transaction
     join_time text, -- shouldn't be null at end of transaction
