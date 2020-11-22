@@ -6,20 +6,16 @@ create table conversations (
     type text not null check(type in ("group", "individual")),
     notes text,
     other_person integer unique, -- just usable for individual chats
+    -- the below columns cache the times of the first and last message, name update, or participant joining or
+    -- leaving times for the conversation
+    first_time string,
+    last_time string,
     -- the below is pretty much just relevant for group chats
-    created_by_me integer check(created_by_me in (0, 1)) default 1, -- should be not null by end of transaction
-    join_time text, -- shouldn't be null at end of transaction
-    -- if we created the chat then this should be set to the first message's timestamp
+    created_by_me integer check(created_by_me in (0, 1)) default 1,
     added_by integer -- if we created the chat then this is null
     /* if we created the chat then participant info might not be comprehensive (the data doesn't show the
      initial members in that case fsr) */
 );
-
--- for searching
-create unique index convo_id_idx on conversations (id);
-
--- for sorting
-create unique index convo_starttime_idx on conversations (join_time);
 
 create table users (
     id integer primary key,

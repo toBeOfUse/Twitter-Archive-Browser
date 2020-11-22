@@ -209,7 +209,7 @@ class TwitterDataWriter(sqlite3.Connection):
                                 (message["createdAt"], user_id, message["conversationId"]))
         
         elif message["type"] == "joinConversation":
-            self.execute("update conversations set join_time=?, added_by=?, created_by_me=0 where id=?;",
+            self.execute("update conversations set first_time=?, added_by=?, created_by_me=0 where id=?;",
                 (message["createdAt"], message["initiatingUserId"], message["conversationId"]))
             for user_id in message["participantsSnapshot"]:
                 self.add_user_if_necessary(user_id)
@@ -220,60 +220,20 @@ class TwitterDataWriter(sqlite3.Connection):
         self.added_messages += 1
 
     async def finalize(self):
-        # group dms that you start don't come with data on their start time or initial participants, so we
-        # have to do some deduction to try to recover that data.
-        # select conversations with unclear start times:
-        for conversation in self.execute("select id from conversations where join_time is null;"):
-            # select earliest records corresponding to all possible first recorded events:
-            cur = self.cursor()
-            firsts = []
-            first_message = cur.execute(
-                "select sent_time from messages where conversation=? order by sent_time asc limit 1;",
-                (conversation[0], )
-            ).fetchone()
-            firsts += [first_message[0]] if first_message else []
-            first_name_update = cur.execute(
-                "select update_time from name_updates where conversation=? order by update_time asc limit 1;",
-                (conversation[0], )
-            ).fetchone()
-            firsts += [first_name_update[0]] if first_name_update else []
-            # this is for when the first event is a participantsJoin
-            first_entrant = cur.execute(
-                """select start_time from participants
-                    where start_time is not null and conversation=?
-                    order by start_time asc limit 1;""",
-                    (conversation[0], )
-            ).fetchone()
-            firsts += [first_entrant[0]] if first_entrant else []
-            first_exiter = cur.execute(
-                """select end_time from participants
-                    where end_time is not null and conversation=?
-                    order by end_time asc limit 1;""",
-                    (conversation[0], )
-            ).fetchone()
-            firsts += [first_exiter[0]] if first_exiter else []
-            convo_start_time = min(firsts)
-            cur.execute("update conversations set join_time=? where id=?;", (convo_start_time, conversation[0]))
-        # participants without an explicit start time set by a joinConversation snapshot or participantsJoin
-        # event can be assumed to have been there since the beginning of the conversation (note: this indicates
-        # the case that this is a conversation that you started)
-        self.execute("""update participants 
-            set start_time=(select join_time from conversations where id=participants.conversation)
-            where start_time is null;""")
-        self.execute("""update conversations
-            set created_by_me=((select sender from messages where conversation=conversations.id order by sent_time asc limit 1) == ?)
-            where type=="individual"
-        """, (self.account_id, ))
-        
+        self.commit()
+        print("indexing data...")
+        with open("indexes.sql") as index_script:
+            self.executescript(index_script.read())
+        self.commit()
+
+        with open("cache_conversation_times.sql") as conversation_times_script:
+            self.executescript(conversation_times_script.read())
+
         self.queue_twitter_user_request(None, last_call=True)
         await asyncio.gather(*self.queued_tasks)
         
         self.execute("pragma optimize;")
-        self.commit()
 
-        print("indexing data...")
-        with open("indexes.sql") as index_script:
-            self.executescript(index_script.read())
         self.commit()
 
         print("smallifying database size...")
@@ -282,6 +242,7 @@ class TwitterDataWriter(sqlite3.Connection):
         self.added_users_cache = set()
         self.added_conversations_cache = set()
         self.added_particpants_cache = set()
+        self.close()
 
 
 async def writer_test():
