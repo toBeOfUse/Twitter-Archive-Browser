@@ -352,8 +352,8 @@ class TwitterDataWriter(Connection):
         print("indexing data...")
         with open("indexes.sql") as index_script:
             self.executescript(index_script.read())
-        with open("cache_conversation_times.sql") as conversation_times_script:
-            self.executescript(conversation_times_script.read())
+        with open("cache_conversation_stats.sql") as conversation_stats_script:
+            self.executescript(conversation_stats_script.read())
 
         self.api_client.flush_queue()
         await asyncio.gather(*self.queued_tasks)

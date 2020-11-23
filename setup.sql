@@ -5,6 +5,8 @@ create table conversations (
     id text primary key,
     type text not null check(type in ("group", "individual")),
     notes text,
+    number_of_messages integer,
+    messages_from_you integer,
     -- only usable for individual chats
     other_person integer unique,
     -- the below columns cache the times of the first and last message, name update,

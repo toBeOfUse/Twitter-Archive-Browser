@@ -58,3 +58,22 @@ where type = "individual"
         from me
         limit 1
     );
+
+update conversations
+set number_of_messages = (
+        select count()
+        from messages
+        where conversation = conversations.id
+    );
+
+update conversations
+set messages_from_you = (
+        select count()
+        from messages
+        where conversation = conversations.id
+            and sender_id = (
+                select id
+                from me
+                limit 1
+            )
+    )
