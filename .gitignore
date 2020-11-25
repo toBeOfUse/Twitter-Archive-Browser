@@ -1,3 +1,5 @@
+docs/*
+
 api_keys.json
 
 *.db
