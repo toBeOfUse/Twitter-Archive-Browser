@@ -80,7 +80,7 @@ set messages_from_you = (
 
 update participants
 set start_time =(
-        select join_time
+        select first_time
         from conversations
         where id = participants.conversation
     )
