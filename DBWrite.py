@@ -22,8 +22,8 @@ class SimpleTwitterAPIClient:
         # list of user ids (max 100)
         self.queued_users = []
 
-        # maps user ids to futures whose results will be set to an object
-        # representing the user or None if no data is available
+        # maps user ids to callbacks which will receive an object representing the
+        # user or None if no data is available
         self.found_users = {}
 
         # contains coroutine objects corresponding to http requests, only the first
@@ -42,6 +42,20 @@ class SimpleTwitterAPIClient:
         self.queued_http_requests.popleft()
         return resp
 
+    async def get_avatar(self, user_dict):
+        try:
+            print(f"saving avatar for user @{user_dict['screen_name']}")
+            user_dict["avatar_bytes"] = (
+                await self.queue_http_request(user_dict["profile_image_url_https"])
+            ).body
+        except HTTPClientError as e:
+            print(repr(e))
+            print(
+                "warning: could not retrieve avatar from "
+                + f'{user_dict["profile_image_url_https"]} for {user_dict["id"]}'
+            )
+            user_dict["avatar_bytes"] = bytes()
+
     async def users_api_request(self, users):
         users_string = ",".join(str(x) for x in users)
         url = f"https://api.twitter.com/1.1/users/lookup.json?user_id={users_string}"
@@ -50,50 +64,53 @@ class SimpleTwitterAPIClient:
             "GET",
             {"Authorization": f"Bearer {self.twitter_api_keys['bearer_token']}"},
         )
+
         try:
             resp = await self.queue_http_request(req)
             user_data = json.loads(str(resp.body, encoding="utf-8"))
-            print(f"retrieved data for {len(user_data)} twitter accounts")
-            for user in user_data:
-                try:
-                    print(f"saving avatar for user @{user['screen_name']}")
-                    user["avatar_bytes"] = (
-                        await self.queue_http_request(
-                            user["profile_image_url_https"]
-                        )
-                    ).body
-                except HTTPClientError as e:
-                    print(repr(e))
-                    print(
-                        "warning: could not retrieve avatar from "
-                        + f'{user["profile_image_url_https"]} for {user["id"]}'
-                    )
-                    user["avatar_bytes"] = bytes()
-                self.found_users[user["id_str"]].set_result(user)
-            for user in users:
-                if not self.found_users[user].done():
-                    self.found_users[user].set_result(None)
         except HTTPClientError as e:
             print(repr(e))
             print(f"warning: not able to retrieve user data for any ids in {users}")
+            return
+
+        print(f"retrieved data for {len(user_data)} twitter accounts")
+        retrieved_users = set(x["id_str"] for x in user_data)
+
+        avatar_reqs = []
+        for user in user_data:
+            avatar_reqs.append(self.get_avatar(user))
+        await asyncio.gather(*avatar_reqs)
+
+        for user in user_data:
+            self.found_users[user["id_str"]](user)
+
+        for user in set(users) - retrieved_users:
+            self.found_users[user](None)
 
     # synchronously flushes the queue
-    def flush_queue(self):
-        for i in range(0, len(self.queued_users), 100):
-            users = self.queued_users[i : i + 100]
-            self.queued_users = self.queued_users[i:]
-            asyncio.create_task(self.users_api_request(users))
+    async def flush_queue(self):
+        if len(self.queued_users) == 0:
+            print("nothing in twitter user request queue to act upon")
+        else:
+            print(
+                f"requesting user data for {len(self.queued_users)} twitter accounts"
+            )
+            api_reqs = []
+            while len(self.queued_users):
+                users = self.queued_users[0:100]
+                self.queued_users = self.queued_users[100:]
+                api_reqs.append(self.users_api_request(users))
+            await asyncio.gather(*api_reqs)
 
     # adds given user id to the queue, flushes the queue if there are 100 users in
     # it, returns a future that will resolve to the result of the user id request
     # (either a twitter api formatted dict or None if no data is available) after the
     # queue is flushed
-    def queue_twitter_user_request(self, user):
+    def queue_twitter_user_request(self, user, callback):
         self.queued_users.append(user)
-        self.found_users[user] = asyncio.get_event_loop().create_future()
+        self.found_users[user] = callback
         if len(self.queued_users) == 100:
-            self.flush_queue()
-        return self.found_users[user]
+            asyncio.create_task(self.flush_queue())
 
 
 # this class is intended to be used once to create and populate the database in one clean sweep; it has
@@ -136,9 +153,6 @@ class TwitterDataWriter(Connection):
         self.added_particpants_cache = set()
 
         self.api_client = SimpleTwitterAPIClient("api_keys.json")
-        # holds task objects that represent retrieving asynchronously user info from
-        # the twitter api
-        self.queued_tasks = []
 
         self.added_messages = 0
 
@@ -151,8 +165,7 @@ class TwitterDataWriter(Connection):
         return len(self.added_users_cache)
 
     # asynchronously look up users' data by their ids, add said data to the db
-    async def save_user_data(self, user_future):
-        user = await user_future
+    def save_user_data(self, user):
         if user:
             self.execute(
                 """update users 
@@ -167,10 +180,6 @@ class TwitterDataWriter(Connection):
                 ),
             )
 
-    def get_user_data(self, user_id):
-        f = self.api_client.queue_twitter_user_request(user_id)
-        self.queued_tasks.append(asyncio.create_task(self.save_user_data(f)))
-
     def add_user_if_necessary(self, user_id):
         if user_id not in self.added_users_cache:
             if not self.execute(
@@ -180,20 +189,22 @@ class TwitterDataWriter(Connection):
                     "insert into users (id, loaded_full_data) values(?, 0);",
                     (user_id,),
                 )
-                self.get_user_data(user_id)
+                self.api_client.queue_twitter_user_request(
+                    user_id, self.save_user_data
+                )
                 self.added_users_cache.add(user_id)
 
     def add_participant_if_necessary(
         self, user_id, conversation_id, start_time=None, added_by=None
     ):
-        if (user_id, conversation_id) not in self.added_conversations_cache:
+        if (user_id, conversation_id) not in self.add_partipants_cache:
             self.execute(
                 """insert into participants
                             (participant, conversation, start_time, added_by)
                             values (?, ?, ?, ?);""",
                 (user_id, conversation_id, start_time, added_by),
             )
-            self.added_conversations_cache.add((user_id, conversation_id))
+            self.add_partipants_cache.add((user_id, conversation_id))
 
     def add_message(self, message, group_dm=False):
         if message["conversationId"] not in self.added_conversations_cache:
@@ -355,8 +366,7 @@ class TwitterDataWriter(Connection):
         with open("cache_conversation_stats.sql") as conversation_stats_script:
             self.executescript(conversation_stats_script.read())
 
-        self.api_client.flush_queue()
-        await asyncio.gather(*self.queued_tasks)
+        await self.api_client.flush_queue()
 
         self.execute("pragma optimize;")
 
