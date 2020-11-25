@@ -105,6 +105,7 @@ create table name_updates (
 create table participants (
     participant integer not null,
     conversation text not null,
+    messages_sent integer,
     -- start_time can come from participant snapshots, participantsJoin events, or
     -- the first_time of the conversation otherwise
     start_time text,

@@ -1,5 +1,7 @@
 create index convos_ids_idx on conversations(id);
 
+create index convos_message_count_idx on conversations(type, number_of_messages);
+
 create index convo_firsttime_idx on conversations (first_time);
 
 create index convo_lasttime_idx on conversations (last_time);

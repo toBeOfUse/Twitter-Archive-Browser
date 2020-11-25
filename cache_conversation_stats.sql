@@ -71,9 +71,25 @@ set messages_from_you = (
         select count()
         from messages
         where conversation = conversations.id
-            and sender_id = (
+            and sender = (
                 select id
                 from me
                 limit 1
             )
+    );
+
+update participants
+set start_time =(
+        select join_time
+        from conversations
+        where id = participants.conversation
     )
+where start_time is null;
+
+update participants
+set messages_sent = (
+        select count()
+        from messages
+        where messages.conversation = participants.conversation
+            and messages.sender = participants.participant
+    );
