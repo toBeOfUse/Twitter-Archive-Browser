@@ -56,12 +56,12 @@ class MessageStream:
     Attributes:
         path: path to .js file that the messages are being obtained from
         ijson_events_processed: an ijson event is raised when ijson finds some data
-        in the code; the number of processed events here serves as a progress
-        indicator. ijson events are not to be confused with conversation events like
-        messageCreate or the other ones this class yields, which contain a lot more
-        data.
+            in the code; the number of processed events here serves as a progress
+            indicator. ijson events are not to be confused with conversation events like
+            messageCreate or the other ones this class yields, which contain a lot more
+            data.
         ijson_events_total: the total number of ijson events reading this file will
-        cause.
+            cause.
 
     How to use:
         >>> for message in MessageStream("messages.js"):

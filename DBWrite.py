@@ -21,15 +21,15 @@ class SimpleTwitterAPIClient:
 
     Attributes:
         http_client: instance of tornado.httpclient.AsyncHTTPClient to make HTTP
-        requests with.
+            requests with.
         twitter_api_keys: dict holding at least a 'bearer_token' field to
-        authenticate api requests with.
+            authenticate api requests with.
         queued_users: list of user ids that we want data for.
         found_users: maps user ids to callbacks which will receive an object
-        representing the user or None if no data is available.
+            representing the user or None if no data is available.
         queued_http_requests: contains coroutine objects corresponding to http
-        requests, only the first 10 of which are live (being awaited) at a time; all
-        the rest are awaiting the one in front of them before they start.
+            requests, only the first 10 of which are live (being awaited) at a time; all
+            the rest are awaiting the one in front of them before they start.
 
     How to use:
         >>> stac = SimpleTwitterAPIClient("api_keys.json")
@@ -44,7 +44,7 @@ class SimpleTwitterAPIClient:
 
         Arguments:
             keyfile: path to a json file containing at least the field
-            'bearer_token'. api keys are obtained from twitter.
+                'bearer_token'. api keys are obtained from twitter.
         """
 
         self.http_client = AsyncHTTPClient()
@@ -59,14 +59,14 @@ class SimpleTwitterAPIClient:
         self.queued_http_requests = deque()
 
     async def queue_http_request(self, url_or_req):
-        """adds a http request to queued_http_requests and starts it once there are <
-        10 active requests. keeps requests from timing out in tornado's request
-        queue.
+        """adds a http request to queued_http_requests and starts it once there are
+        less than 10 active requests. keeps requests from timing out in tornado's
+        request queue.
 
         Arguments:
             url_or_req: either a string containing a url or a
-            tornado.httpclient.HTTPRequest object that will be passed to our http
-            client's fetch method.
+                tornado.httpclient.HTTPRequest object that will be passed to our http
+                client's fetch method.
         """
 
         coroutine_object = self.http_client.fetch(url_or_req)
@@ -84,7 +84,7 @@ class SimpleTwitterAPIClient:
 
         Arguments:
             user_dict: a dictionary meant to be loaded from json returned by an api
-            request carried out in users_api_request.
+                request carried out in users_api_request.
         """
 
         try:
@@ -164,7 +164,7 @@ class SimpleTwitterAPIClient:
         Arguments:
             user_id: the unique id of a twitter user.
             callback: a function that can accept a dict containing twitter api data
-            and an image file for the user in the 'avatar_bytes' field.
+                and an image file for the user in the 'avatar_bytes' field.
         """
         # user ids can be stored as ints or strings; the str() cast is just so that
         # within this class, they're represented consistently
@@ -187,16 +187,19 @@ class TwitterDataWriter(Connection):
 
     Attributes:
         account: string name for the account that is being preserved; used as the
-        filename for the resulting sqlite3 database file.
+            filename for the resulting sqlite3 database file.
         account_id: twitter unique id for the account that is being preserved.
         added_users_cache: set of the ids of users we've added to the database.
         added_conversations_cache: set of the ids of conversations we've added to the
-        database.
+            database.
         added_participants_cache: set of (user_id, conversation_id) tuples
-        corresponding to records of specific users' appearances in specific
-        conversations that we've added to the database.
+            corresponding to records of specific users' appearances in specific
+            conversations that we've added to the database.
         api_client: instance of SimpleTwitterAPIClient that will be used to retrieve
-        data for users given their ids for storage in the database.
+            data for users given their ids for storage in the database.
+        added_messages: tracks the number of messages or other conversation events
+            that have been added to the database. intended to be used by this object's
+            owner for progress reports
     """
 
     def __init__(self, account_name, account_id):
@@ -311,12 +314,12 @@ class TwitterDataWriter(Connection):
             user_id: the usual one
             conversation_id: same
             start_time: timestamp in YYYY-MM-DDTHH:MM:SS.MMMZ format indicating the
-            time at which this user was first seen in this conversation. we know this
-            if we're processing a participantsJoin or joinConversation event.
+                time at which this user was first seen in this conversation. we know this
+                if we're processing a participantsJoin or joinConversation event.
             end_time: timestamp indicating the last time this user was seen in this
-            conversation. we know this if we're processing a participantsLeave event.
+                conversation. we know this if we're processing a participantsLeave event.
             added_by: id of the user that added this participant to this
-            conversation. we know this if we're processing a participantsJoin event.
+                conversation. we know this if we're processing a participantsJoin event.
         """
         if (
             user_id,
