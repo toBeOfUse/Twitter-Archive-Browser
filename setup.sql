@@ -106,8 +106,8 @@ create table participants (
     participant integer not null,
     conversation text not null,
     messages_sent integer,
-    -- start_time can come from participant snapshots, participantsJoin events, or
-    -- the first_time of the conversation otherwise
+    -- if equal to the conversation's first_time, they've been there since before we
+    -- were
     start_time text,
     -- if null they never left,
     end_time text,

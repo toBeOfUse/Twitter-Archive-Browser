@@ -8,32 +8,67 @@ import JSONStream
 from collections import deque
 
 
-# simple api client that requests user data. call queue_twitter_user_request
-# synchronously with an id and then await the future it returns to get data for that
-# id; call flush_queue before your program ends to ensure that your
-# queue_twitter_user_request calls will in fact complete.
 class SimpleTwitterAPIClient:
+    """simple twitter api client for requesting user data.
+
+    this api client uses a tornado AsynHTTPClient to make http requests; it queues
+    http requests so that tornado is only performing 10 at a time, which prevents
+    timeout errors from requests sitting in tornado's queue too long; it queues user
+    ids that it will request data for until it has 100 or the queue is manually
+    flushed; it retrieves twitter users' avatar image files as bytes automatically;
+    and it returns data to its owner via callback functions. sends back None if no
+    data is found for a user.
+
+    Attributes:
+        http_client: instance of tornado.httpclient.AsyncHTTPClient to make HTTP
+        requests with.
+        twitter_api_keys: dict holding at least a 'bearer_token' field to
+        authenticate api requests with.
+        queued_users: list of user ids that we want data for.
+        found_users: maps user ids to callbacks which will receive an object
+        representing the user or None if no data is available.
+        queued_http_requests: contains coroutine objects corresponding to http
+        requests, only the first 10 of which are live (being awaited) at a time; all
+        the rest are awaiting the one in front of them before they start.
+
+    How to use:
+        >>> stac = SimpleTwitterAPIClient("api_keys.json")
+        >>> stac.queue_twitter_user_request("10101010")
+        >>> stac.queue_twitter_user_request("01010101")
+        ...
+        >>> await stac.flush_queue()
+    """
+
     def __init__(self, keyfile):
+        """initializes instance variables and reads api keys from a json file.
+
+        Arguments:
+            keyfile: path to a json file containing at least the field
+            'bearer_token'. api keys are obtained from twitter.
+        """
+
         self.http_client = AsyncHTTPClient()
 
         with open(keyfile) as keys:
             self.twitter_api_keys = json.load(keys)
 
-        # list of user ids (max 100)
         self.queued_users = []
 
-        # maps user ids to callbacks which will receive an object representing the
-        # user or None if no data is available
         self.found_users = {}
 
-        # contains coroutine objects corresponding to http requests, only the first
-        # 10 of which are live (being awaited) at a time; all the rest are awaiting
-        # the one in front of them before they start
         self.queued_http_requests = deque()
 
-    # used to send http requests that will be queued to avoid timeouts due to traffic
-    # jams.
     async def queue_http_request(self, url_or_req):
+        """adds a http request to queued_http_requests and starts it once there are <
+        10 active requests. keeps requests from timing out in tornado's request
+        queue.
+
+        Arguments:
+            url_or_req: either a string containing a url or a
+            tornado.httpclient.HTTPRequest object that will be passed to our http
+            client's fetch method.
+        """
+
         coroutine_object = self.http_client.fetch(url_or_req)
         self.queued_http_requests.append(coroutine_object)
         if len(self.queued_http_requests) > 10:
@@ -43,6 +78,15 @@ class SimpleTwitterAPIClient:
         return resp
 
     async def get_avatar(self, user_dict):
+        """asynchronously retrieves an avatar based on user data from an api request
+        and adds it to the user data in the 'avatar_bytes' field. meant to be run in
+        parallel with other coroutines for efficiency.
+
+        Arguments:
+            user_dict: a dictionary meant to be loaded from json returned by an api
+            request carried out in users_api_request.
+        """
+
         try:
             print(f"saving avatar for user @{user_dict['screen_name']}")
             user_dict["avatar_bytes"] = (
@@ -57,6 +101,14 @@ class SimpleTwitterAPIClient:
             user_dict["avatar_bytes"] = bytes()
 
     async def users_api_request(self, users):
+        """makes an api request for the users specified by the ids in the users
+        argument; runs the requests for the avatars of those users in parallel; calls
+        the callback function associated with each user id to deliver the data to
+        this object's owner.
+
+        Arguments:
+            users: a list of user ids in string form.
+        """
         users_string = ",".join(str(x) for x in users)
         url = f"https://api.twitter.com/1.1/users/lookup.json?user_id={users_string}"
         req = HTTPRequest(
@@ -87,8 +139,10 @@ class SimpleTwitterAPIClient:
         for user in set(users) - retrieved_users:
             self.found_users[user](None)
 
-    # synchronously flushes the queue
     async def flush_queue(self):
+        """causes all currently queued requests for users' data to be acted upon;
+        should be run and awaited before the owner of this object closes up shop.
+        """
         if len(self.queued_users) == 0:
             print("nothing in twitter user request queue to act upon")
         else:
@@ -102,21 +156,54 @@ class SimpleTwitterAPIClient:
                 api_reqs.append(self.users_api_request(users))
             await asyncio.gather(*api_reqs)
 
-    # adds given user id to the queue, flushes the queue if there are 100 users in
-    # it, returns a future that will resolve to the result of the user id request
-    # (either a twitter api formatted dict or None if no data is available) after the
-    # queue is flushed
-    def queue_twitter_user_request(self, user, callback):
-        self.queued_users.append(user)
-        self.found_users[user] = callback
+    def queue_twitter_user_request(self, user_id, callback):
+        """adds a user id to the queue and registers a callback function that a dict
+        of the user's data (including bytes containing an image file representing
+        their avatar in 'avatar_bytes') will be passed to once it is retrieved.
+
+        Arguments:
+            user_id: the unique id of a twitter user.
+            callback: a function that can accept a dict containing twitter api data
+            and an image file for the user in the 'avatar_bytes' field.
+        """
+        # user ids can be stored as ints or strings; the str() cast is just so that
+        # within this class, they're represented consistently
+        self.queued_users.append(str(user_id))
+        self.found_users[user_id] = callback
         if len(self.queued_users) == 100:
             asyncio.create_task(self.flush_queue())
 
 
-# this class is intended to be used once to create and populate the database in one clean sweep; it has
-# limited protections against adding duplicate records and the like.
 class TwitterDataWriter(Connection):
+    """creates a database containing group and individual direct messages and associated data.
+
+    broadly, this class recieves a twitter account name and id, a series of messages
+    and other conversation events through its add_message method, and turns the data
+    into a sqlite3 database file that can be queried to obtain information about the
+    recorded conversants and conversations in excrutiating detail. setup.sql contains
+    the database schema that indicates the data that is preserved (and inferred.) note:
+    does very little type casting or checking; sqlite3 is expected to do this based on
+    each column of data's type affinity in the schema.
+
+    Attributes:
+        account: string name for the account that is being preserved; used as the
+        filename for the resulting sqlite3 database file.
+        account_id: twitter unique id for the account that is being preserved.
+        added_users_cache: set of the ids of users we've added to the database.
+        added_conversations_cache: set of the ids of conversations we've added to the
+        database.
+        added_participants_cache: set of (user_id, conversation_id) tuples
+        corresponding to records of specific users' appearances in specific
+        conversations that we've added to the database.
+        api_client: instance of SimpleTwitterAPIClient that will be used to retrieve
+        data for users given their ids for storage in the database.
+    """
+
     def __init__(self, account_name, account_id):
+        """creates a database file for an archive for a specific account, initializes
+        it with a sql script that creates tables within it, begins our overall sql
+        transaction, and saves the id of the account being archived in the
+        database."""
         filename = account_name + ".db"
         if Path(filename).exists():
             if (
@@ -134,6 +221,8 @@ class TwitterDataWriter(Connection):
         super(TwitterDataWriter, self).__init__(filename)
         self.account = account_name
 
+        # keeps python from automatically creating and ending database transactions
+        # so that all of our inserts can be contained in one large one (faster)
         self.isolation_level = None
 
         with open("setup.sql") as setup:
@@ -150,7 +239,7 @@ class TwitterDataWriter(Connection):
         self.added_users_cache = set()
         self.added_conversations_cache = set()
         # contains tuples of the form (user_id, conversation_id)
-        self.added_particpants_cache = set()
+        self.added_participants_cache = set()
 
         self.api_client = SimpleTwitterAPIClient("api_keys.json")
 
@@ -158,14 +247,21 @@ class TwitterDataWriter(Connection):
 
     @property
     def added_conversations(self):
+        """returns number of conversations that have been stored in the database;
+        intended for progress-checking"""
         return len(self.added_conversations_cache)
 
     @property
     def added_users(self):
+        """returns number of users that have been stored in the database;
+        intended for progress-checking"""
         return len(self.added_users_cache)
 
-    # asynchronously look up users' data by their ids, add said data to the db
     def save_user_data(self, user):
+        """receives a dict containing data about a user from the twitter api and
+        bytes containing an image file for the user's avatar and saves this
+        information in the database. intended to be passed as a callback function
+        to queue_twitter_user_request in the SimpleTwitterAPIClient class."""
         if user:
             self.execute(
                 """update users 
@@ -181,6 +277,13 @@ class TwitterDataWriter(Connection):
             )
 
     def add_user_if_necessary(self, user_id):
+        """one-stop shop for adding a user record for a user id to the
+        database; should be called whenever a user id is encountered.
+
+        adds a mostly-empty row at first, but place the user id in the api client's
+        queue with save_user_data as a callback function so that the row will be
+        populated with data from the twitter api momentarily if it's available.
+        """
         if user_id not in self.added_users_cache:
             if not self.execute(
                 "select 1 from users where id=?;", (user_id,)
@@ -195,34 +298,101 @@ class TwitterDataWriter(Connection):
                 self.added_users_cache.add(user_id)
 
     def add_participant_if_necessary(
-        self, user_id, conversation_id, start_time=None, added_by=None
+        self, user_id, conversation_id, start_time=None, end_time=None, added_by=None
     ):
-        if (user_id, conversation_id) not in self.add_partipants_cache:
-            self.execute(
-                """insert into participants
-                            (participant, conversation, start_time, added_by)
-                            values (?, ?, ?, ?);""",
-                (user_id, conversation_id, start_time, added_by),
-            )
-            self.add_partipants_cache.add((user_id, conversation_id))
+        """one-stop shop for adding an record of a particular user appearing in a
+        particular conversation to the database; should be called whenever a user id
+        is encountered. adds a very simple record if no record of this participation
+        exist yet and then, if start_time, end_time, or added_by are present, updates
+        the existing record with this new information. missing information in any
+        given participant record will be filled in when finalize() is called.
 
-    def add_message(self, message, group_dm=False):
-        if message["conversationId"] not in self.added_conversations_cache:
+        Arguments:
+            user_id: the usual one
+            conversation_id: same
+            start_time: timestamp in YYYY-MM-DDTHH:MM:SS.MMMZ format indicating the
+            time at which this user was first seen in this conversation. we know this
+            if we're processing a participantsJoin or joinConversation event.
+            end_time: timestamp indicating the last time this user was seen in this
+            conversation. we know this if we're processing a participantsLeave event.
+            added_by: id of the user that added this participant to this
+            conversation. we know this if we're processing a participantsJoin event.
+        """
+        if (
+            user_id,
+            conversation_id,
+        ) not in self.added_participants_cache:
+            self.execute(
+                """insert or replace into participants
+                            (participant, conversation)
+                            values (?, ?);""",
+                (user_id, conversation_id),
+            )
+            self.added_participants_cache.add((user_id, conversation_id))
+        if start_time:
+            self.execute(
+                """update participants 
+                    set start_time=? where participant=? and conversation=?;""",
+                (start_time, user_id, conversation_id),
+            )
+        if end_time:
+            self.execute(
+                """update participants 
+                    set start_time=? where participant=? and conversation=?;""",
+                (end_time, user_id, conversation_id),
+            )
+        if added_by:
+            self.execute(
+                """update participants 
+                    set added_by=? where participant=? and conversation=?;""",
+                (added_by, user_id, conversation_id),
+            )
+
+    def add_conversation_if_necessary(
+        self, conversation_id, group_dm, other_person, first_time=None, added_by=None
+    ):
+        """one-stop shop for adding a conversation record to the database. if
+        first_time and added_by are present, we're processing a conversationJoin
+        event and need to update the conversation record with that info (after
+        creating it if necessary.) missing information in any given conversation
+        record will be filled in when finalize() is called.
+        """
+
+        if conversation_id not in self.added_conversations_cache:
             self.execute(
                 "insert into conversations (id, type, other_person) values (?, ?, ?);",
                 (
-                    message["conversationId"],
+                    conversation_id,
                     "group" if group_dm else "individual",
-                    None
-                    if group_dm
-                    else (
-                        message["recipientId"]
-                        if message["senderId"] == str(self.account_id)
-                        else message["senderId"]
-                    ),
+                    other_person,
                 ),
             )
-            self.added_conversations_cache.add(message["conversationId"])
+            self.added_conversations_cache.add(conversation_id)
+        # either both should be present or neither
+        assert (first_time and added_by) or (not first_time and not added_by)
+        if first_time and added_by:
+            self.execute(
+                "update conversations set first_time=?, added_by=? where id=?;",
+                (first_time, added_by, conversation_id),
+            )
+
+    def add_message(self, message, group_dm=False):
+        """one-stop shop for adding a message or other conversation event to the
+        database, with the above types of record as a consequence. aaaaaaaaa
+        """
+
+        recipient_id = (
+            None
+            if group_dm
+            else (
+                message["recipientId"]
+                if message["senderId"] == str(self.account_id)
+                else message["senderId"]
+            )
+        )
+        self.add_conversation_if_necessary(
+            message["conversationId"], group_dm, recipient_id
+        )
 
         if message["type"] == "messageCreate":
             participant_ids = [message["senderId"]] + (
@@ -316,36 +486,30 @@ class TwitterDataWriter(Connection):
         ):
             if message["type"] == "participantsJoin":
                 self.add_user_if_necessary(message["initiatingUserId"])
-            for user_id in message["userIds"]:
-                self.add_user_if_necessary(user_id)
-                self.add_participant_if_necessary(user_id, message["conversationId"])
-                if message["type"] == "participantsJoin":
-                    self.execute(
-                        """update participants
-                                    set start_time=?, added_by=?
-                                    where participant=? and conversation=?;""",
-                        (
-                            message["createdAt"],
-                            message["initiatingUserId"],
-                            user_id,
-                            message["conversationId"],
-                        ),
+                for user_id in message["userIds"]:
+                    self.add_user_if_necessary(user_id)
+                    self.add_participant_if_necessary(
+                        user_id,
+                        message["conversationId"],
+                        start_time=message["createdAt"],
+                        added_by=message["initiatingUserId"],
                     )
-                else:
-                    self.execute(
-                        """update participants 
-                                    set end_time=? where participant=? and conversation=?;""",
-                        (message["createdAt"], user_id, message["conversationId"]),
+            else:
+                for user_id in message["userIds"]:
+                    self.add_user_if_necessary(user_id)
+                    self.add_participant_if_necessary(
+                        user_id,
+                        message["conversationId"],
+                        end_time=message["createdAt"],
                     )
 
         elif message["type"] == "joinConversation":
-            self.execute(
-                "update conversations set first_time=?, added_by=?, created_by_me=0 where id=?;",
-                (
-                    message["createdAt"],
-                    message["initiatingUserId"],
-                    message["conversationId"],
-                ),
+            self.add_conversation_if_necessary(
+                message["conversationId"],
+                group_dm,
+                recipient_id,
+                message["createdAt"],
+                message["initiatingUserId"],
             )
             for user_id in message["participantsSnapshot"]:
                 self.add_user_if_necessary(user_id)
@@ -358,6 +522,10 @@ class TwitterDataWriter(Connection):
         self.added_messages += 1
 
     async def finalize(self):
+        """runs the script that creates the indexes; runs the script that infers data
+        to put into the gaps in the participants and conversations tables; waits for
+        the fetching of user data from the twitter api to be done; optimizes,
+        shrinks, and closes the database."""
         self.commit()
 
         print("indexing data...")
