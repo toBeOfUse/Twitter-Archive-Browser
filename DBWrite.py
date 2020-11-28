@@ -82,7 +82,8 @@ class SimpleTwitterAPIClient:
     async def get_avatar(self, user_dict):
         """asynchronously retrieves an avatar based on user data from an api request
         and adds it to the user data in the 'avatar_bytes' field. meant to be run in
-        parallel with other coroutines for efficiency.
+        parallel with other coroutines for efficiency. also places the file extension
+        of the avatar (jpg, png, gif) in the 'avatar_extension' field.
 
         Arguments:
             user_dict: a dictionary meant to be loaded from json returned by an api
@@ -92,8 +93,9 @@ class SimpleTwitterAPIClient:
         try:
             print(f"saving avatar for user @{user_dict['screen_name']}")
             user_dict["avatar_bytes"] = (
-                await self.queue_http_request(user_dict["profile_image_url_https"])
+                await self.queue_http_request(user_dict["profile_image_url_https"].replace("normal", "400x400"))
             ).body
+            user_dict["avatar_extension"] = user_dict["profile_image_url_https"].split(".")[-1]
         except HTTPClientError as e:
             print(repr(e))
             print(
@@ -271,12 +273,13 @@ class TwitterDataWriter(Connection):
             self.execute(
                 """update users 
                     set loaded_full_data=1, handle=?, display_name=?, bio=?, 
-                    avatar=? where id=?;""",
+                    avatar=?, avatar_extension=? where id=?;""",
                 (
                     user["screen_name"],
                     user["name"],
                     user["description"],
                     user["avatar_bytes"],
+                    user["avatar_extension"],
                     user["id"],
                 ),
             )

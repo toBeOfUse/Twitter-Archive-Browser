@@ -29,6 +29,8 @@ create table users (
     display_name text,
     bio text,
     avatar blob,
+    -- "jpg", "png", maybe "gif"; who needs mime types
+    avatar_extension text,
     nickname text,
     notes text
 );
