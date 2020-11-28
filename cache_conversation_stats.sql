@@ -79,7 +79,7 @@ set messages_from_you = (
     );
 
 update participants
-set start_time =(
+set start_time = (
         select first_time
         from conversations
         where id = participants.conversation

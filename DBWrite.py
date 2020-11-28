@@ -33,8 +33,10 @@ class SimpleTwitterAPIClient:
 
     How to use:
         >>> stac = SimpleTwitterAPIClient("api_keys.json")
-        >>> stac.queue_twitter_user_request("10101010")
-        >>> stac.queue_twitter_user_request("01010101")
+        >>> def user_dict_handler(user_dict):
+        ...     print(user_dict)
+        >>> stac.queue_twitter_user_request("10101010", user_dict_handler)
+        >>> stac.queue_twitter_user_request("01010101", user_dict_handler)
         ...
         >>> await stac.flush_queue()
     """
