@@ -13,16 +13,20 @@ create table conversations (
     -- or participant joining or leaving times for the conversation
     first_time string,
     last_time string,
-    -- mmore meaningful for group chats; just records the first message's sender for
+    -- more meaningful for group chats; just records the first message's sender for
     -- individual chats
     created_by_me integer check(created_by_me in (0, 1)) default 1,
     added_by integer -- if we created the chat then this is null
+    -- only meaningful for group chats
+    num_participants integer,
+    num_name_updates integer,
     /* if we created the chat then participant info might not be comprehensive (the
      data doesn't show the initial members in that case fsr) */
 );
 
 create table users (
     id integer primary key,
+    number_of_messages integer,
     loaded_full_data integer check(loaded_full_data in (0, 1)),
     -- if false, the rest of these will be null (except maybe nickname and notes)
     handle text,
@@ -55,12 +59,19 @@ create virtual table messages_text_search using fts5(
     content_rowid = id
 );
 
--- messages don't get updated or deleted lol
+-- messages don't get updated or deleted lol so other triggers aren't necessary
 create trigger message_add
 after
 insert on messages begin
 insert into messages_text_search(rowid, content)
-values(new.id, new.content);
+values(
+        new.id,
+        -- adding tags with author ids into the indexed text allows for indexed text
+        -- searching and indexed author searching to be done in a single query;
+        -- query results will still have their content drawn from the messages table
+        -- and will not include the tag
+        new.content || " author_tag_" || new.sender
+    );
 
 end;
 

@@ -78,11 +78,25 @@ set messages_from_you = (
             )
     );
 
+update conversations
+set num_participants = (
+        select count()
+        from participants
+        where participants.conversation = conversations.id
+    );
+
+update conversations
+set num_name_updates = (
+        select count()
+        from name_updates
+        where name_updates.conversation = conversations.id
+    );
+
 update participants
 set start_time = (
         select first_time
         from conversations
-        where id = participants.conversation
+        where conversations.id = participants.conversation
     )
 where start_time is null;
 
@@ -92,4 +106,11 @@ set messages_sent = (
         from messages
         where messages.conversation = participants.conversation
             and messages.sender = participants.participant
+    );
+
+update users
+set number_of_messages = (
+        select count()
+        from messages
+        where messages.sender = users.id
     );
