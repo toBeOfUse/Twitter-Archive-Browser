@@ -477,6 +477,7 @@ class TwitterDataWriter(Connection):
 
         elif message["type"] == "conversationNameUpdate":
             self.add_user_if_necessary(message["initiatingUserId"])
+            self.add_participant_if_necessary(message["initiatingUserId"], message["conversationId"])
             self.execute(
                 """insert into name_updates (update_time, initiator, new_name, conversation)
                             values (?, ?, ?, ?);""",
