@@ -11,7 +11,7 @@ from collections import deque
 class SimpleTwitterAPIClient:
     """simple twitter api client for requesting user data.
 
-    this api client uses a tornado AsynHTTPClient to make http requests; it queues
+    this api client uses a tornado AsyncHTTPClient to make http requests; it queues
     http requests so that tornado is only performing 10 at a time, which prevents
     timeout errors from requests sitting in tornado's queue too long; it queues user
     ids that it will request data for until it has 100 or the queue is manually
@@ -93,9 +93,13 @@ class SimpleTwitterAPIClient:
         try:
             print(f"saving avatar for user @{user_dict['screen_name']}")
             user_dict["avatar_bytes"] = (
-                await self.queue_http_request(user_dict["profile_image_url_https"].replace("normal", "400x400"))
+                await self.queue_http_request(
+                    user_dict["profile_image_url_https"].replace("normal", "400x400")
+                )
             ).body
-            user_dict["avatar_extension"] = user_dict["profile_image_url_https"].split(".")[-1]
+            user_dict["avatar_extension"] = user_dict[
+                "profile_image_url_https"
+            ].split(".")[-1]
         except HTTPClientError as e:
             print(repr(e))
             print(
@@ -181,10 +185,10 @@ class SimpleTwitterAPIClient:
 class TwitterDataWriter(Connection):
     """creates a database containing group and individual direct messages and associated data.
 
-    broadly, this class recieves a twitter account name and id, a series of messages
+    broadly, this class receives a twitter account name and id, a series of messages
     and other conversation events through its add_message method, and turns the data
     into a sqlite3 database file that can be queried to obtain information about the
-    recorded conversants and conversations in excrutiating detail. setup.sql contains
+    recorded conversants and conversations in excruciating detail. setup.sql contains
     the database schema that indicates the data that is preserved (and inferred.) note:
     does very little type casting or checking; sqlite3 is expected to do this based on
     each column of data's type affinity in the schema.
@@ -477,7 +481,9 @@ class TwitterDataWriter(Connection):
 
         elif message["type"] == "conversationNameUpdate":
             self.add_user_if_necessary(message["initiatingUserId"])
-            self.add_participant_if_necessary(message["initiatingUserId"], message["conversationId"])
+            self.add_participant_if_necessary(
+                message["initiatingUserId"], message["conversationId"]
+            )
             self.execute(
                 """insert into name_updates (update_time, initiator, new_name, conversation)
                             values (?, ?, ?, ?);""",
@@ -513,6 +519,7 @@ class TwitterDataWriter(Connection):
                     )
 
         elif message["type"] == "joinConversation":
+            self.add_user_if_necessary(message["initiatingUserId"])
             self.add_conversation_if_necessary(
                 message["conversationId"],
                 group_dm,
