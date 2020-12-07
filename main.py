@@ -43,7 +43,7 @@ async def main(manifest_path):
         process_file(group_dm_file, True)
 
     print(
-        "added {:,} group chat messages from {:,} users across {:,} conversations\n".format(
+        "added {:,} group chat messages from {:,} more users across {:,} conversations\n".format(
             db_store.added_messages - dms,
             db_store.added_users - dm_users,
             db_store.added_conversations - dm_convos,
