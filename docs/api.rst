@@ -2,7 +2,7 @@
 API Documentation
 ###################
 
-All API requests must contain an Authorization cookie obtained from /api/authenticate. All query string parameters are required unless otherwise indicated. Page numbers start at 1. When a single name for a user is to be displayed, standard practice is to go with the nickname if it is exists, the display name if it is known but there is no nickname set, and "mystery user @11111" otherwise, with the user's id as the number. User-sidecar requests (as labeled below) come in the form of objects with a "results" key pointing to the main payload of the request and a "users" key pointing to an object mapping user ids onto objects containing "handle", "display_name", "nickname", and "avatar_url" fields.
+All API requests must contain an Authorization cookie obtained from /api/authenticate. All query string parameters are required unless otherwise indicated. Page numbers start at 1. User-sidecar requests (as labeled below) come in the form of objects with a "results" key pointing to the main payload of the request and a "users" key pointing to an object mapping user ids onto objects containing "id", "handle", "display_name", "nickname", and "avatar_url" fields. The standard way to display a user's name is "display name (@handle) | nickname if it exists".
 
 Authorization
 ================
@@ -25,7 +25,7 @@ These endpoints return an object containing an array of up to 20 conversation ob
 * ``name`` - in an individual dm this will be the name of the other person; otherwise it will be the most recent custom group chat name or a list of (up to) the 10 most active participants, as available
 * ``image_url`` - the url of the avatar of the other person, or, um, something else, as available.
 
-Also, conversation IDs are represented as strings to make them JavaScript-safe.
+Also, user IDs are represented as strings to make them JavaScript-safe.
 
 ``GET /api/conversations?first=[oldest|newest|mostused|mostusedbyme]&page=[1|2|3|...]&include=[group,individual]``
 -------------------------------------------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ Timezone clause: ``after=[timestamp]|before=[timestamp]|at=[timestamp]``
 Search clause (optional): ``search=[query]``
 
 The main endpoint for obtaining messages from the API. "Messages" here includes name updates and participant leaving and joining events; each object received will have a "type" field indicating which of these it is ("message", "join", "leave", "name_update"). Name update objects follow the name_updates database schema; the joining and leaving objects each have a "user_id" field pointing to a string user id and a "timestamp" field. This is a user-sidecar endpoint. Message IDs are presented as strings to make them JavaScript-safe. This endpoint returns 40 messages at a time; the name update and joining and leaving events are additional to that. Message/event objects are always sorted oldest to newest (ascending.)
-Proper messages follow the database schema with the addition of a "media" field that contains media objects with a type field ("image", "video", or "gif") and a url field, a "reactions" array with reactions objects that follow the reactions 
+Proper messages follow the database schema with the addition of a "media" field that contains media objects with a type field ("image", "video", or "gif") and a url field, a "reactions" array with reactions objects that follow the database reaction schema in the database, and a 
 The filter clause is fairly self explanatory; pick either a conversation= or a byuser= parameter to send in.
 The timezone clause's first two options can be either "beginning" or "end" respectively, to retrieve messages from the very beginning or very end of the conversation; the at option will return the 20 messages from immediately before the timestamp and 20 messages after; if a message was sent at that exact timestamp, it will count as being before it. Events are included if they happened after the given timestamp but before the 40th message if the first option is used and vice versa for the second; for the third, only events that happened after the first returned message and before the last returned message are included. Don't overthink the logic of retrieving a complete set of messages and events as you scan in either direction in time; if you want to retrieve messages from before the ones you currently have loaded, use the before option with the oldest timestamp you have in the messages and events you have; if you want to populate messages from after, use the after option with the newest timestamp you have.
 The search clause allows you to filter message results by their contents. It takes a URL-encoded string containing words that will be searched for individually and quotation mark-surrounded phrases that will be searched for as a unit. Words that are searched for individually will use a "stemmed" index so that searches for "walk" will also match "walking", for example.
@@ -73,6 +73,11 @@ The search clause allows you to filter message results by their contents. It tak
 ---------------------------------------
 
 Gets the database record for a specific message.
+
+``GET /api/media/[conversation_id]/[message_id]/[filename]``
+---------------------------------------------------------------
+
+Retrieves a media item from the thing.
 
 Get/Set User Data
 ===================
@@ -102,7 +107,7 @@ Retrieves a user's avatar as an image file. The exact type of image file will be
 ``POST /api/users/nickname?id=[user_id]``
 ------------------------------------------
 
-Sets the nickname field in the database for a user to the plain text in the body of this request. Can only be used by users authenticated with the master password.
+Sets the nickname field in the database for a user to the plain text in the body of this request. Nicknames have a character limit of 50 characters. Can only be used by users authenticated with the master password.
 
 ``POST /api/users/notes?id=[user_id]``
 ---------------------------------------

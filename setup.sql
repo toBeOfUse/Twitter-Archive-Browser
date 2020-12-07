@@ -16,12 +16,15 @@ create table conversations (
     -- more meaningful for group chats; just records the first message's sender for
     -- individual chats
     created_by_me integer check(created_by_me in (0, 1)) default 1,
-    added_by integer -- if we created the chat then this is null
+    -- if we created the chat then this is null
+    added_by integer,
     -- only meaningful for group chats
     num_participants integer,
     num_name_updates integer,
     /* if we created the chat then participant info might not be comprehensive (the
      data doesn't show the initial members in that case fsr) */
+    foreign key(other_person) references users(id),
+    foreign key(added_by) references users(id)
 );
 
 create table users (
@@ -35,7 +38,7 @@ create table users (
     avatar blob,
     -- "jpg", "png", maybe "gif"; who needs mime types
     avatar_extension text,
-    nickname text,
+    nickname text check(length(nickname) < 50),
     notes text
 );
 
