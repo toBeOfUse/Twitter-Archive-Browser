@@ -4,8 +4,14 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPClientError
 from tornado.ioloop import IOLoop
 import json
 import asyncio
-import JSONStream
 from collections import deque
+
+if __name__ == "__main__":
+    import JSONStream
+else:
+    from ArchiveAccess import JSONStream
+
+SQL_SCRIPTS_PATH = Path.cwd() / "SQLScripts"
 
 
 class SimpleTwitterAPIClient:
@@ -210,33 +216,33 @@ class TwitterDataWriter(Connection):
             owner for progress reports
     """
 
-    def __init__(self, account_name, account_id):
+    def __init__(self, account_name, account_id, automatic_overwrite=False):
         """creates a database file for an archive for a specific account, initializes
         it with a sql script that creates tables within it, begins our overall sql
         transaction, and saves the id of the account being archived in the
         database."""
-        filename = account_name + ".db"
-        if Path(filename).exists():
+        db_path = Path.cwd() / "db" / Path(account_name + ".db")
+        if db_path.exists():
             if (
-                input(
+                automatic_overwrite
+                or input(
                     "database for this account name already exists. overwrite? (y/n) "
                 ).lower()
                 == "y"
             ):
-                if (prev_db := Path(filename)).exists():
-                    prev_db.unlink()
-                if (prev_journal := Path(filename + "-journal")).exists():
+                db_path.unlink()
+                if (prev_journal := Path(str(db_path) + "-journal")).exists():
                     prev_journal.unlink()
             else:
                 raise RuntimeError(f"Database for {account_name} already exists")
-        super(TwitterDataWriter, self).__init__(filename)
+        super(TwitterDataWriter, self).__init__(db_path)
         self.account = account_name
 
         # keeps python from automatically creating and ending database transactions
         # so that all of our inserts can be contained in one large one (faster)
         self.isolation_level = None
 
-        with open("setup.sql") as setup:
+        with open(SQL_SCRIPTS_PATH / "setup.sql") as setup:
             self.executescript(setup.read())
         self.commit()
 
@@ -252,7 +258,7 @@ class TwitterDataWriter(Connection):
         # contains tuples of the form (user_id, conversation_id)
         self.added_participants_cache = set()
 
-        self.api_client = SimpleTwitterAPIClient("api_keys.json")
+        self.api_client = SimpleTwitterAPIClient(Path.cwd() / "api_keys.json")
 
         self.added_messages = 0
 
@@ -545,9 +551,11 @@ class TwitterDataWriter(Connection):
         self.commit()
 
         print("indexing data...")
-        with open("indexes.sql") as index_script:
+        with open(SQL_SCRIPTS_PATH / "indexes.sql") as index_script:
             self.executescript(index_script.read())
-        with open("cache_conversation_stats.sql") as conversation_stats_script:
+        with open(
+            SQL_SCRIPTS_PATH / "cache_conversation_stats.sql"
+        ) as conversation_stats_script:
             self.executescript(conversation_stats_script.read())
 
         await self.api_client.flush_queue()
@@ -562,19 +570,20 @@ class TwitterDataWriter(Connection):
         self.close()
 
 
-async def writer_test():
-    if (prev_db := Path("test.db")).exists():
-        prev_db.unlink()
-    if (prev_journal := Path("test.db-journal")).exists():
-        prev_journal.unlink()
-    db = TwitterDataWriter("test", 846137120209190912)
-    for message in JSONStream.MessageStream("./testdata/individual_dms_test.js"):
+async def smoke_test():
+    """this checks if the code can be run without crashing."""
+    db = TwitterDataWriter("test", 846137120209190912, automatic_overwrite=True)
+    for message in JSONStream.MessageStream(
+        Path.cwd() / "testdata/individual_dms_test.js"
+    ):
         db.add_message(message, group_dm=False)
-    for message in JSONStream.MessageStream("./testdata/group_dms_test.js"):
+    for message in JSONStream.MessageStream(
+        Path.cwd() / "testdata/group_dms_test.js"
+    ):
         db.add_message(message, group_dm=True)
     await db.finalize()
 
 
 if __name__ == "__main__":
     # using asyncio.run results in tornado raising an exception :(
-    IOLoop.current().run_sync(writer_test)
+    IOLoop.current().run_sync(smoke_test)
