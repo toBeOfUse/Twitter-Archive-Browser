@@ -1,7 +1,7 @@
-DBWrite module
-==============
+test module
+===========
 
-.. automodule:: DBWrite
+.. automodule:: test
    :members:
    :undoc-members:
    :show-inheritance:

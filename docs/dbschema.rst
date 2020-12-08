@@ -11,11 +11,11 @@ The following are live versions of the DDL statements used to create our databas
 Schema (taken from setup.sql)
 ------------------------------
 
-.. include:: ../setup.sql
+.. include:: ../SQLScripts/setup.sql
     :code:
 
 Indexes (taken from indexes.sql)
 -----------------------------------
 
-.. include:: ../indexes.sql
+.. include:: ../SQLScripts/indexes.sql
     :code:

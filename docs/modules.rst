@@ -4,7 +4,6 @@ server
 .. toctree::
    :maxdepth: 4
 
-   DBRead
-   DBWrite
-   JSONStream
+   ArchiveAccess
    main
+   test
