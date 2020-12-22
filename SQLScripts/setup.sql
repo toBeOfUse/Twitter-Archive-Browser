@@ -67,14 +67,7 @@ create trigger message_add
 after
 insert on messages begin
 insert into messages_text_search(rowid, content)
-values(
-        new.id,
-        -- adding tags with author ids into the indexed text allows for indexed text
-        -- searching and indexed author searching to be done in a single query;
-        -- query results will still have their content drawn from the messages table
-        -- and will not include the tag
-        new.content || " author_tag_" || new.sender
-    );
+values(new.id, new.content);
 
 end;
 
@@ -130,5 +123,6 @@ create table participants (
     -- null unless the user was added while we were already in the chat
     added_by integer,
     unique(participant, conversation),
-    foreign key (added_by) references users(id)
+    foreign key (added_by) references users(id),
+    foreign key (participant) references users(id)
 );

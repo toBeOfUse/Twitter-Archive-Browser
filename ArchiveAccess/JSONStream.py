@@ -13,7 +13,7 @@ class PrefixedJSON:
 
     How to use:
         >>> with PrefixedJSON("file.js") as json_file:
-        >>>     parser = ijson.parse(json_file)
+        ...     parser = ijson.parse(json_file)
     """
 
     def __init__(self, file):
@@ -65,7 +65,7 @@ class MessageStream:
 
     How to use:
         >>> for message in MessageStream("messages.js"):
-        >>>     save_in_database(message)
+        ...     save_in_database(message)
     """
 
     def __init__(self, path):
@@ -96,7 +96,6 @@ class MessageStream:
         grabs each object representing one of these events, adds 'type' and
         'conversationId' fields to them based on context from elsewhere in the json
         data, and yields them.
-
         """
         with PrefixedJSON(self.path) as json_file:
             conversation_id = ""

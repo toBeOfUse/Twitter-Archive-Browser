@@ -3,22 +3,13 @@
         {
             "previewLimit": 50,
             "driver": "SQLite",
-            "name": "test",
-            "database": "test.db"
-        },
-        {
-            "previewLimit": 50,
-            "driver": "SQLite",
-            "database": "vivastian.db",
-            "name": "vivastian"
-        },
-        {
-            "previewLimit": 50,
-            "driver": "SQLite",
             "name": "vivastian_stable",
-            "database": "vivastian_stable.db"
+            "database": "${workspaceFolder:server}/db/vivastian_stable.db"
         }
     ],
     "sqltools.useNodeRuntime": true,
-    "restructuredtext.confPath": "${workspaceFolder}\\docs"
+    "restructuredtext.confPath": "${workspaceFolder}\\docs",
+    "cSpell.words": [
+        "ijson"
+    ]
 }
