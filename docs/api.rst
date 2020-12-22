@@ -35,7 +35,7 @@ Gets conversations sorted by time. If you specify first=oldest, the conversation
 ``GET /api/conversations/withuser?id=[user_id]``
 -----------------------------------------------------
 
-Gets the conversations that a specific user has appeared in. This is a user-sidecar endpoint.
+Gets the conversations that a specific user has appeared in, ordered by the number of messages they sent in that conversation in descending order. This is a user-sidecar endpoint.
 
 ``GET /api/conversation?id=[conversation_id]``
 ------------------------------------------------
@@ -45,7 +45,7 @@ Gets the database record for a specific conversation.
 ``GET /api/conversations/names?conversation=[conversation_id]&first=[oldest|newest]&page=[1|2|3...]``
 ------------------------------------------------------------------------------------------------------------
 
-Gets all the names that a (group) conversation has ever had, sorted according to the ``first`` parameter. (Individual conversations cannot have custom names 🙁.) Each page contains 50 objects that correspond to name_updates database records. This is a user-sidecar endpoint.
+Gets all the names that a (group) conversation has ever had, sorted according to the ``first`` parameter. (Individual conversations cannot have custom names 🙁.) Each page contains 50 objects that correspond to name_updates database records. This is a user-sidecar endpoint. The user ids in the initiator field are presented as strings.
 
 ``POST /api/conversations/notes?id=[conversation_id]``
 -------------------------------------------------------
@@ -57,17 +57,21 @@ Get Messages
 
 ``GET /api/messages?``
 -----------------------
-Filter clause: ``conversation=[conversation_id]|byuser=[user_id]``
+Filter clause (optional): ``conversation=[conversation_id]|byuser=[user_id]``
 
 Timezone clause: ``after=[timestamp]|before=[timestamp]|at=[timestamp]``
 
 Search clause (optional): ``search=[query]``
 
 The main endpoint for obtaining messages from the API. "Messages" here includes name updates and participant leaving and joining events; each object received will have a "type" field indicating which of these it is ("message", "join", "leave", "name_update"). Name update objects follow the name_updates database schema; the joining and leaving objects each have a "user_id" field pointing to a string user id and a "timestamp" field. This is a user-sidecar endpoint. Message IDs are presented as strings to make them JavaScript-safe. This endpoint returns 40 messages at a time; the name update and joining and leaving events are additional to that. Message/event objects are always sorted oldest to newest (ascending.)
-Proper messages follow the database schema with the addition of a "media" field that contains media objects with a type field ("image", "video", or "gif") and a url field, a "reactions" array with reactions objects that follow the database reaction schema in the database, and a 
-The filter clause is fairly self explanatory; pick either a conversation= or a byuser= parameter to send in.
-The timezone clause's first two options can be either "beginning" or "end" respectively, to retrieve messages from the very beginning or very end of the conversation; the at option will return the 20 messages from immediately before the timestamp and 20 messages after; if a message was sent at that exact timestamp, it will count as being before it. Events are included if they happened after the given timestamp but before the 40th message if the first option is used and vice versa for the second; for the third, only events that happened after the first returned message and before the last returned message are included. Don't overthink the logic of retrieving a complete set of messages and events as you scan in either direction in time; if you want to retrieve messages from before the ones you currently have loaded, use the before option with the oldest timestamp you have in the messages and events you have; if you want to populate messages from after, use the after option with the newest timestamp you have.
-The search clause allows you to filter message results by their contents. It takes a URL-encoded string containing words that will be searched for individually and quotation mark-surrounded phrases that will be searched for as a unit. Words that are searched for individually will use a "stemmed" index so that searches for "walk" will also match "walking", for example.
+
+Proper messages follow the database schema with the addition of a "media" field that contains media objects with a `type` field ("image", "video", or "gif") and a `url `field, a `reactions` array with reactions objects that follow the database reaction schema in the database, and an `html_contents` field that does not include media urls but includes other links as HTML <a> entities.
+
+The filter clause is fairly self explanatory; pick either a conversation= or a byuser= parameter to send in. If it is omitted, any and all messages can come through. If displayed to an end user, conversation events will need to be presented with their conversation name to make things clear.
+
+The timezone clause's first two options can be either "beginning" or "end" respectively, to retrieve messages from the very beginning or very end of the conversation; the "at" option will return the 20 messages from immediately before the timestamp and 20 messages after; if a message was sent at that exact timestamp, it will count as being before it. Events are included if they happened after the given timestamp but before the 40th message if the first option is used and vice versa for the second; for the third, only events that happened after the first returned message and before the last returned message are included. Don't overthink the logic of retrieving a complete set of messages and events as you move in either direction in time; if you want to retrieve messages from before the ones you currently have loaded, just use the before option with the oldest timestamp you have in the messages and events you have; if you want to populate messages from after, use the after option with the newest timestamp you have.
+
+The search clause allows you to further filter message results by their contents. It takes a URL-encoded string containing words that will be searched for individually and quotation mark-surrounded phrases that will be searched for as a unit. Words that are searched for individually will use a "stemmed" index so that searches for "walk" will also match "walking", for example.
 
 ``GET /api/message?id=[message_id]``
 ---------------------------------------
