@@ -175,7 +175,6 @@ def test(path):
     file for manual review"""
     for message in (s := MessageStream(path)) :
         pprint(message, width=200)
-        print(f"percentage: {s.percentage}")
 
 
 if __name__ == "__main__":
