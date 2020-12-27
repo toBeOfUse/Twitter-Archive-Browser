@@ -8,6 +8,7 @@ from collections import namedtuple
 from dataclasses import dataclass, asdict
 from os import PathLike
 from contextlib import contextmanager
+from copy import deepcopy
 
 CONVERSATIONS_PER_PAGE: Final = 20
 CONVERSATION_NAMES_PER_PAGE: Final = 50
@@ -39,13 +40,28 @@ def set_row_mode(connection: sqlite3.Connection, row_factory: Callable) -> None:
     connection.row_factory = prev_row_factory
 
 
+class WhereClause:
+    def __init__(self):
+        self.conditions = []
+
+    def add(self, condition: str) -> None:
+        if clean := condition.strip():
+            self.conditions.append(clean)
+
+    def __format__(self, params) -> str:
+        if len(self.conditions):
+            return "where " + " and ".join(f"({x})" for x in self.conditions)
+        else:
+            return ""
+
+
 @dataclass(frozen=True)
 class DBRow:
 
-    db_select = "select 1"
+    db_select = "select 1 from sqlite_master"
 
     def serialize(self) -> dict:
-        return asdict(self)
+        return asdict(self) | {"schema": type(self).__name__}
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
@@ -81,7 +97,7 @@ class ArchivedUserSummary(DBRow):
             str(row[0]),
             row[1] or "",
             row[2] if row[5] else str(row[0]),
-            row[3] if row[-1] else "Mystery User",
+            row[3] if row[5] else "Mystery User",
             f"{AVATAR_API_URL}{row[0]}.{row[4]}"
             if row[5]
             else INDIVIDUAL_DM_DEFAULT_URL,
@@ -210,6 +226,91 @@ class Conversation(DBRow):
 
 
 @dataclass(frozen=True)
+class MessageLike(DBRow):
+
+    timestamp_field: ClassVar = ""
+
+    @property
+    def sort_by_timestamp(self):
+        raise NotImplementedError
+
+    @property
+    def user_ids(self):
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class NameUpdate(MessageLike):
+    db_select: ClassVar = """select update_time, initiator, new_name, conversation
+        from name_updates"""
+    timestamp_field: ClassVar = "update_time"
+
+    update_time: str
+    initiator: str
+    new_name: str
+    conversation: str
+
+    @property
+    def sort_by_timestamp(self) -> str:
+        return self.update_time
+
+    @property
+    def user_ids(self) -> list[int]:
+        return [int(self.initiator)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> NameUpdate:
+        return cls(*(str(x) for x in row))
+
+
+@dataclass(frozen=True)
+class ParticipantJoin(MessageLike):
+    db_select: ClassVar = """select participant, conversation, start_time from
+        participants"""
+    timestamp_field: ClassVar = "start_time"
+
+    participant: str
+    added_by: str
+    conversation: str
+    time: str
+
+    @property
+    def sort_by_timestamp(self) -> self:
+        return self.time
+
+    @property
+    def user_ids(self) -> list[int]:
+        return [int(self.participant), int(self.added_by)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> ParticipantJoin:
+        return cls(*(str(x) for x in row))
+
+
+@dataclass(frozen=True)
+class ParticipantLeave(MessageLike):
+    db_select: ClassVar = """select participant, conversation, end_time from
+        participants"""
+    timestamp_field: ClassVar = "end_time"
+
+    participant: str
+    conversation: str
+    time: str
+
+    @property
+    def sort_by_timestamp(self) -> self:
+        return self.time
+
+    @property
+    def user_ids(self) -> list[int]:
+        return [int(self.participant)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> ParticipantJoin:
+        return cls(*(str(x) for x in row))
+
+
+@dataclass(frozen=True)
 class Reaction(DBRow):
     db_select: ClassVar = "select emotion, creation_time, creator from reactions"
 
@@ -236,17 +337,14 @@ class Media(DBRow):
 
 
 @dataclass(frozen=True)
-class MessageLike(DBRow):
-    @property
-    def sort_by_timestamp(self):
-        raise NotImplementedError
-
-
-@dataclass(frozen=True)
 class Message(MessageLike):
-    db_select: ClassVar = (
-        """select sent_time, conversation, content, sender, id from messages"""
+    db_select_fields: ClassVar = (
+        """select sent_time, conversation, content, sender, id from """
     )
+    timestamp_field: ClassVar = "sent_time"
+
+    db_select: ClassVar = db_select_fields + "messages"
+    db_select_for_search: ClassVar = db_select_fields + "messages_text_search"
 
     sent_time: str
     conversation: str
@@ -260,6 +358,10 @@ class Message(MessageLike):
     @property
     def sort_by_timestamp(self) -> str:
         return self.sent_time
+
+    @property
+    def user_ids(self) -> list[int]:
+        return [int(self.sender)] + [int(x.creator) for x in self.reactions]
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
@@ -306,11 +408,7 @@ class TwitterDataReader(sqlite3.Connection):
 
     def __init__(self, db_path: PathLike):
         """Takes in the path to a database created by DBWrite and opens it it for
-        querying.
-
-        The sqlite3.Row class is used to allow for dictionary-like column
-        value retrieval.
-        """
+        querying."""
         super(TwitterDataReader, self).__init__(db_path)
         self.row_factory = sqlite3.Row
 
@@ -319,9 +417,9 @@ class TwitterDataReader(sqlite3.Connection):
     ) -> list[Union[ArchivedUserSummary, ArchivedUser]]:
         """Uses ids to retrieve user records from the database.
 
-        "Sidecar" objects are defined as those that accompany conversation
-        or messages and don't contain the full data for a user; non-sidecar user
-        dicts contain the bio, notes, and number_of_messages fields.
+        "Sidecar" objects are defined as those that accompany messages and don't
+        contain the full data for a user; they are represented by ArchivedUserSummary
+        objects.
         """
         user_class = ArchivedUserSummary if sidecar else ArchivedUser
 
@@ -331,6 +429,24 @@ class TwitterDataReader(sqlite3.Connection):
                 + f" where id in ({', '.join(['?' for _ in range(len(user_ids))])});",
                 user_ids,
             ).fetchall()
+
+    def set_user_nickname(self, user_id: str, new_nickname: str) -> None:
+        self.execute(
+            "update users set nickname=? where id=?;",
+            (new_nickname[0:50], int(user_id)),
+        )
+
+    def set_user_notes(self, user_id: str, new_notes: str) -> None:
+        self.execute(
+            "update users set notes=? where id=?;",
+            (new_notes, int(user_id)),
+        )
+
+    def get_user_avatar(self, id: Union[int, str]) -> bytes:
+        """Retrieves user avatar image file as bytes."""
+        return self.execute(
+            "select avatar from users where id=?;", (id,)
+        ).fetchone()[0]
 
     def get_conversations(
         self,
@@ -357,22 +473,23 @@ class TwitterDataReader(sqlite3.Connection):
             placeholders: optional iterable containing values corresponding to any ?s
                 in the previous two sql strings
         """
+        type_clause = WhereClause()
         if group and individual:
-            type_clause = "where 1=1"
+            pass
         elif group:
-            type_clause = "where type='group'"
+            type_clause = type_clause.add("type='group'")
         elif individual:
-            type_clause = "where type='individual'"
+            type_clause = type_clause.add("type='individual'")
         else:
             return []
-        where_clause = type_clause + " and (" + where + ")" if where else type_clause
+        type_clause.add(where)
         placeholders = list(placeholders) + [
             CONVERSATIONS_PER_PAGE,
             CONVERSATIONS_PER_PAGE * (page_number - 1),
         ]
         with set_row_mode(self, Conversation.from_row):
             return self.execute(
-                Conversation.db_select + f" {where_clause} "
+                Conversation.db_select + f" {type_clause} "
                 f" {order_by} "
                 f"limit ? "
                 f"offset ?;",
@@ -425,7 +542,7 @@ class TwitterDataReader(sqlite3.Connection):
         self, user_id: Union[str, int], page_number: int
     ) -> list[ConversationRow]:
 
-        order_by = """"order by
+        order_by = """order by
                 (select messages_sent from participants
                 where conversation=conversations.id)
                 desc"""
@@ -444,13 +561,12 @@ class TwitterDataReader(sqlite3.Connection):
 
     def get_conversation_names(
         self, conversation_id: str, oldest_first=True, page_number: int = 1
-    ) -> dict[str, list[dict]]:
+    ) -> list[NameUpdate]:
         """Gets the records for CONVERSATION_NAMES_PER_PAGE names that a conversation
         has had."""
-        names = [
-            dict(x, initiator=str(x["initiator"]))
-            for x in self.execute(
-                f"""select * from name_updates
+        with set_row_mode(self, NameUpdate.from_row):
+            names = self.execute(
+                f"""{NameUpdate.db_select}
                 where conversation=?
                 order by update_time {'asc' if oldest_first else 'desc'}
                 limit ? offset ?;""",
@@ -459,44 +575,135 @@ class TwitterDataReader(sqlite3.Connection):
                     CONVERSATION_NAMES_PER_PAGE,
                     CONVERSATION_NAMES_PER_PAGE * (page_number - 1),
                 ),
-            )
-        ]
-        users = self.get_users_by_id([x["initiator"] for x in names])
+            ).fetchall()
+        users = self.get_users_by_id(int(x) for x in sum(x.user_ids for x in names))
         return {"results": names, "users": users}
 
     def set_conversation_notes(self, conversation_id: str, notes: str) -> None:
         """Updates a conversation's notes field. hooray"""
         self.execute(
-            "update conversations set notes=? where id=?;", (conversation_id, notes)
+            "update conversations set notes=? where id=?;", (notes, conversation_id)
         )
 
-    def get_messages(self, where: str, placeholders: Iterable):
+    def traverse_messages(
+        self,
+        conversation="",
+        user="",
+        after: str = "",
+        before: str = "",
+        at: str = "",
+        search: str = "",
+    ):
+        assert (bool(after) ^ bool(before)) or (
+            bool(before) ^ bool(at)
+        ), "traversing messages is unidirectional"
+
+        sort = "sent_time asc"
+
+        where = WhereClause()
+        placeholders = []
+        if conversation:
+            where.add("conversation=?")
+            placeholders.append(conversation)
+        if user:
+            where.add("user=?")
+            placeholders.append(user)
+
+        messages = []
+
+        if search:
+            where.add("messages_text_search=?")
+            placeholders.append(search)
+            select = Message.db_select
+        else:
+            select = Message.db_select_for_search
+
         with set_row_mode(self, Message.from_row):
-            message_rows = self.execute(
+            if at:
+                first_where = where
+                first_where.add("sent_time <= ?")
+                second_where = deepcopy(where)
+                second_where.add("sent_time > ?")
+
+                # `at` must be the last added placeholder so it can work for both
+                # versions of the where clause
+                placeholders.add(at)
+
+                messages += self.execute(
+                    f"""{select}
+                    where {first_where}
+                    order by sent_time desc
+                    limit {int(MESSAGES_PER_PAGE/2)};"""
+                ).fetchall()
+
+                messages += self.execute(
+                    f"""{select}
+                    where {second_where}
+                    order by sent_time desc
+                    limit {int(MESSAGES_PER_PAGE/2)};"""
+                ).fetchall()
+
+            else:
+                if before:
+                    if before == "end":
+                        sort = "sent_time desc"
+                    else:
+                        where.add("sent_time < ?")
+                        placeholders.append(before)
+                elif after:
+                    if after != "beginning":
+                        where.add("sent_time > ?")
+                        placeholders.append(after)
+            messages += self.execute(
                 f"""{Message.db_select}
                     where {where}
-                    order by sent_time asc
+                    order by {sort}
                     limit {MESSAGES_PER_PAGE};"""
             ).fetchall()
-        users = self.get_users_by_id([m["sender"] for m in message_rows])
+
+        sequence_start = after or messages[0].sort_by_timestamp
+        sequence_end = before or messages[-1].sort_by_timestamp
+
+        if conversation:
+            with set_row_mode(self, NameUpdate.from_row):
+                messages += self.execute(
+                    NameUpdate.db_select
+                    + " where conversation=? and update_time > ? and update_time < ?;",
+                    (conversation, sequence_start, sequence_end),
+                )
+
+        joining_where = WhereClause()
+        if conversation:
+            joining_where.add("conversation=?")
+        elif user:
+            joining_where.add("participant=?")
+        leaving_where = deepcopy(joining_where)
+        leaving_where.add("end_time > ? and end_time < ?")
+        joining_where.add("start_time > ? and start_time < ?")
+
+        with set_row_mode(self, ParticipantJoin.from_row):
+            messages += self.execute(
+                ParticipantJoin.db_select + f" {joining_where};"
+            ).fetchall()
+        with set_row_mode(self, ParticipantLeave.from_row):
+            messages += self.execute(
+                ParticipantLeave.db_select + f" {leaving_where};"
+            )
+
+        sorted(messages, key=lambda x: x.sort_by_timestamp)
+
+        users = self.get_users_by_id(
+            int(x) for x in sum(x.user_ids for x in messages)
+        )
         return {"results": messages, "users": users}
 
-    def get_messages_by_conversation(
-        self, conversation_id: str, after: str = "", before: str = "", at: str = ""
-    ):
-        pass
-
-    def search_messages(self, where: str, placeholders: Iterable, query: str):
-        pass
-
-    def get_user_avatar(self, id: Union[int, str]) -> bytes:
-        """Retrieves user avatar image file as bytes."""
-        return self.execute(
-            "select avatar from users where id=?;", (id,)
-        ).fetchone()[0]
+    def get_message(self, id: int):
+        with set_row_mode(self, Message.from_row):
+            return self.execute(Message.db_select + " where id=?;", (id,)).fetchone()
 
 
 if __name__ == "__main__":
     source = TwitterDataReader("./db/test.db")
     pprint(source.get_conversations_by_time(1))
     pprint(source.get_conversations_by_message_count(1))
+    pprint([x.serialize() for x in source.get_conversations_by_user(4196983835, 1)])
