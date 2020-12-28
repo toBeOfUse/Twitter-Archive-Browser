@@ -3,17 +3,15 @@ message-like objects as dicts from the individual dms test .js file with the add
 of the type and conversaationId fields."""
 
 from ArchiveAccess.JSONStream import MessageStream
+from pytest import fixture
 
 
-def test_read():
-    global messages
-    messages = [x for x in MessageStream("./tests/fixtures/individual_dms_test.js")]
-    assert (
-        len(messages) == 6
-    ), "messages were not able to be loaded from the individual dms test file"
+@fixture(scope="module")
+def messages():
+    return [x for x in MessageStream("./tests/fixtures/individual_dms_test.js")]
 
 
-def test_read_message():
+def test_read_message(messages):
     assert messages[0] == {
         "recipientId": "4196983835",
         "reactions": [],
@@ -28,7 +26,7 @@ def test_read_message():
     }, "first and simplest message failed to be accurately read"
 
 
-def test_read_message_with_link():
+def test_read_message_with_link(messages):
     assert messages[1] == {
         "recipientId": "846137120209190912",
         "reactions": [],
@@ -49,7 +47,7 @@ def test_read_message_with_link():
     }, "message with link was not read correctly"
 
 
-def test_read_message_with_media():
+def test_read_message_with_media(messages):
     assert messages[2] == {
         "recipientId": "4196983835",
         "reactions": [],
@@ -71,7 +69,7 @@ def test_read_message_with_media():
         "type": "messageCreate",
     }, "message with media was not read correctly"
 
-    def test_message_with_reaction():
+    def test_message_with_reaction(messages):
         assert messages[3] == {
             "recipientId": "4196983835",
             "reactions": [
@@ -101,7 +99,7 @@ def test_read_message_with_media():
         }, "message with reaction was not read correctly"
 
 
-def test_message_with_reactions():
+def test_message_with_reactions(messages):
     assert messages[4] == {
         "recipientId": "4196983835",
         "reactions": [
@@ -137,7 +135,7 @@ def test_message_with_reactions():
     }, "message with multiple reactions not read correctly"
 
 
-def test_new_conversation():
+def test_new_conversation(messages):
     assert messages[5] == {
         "recipientId": "4196983835",
         "reactions": [],
