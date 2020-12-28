@@ -115,8 +115,7 @@ create table participants (
     participant integer not null,
     conversation text not null,
     messages_sent integer,
-    -- if equal to the conversation's first_time, they've been there since before we
-    -- were
+    -- if equal to the conversation's first_time, they where there since before you
     start_time text,
     -- if null they never left,
     end_time text,
