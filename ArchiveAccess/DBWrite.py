@@ -567,8 +567,6 @@ class TwitterDataWriter(Connection):
         print("smallifying database size...")
         self.execute("vacuum")
 
-        self.close()
-
 
 async def smoke_test():
     """this checks if the code can be run without crashing."""

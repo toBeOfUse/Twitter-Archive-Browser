@@ -51,6 +51,7 @@ async def main(manifest_path):
     )
 
     await db_store.finalize()
+    db_store.close()
 
 
 if __name__ == "__main__":
