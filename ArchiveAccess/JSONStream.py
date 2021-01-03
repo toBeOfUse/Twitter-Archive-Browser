@@ -153,7 +153,7 @@ class MessageStream:
                 self.ijson_events_processed += 1
 
 
-def prefix_finder(path):
+def prefix_finder(path):  # pragma: no cover
     "returns all the prefixes ijson finds in a file; used for parser development"
     with PrefixedJSON(path) as json_file:
         prefixes = set()
@@ -162,7 +162,7 @@ def prefix_finder(path):
     return prefixes
 
 
-def dump(path):
+def dump(path):  # pragma: no cover
     """prints all the data ijson finds in a file in ijson event form; Not Recommended
     for large files"""
     with PrefixedJSON(path) as json_file:
@@ -170,14 +170,14 @@ def dump(path):
             print("prefix=" + prefix + ", event=" + event + ", value=" + str(value))
 
 
-def test(path):
+def test(path):  # pragma: no cover
     """shady test function that prints the dicts that the parser outputs for a given
     file for manual review"""
     for message in (s := MessageStream(path)) :
         pprint(message, width=200)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     print("------------ Individual DMs Test ------------")
     test("./testdata/individual_dms_test.js")
     print()
