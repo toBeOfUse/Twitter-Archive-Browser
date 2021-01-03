@@ -8,7 +8,11 @@ from pytest import fixture
 
 @fixture(scope="module")
 def messages():
-    return [x for x in MessageStream("./tests/fixtures/individual_dms_test.js")]
+    source = MessageStream("./tests/fixtures/individual_dms_test.js")
+    assert source.percentage == 0
+    messages = [x for x in source]
+    assert source.percentage == 100
+    return messages
 
 
 def test_read_message(messages):
@@ -69,34 +73,35 @@ def test_read_message_with_media(messages):
         "type": "messageCreate",
     }, "message with media was not read correctly"
 
-    def test_message_with_reaction(messages):
-        assert messages[3] == {
-            "recipientId": "4196983835",
-            "reactions": [
-                {
-                    "senderId": "4196983835",
-                    "reactionKey": "funny",
-                    "eventId": "1320946773276291073",
-                    "createdAt": "2020-10-27T04:33:47.424Z",
-                }
-            ],
-            "urls": [
-                {
-                    "url": "https://t.co/5IAkjDt0A2",
-                    "expanded": "https://twitter.com/messages/media/885513042674552835",
-                    "display": "pic.twitter.com/5IAkjDt0A2",
-                }
-            ],
-            "text": " https://t.co/5IAkjDt0A2",
-            "mediaUrls": [
-                "https://ton.twitter.com/dm/885513042674552835/885513033925242880/ntkMMdTy.jpg"
-            ],
-            "senderId": "846137120209190912",
-            "id": "885513042674552835",
-            "createdAt": "2017-07-14T14:55:36.588Z",
-            "conversationId": "846137120209190912-4196983835",
-            "type": "messageCreate",
-        }, "message with reaction was not read correctly"
+
+def test_message_with_reaction(messages):
+    assert messages[3] == {
+        "recipientId": "4196983835",
+        "reactions": [
+            {
+                "senderId": "4196983835",
+                "reactionKey": "funny",
+                "eventId": "1320946773276291073",
+                "createdAt": "2020-10-27T04:33:47.424Z",
+            }
+        ],
+        "urls": [
+            {
+                "url": "https://t.co/5IAkjDt0A2",
+                "expanded": "https://twitter.com/messages/media/885513042674552835",
+                "display": "pic.twitter.com/5IAkjDt0A2",
+            }
+        ],
+        "text": " https://t.co/5IAkjDt0A2",
+        "mediaUrls": [
+            "https://ton.twitter.com/dm/885513042674552835/885513033925242880/ntkMMdTy.jpg"
+        ],
+        "senderId": "846137120209190912",
+        "id": "885513042674552835",
+        "createdAt": "2017-07-14T14:55:36.588Z",
+        "conversationId": "846137120209190912-4196983835",
+        "type": "messageCreate",
+    }, "message with reaction was not read correctly"
 
 
 def test_message_with_reactions(messages):
