@@ -6,7 +6,7 @@ import json
 import asyncio
 from collections import deque
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     import JSONStream
 else:
     from ArchiveAccess import JSONStream
@@ -231,9 +231,11 @@ class TwitterDataWriter(Connection):
                 == "y"
             ):
                 db_path.unlink()
-                if (prev_journal := Path(str(db_path) + "-journal")).exists():
+                if (
+                    prev_journal := Path(str(db_path) + "-journal")
+                ).exists():  # pragma: no cover
                     prev_journal.unlink()
-            else:
+            else:  # pragma: no cover
                 raise RuntimeError(f"Database for {account_name} already exists")
         super(TwitterDataWriter, self).__init__(db_path)
         self.account = account_name
@@ -356,7 +358,7 @@ class TwitterDataWriter(Connection):
         if end_time:
             self.execute(
                 """update participants 
-                    set start_time=? where participant=? and conversation=?;""",
+                    set end_time=? where participant=? and conversation=?;""",
                 (end_time, user_id, conversation_id),
             )
         if added_by:
@@ -396,7 +398,8 @@ class TwitterDataWriter(Connection):
 
     def add_message(self, message, group_dm=False):
         """one-stop shop for adding a message or other conversation event to the
-        database, with the above types of record as a consequence. aaaaaaaaa
+        database, with the requisite instances of the other types of record being
+        added as a consequence. this is the major public-facing method in this class.
         """
 
         recipient_id = (
@@ -457,7 +460,7 @@ class TwitterDataWriter(Connection):
                         for x, y in url_prefixes.items()
                         if url.startswith(y)
                     )
-                except StopIteration:
+                except StopIteration:  # pragma: no cover
                     print(
                         f"Unsupported media url format {url} found in message {message}"
                     )
@@ -486,6 +489,7 @@ class TwitterDataWriter(Connection):
                 )
 
         elif message["type"] == "conversationNameUpdate":
+            assert group_dm
             self.add_user_if_necessary(message["initiatingUserId"])
             self.add_participant_if_necessary(
                 message["initiatingUserId"], message["conversationId"]
@@ -506,6 +510,9 @@ class TwitterDataWriter(Connection):
             or message["type"] == "participantsLeave"
         ):
             if message["type"] == "participantsJoin":
+                self.add_participant_if_necessary(
+                    message["initiatingUserId"], message["conversationId"]
+                )
                 self.add_user_if_necessary(message["initiatingUserId"])
                 for user_id in message["userIds"]:
                     self.add_user_if_necessary(user_id)
@@ -568,7 +575,7 @@ class TwitterDataWriter(Connection):
         self.execute("vacuum")
 
 
-async def smoke_test():
+async def smoke_test():  # pragma: no cover
     """this checks if the code can be run without crashing."""
     db = TwitterDataWriter("test", 846137120209190912, automatic_overwrite=True)
     for message in JSONStream.MessageStream(
@@ -582,6 +589,6 @@ async def smoke_test():
     await db.finalize()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # using asyncio.run results in tornado raising an exception :(
     IOLoop.current().run_sync(smoke_test)
