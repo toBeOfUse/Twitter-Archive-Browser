@@ -349,6 +349,7 @@ class TwitterDataWriter(Connection):
                 (user_id, conversation_id),
             )
             self.added_participants_cache.add((user_id, conversation_id))
+        assert (start_time and added_by) or (not start_time and not added_by)
         if start_time:
             self.execute(
                 """update participants 
@@ -392,8 +393,9 @@ class TwitterDataWriter(Connection):
         assert (first_time and added_by) or (not first_time and not added_by)
         if first_time and added_by:
             self.execute(
-                "update conversations set first_time=?, added_by=? where id=?;",
-                (first_time, added_by, conversation_id),
+                """update conversations 
+                    set first_time=?, added_by=?, created_by_me=? where id=?;""",
+                (first_time, added_by, 0, conversation_id),
             )
 
     def add_message(self, message, group_dm=False):
@@ -414,6 +416,8 @@ class TwitterDataWriter(Connection):
         self.add_conversation_if_necessary(
             message["conversationId"], group_dm, recipient_id
         )
+
+        self.add_participant_if_necessary(self.account_id, message["conversationId"])
 
         if message["type"] == "messageCreate":
             participant_ids = [message["senderId"]] + (
@@ -533,6 +537,9 @@ class TwitterDataWriter(Connection):
 
         elif message["type"] == "joinConversation":
             self.add_user_if_necessary(message["initiatingUserId"])
+            self.add_participant_if_necessary(
+                message["initiatingUserId"], message["conversationId"]
+            )
             self.add_conversation_if_necessary(
                 message["conversationId"],
                 group_dm,
@@ -540,13 +547,15 @@ class TwitterDataWriter(Connection):
                 message["createdAt"],
                 message["initiatingUserId"],
             )
+            self.add_participant_if_necessary(
+                self.account_id,
+                message["conversationId"],
+                start_time=message["createdAt"],
+                added_by=message["initiatingUserId"],
+            )
             for user_id in message["participantsSnapshot"]:
                 self.add_user_if_necessary(user_id)
-                self.add_participant_if_necessary(
-                    user_id,
-                    message["conversationId"],
-                    start_time=message["createdAt"],
-                )
+                self.add_participant_if_necessary(user_id, message["conversationId"])
 
         self.added_messages += 1
 
