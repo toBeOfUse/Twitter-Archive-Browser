@@ -7,18 +7,21 @@ create table conversations (
     notes text,
     number_of_messages integer,
     messages_from_you integer,
-    -- only usable for individual chats
+    -- null for group chats
     other_person integer unique,
-    -- the below columns cache the times of the first and last message, name update,
-    -- or participant joining or leaving times for the conversation
+    -- either the time you were added to the conversation or the time of the first
+    -- message, name update, or participant joining or leaving event
     first_time string,
+    -- the time of the last message, name update, or participant joining or leaving
+    -- event
     last_time string,
-    -- more meaningful for group chats; just records the first message's sender for
-    -- individual chats
+    -- records whether you created or were added to the conversation for group chats;
+    -- just records the first message's sender for individual chats (since the first
+    -- message is what implicitly creates a conversation on twitter)
     created_by_me integer check(created_by_me in (0, 1)) default 1,
-    -- if we created the chat then this is null
+    -- null unless group chat and not created_by_me
     added_by integer,
-    -- only meaningful for group chats
+    -- null unless group chat
     num_participants integer,
     num_name_updates integer,
     /* if we created the chat then participant info might not be comprehensive (the
@@ -31,7 +34,8 @@ create table users (
     id integer primary key,
     number_of_messages integer,
     loaded_full_data integer check(loaded_full_data in (0, 1)),
-    -- if false, the rest of these will be null (except maybe nickname and notes)
+    -- if false, the rest of these will be null except maybe nickname and notes,
+    -- which are user-created
     handle text,
     display_name text,
     bio text,
@@ -110,14 +114,16 @@ create table name_updates (
     foreign key(conversation) references conversations(id)
 );
 
--- stores a record for each instance of a specific user being in a specific chat
+-- stores a record for each instance of a specific user being in a specific chat,
+-- including you. (the record for you will mirror some of the information in the
+-- conversation record)
 create table participants (
     participant integer not null,
     conversation text not null,
     messages_sent integer,
-    -- if equal to the conversation's first_time, they where there since before you
+    -- if null, they were in the conversation since before you
     start_time text,
-    -- if null they never left,
+    -- if null they never left
     end_time text,
     -- null unless the user was added while we were already in the chat
     added_by integer,

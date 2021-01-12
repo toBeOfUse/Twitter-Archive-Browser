@@ -45,7 +45,7 @@ set last_time = (
 where last_time is null;
 
 update conversations
-set created_by_me = 1
+set created_by_me = 0
 where type = "individual"
     and (
         select sender
@@ -53,7 +53,7 @@ where type = "individual"
         where conversation = conversations.id
         order by sent_time
         limit 1
-    ) = (
+    ) != (
         select id
         from me
         limit 1
