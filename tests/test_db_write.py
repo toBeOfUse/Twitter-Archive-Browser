@@ -75,14 +75,142 @@ def messages() -> deque[dict]:
                     }
                 ],
             },
+            {
+                "conversationId": "846137120209190912-3330610905",
+                "createdAt": "2018-02-20T05:53:06.308Z",
+                "id": "9015632455440",
+                "mediaUrls": [
+                    "https://ton.twitter.com/dm/9015632455440/700921094430072832/f7JooNMW.jpg",
+                ],
+                "reactions": [],
+                "recipientId": "846137120209190912",
+                "senderId": "3330610905",
+                "text": "Duis iaculis pretium lorem, id sodales ante accumsan nec. Maecenas. https://t.co/kuJj6jjLhJ",
+                "type": "messageCreate",
+                "urls": [
+                    {
+                        "url": "https://t.co/kuJj6jjLhJ",
+                        "expanded": "https://twitter.com/messages/media/700921094409056259",
+                        "display": "pic.twitter.com/kuJj6jjLhJ",
+                    }
+                ],
+            },
+            {
+                "conversationId": "846137120209190912-3330610905",
+                "createdAt": "2018-02-20T05:53:06.308Z",
+                "id": "9015632455450",
+                "mediaUrls": [
+                    "https://video.twimg.com/dm_video/995295295943700480/vid/1280x720/rVyBaawRDLp1f2AdJdkdkDIKdmKDIdLCVecgWinASM.mp4",
+                ],
+                "reactions": [],
+                "recipientId": "846137120209190912",
+                "senderId": "3330610905",
+                "text": "Duis iaculis pretium lorem, id sodales ante accumsan nec. Maecenas. https://t.co/kuJj6jjLhJ",
+                "type": "messageCreate",
+                "urls": [
+                    {
+                        "url": "https://t.co/kuJj6jjLhJ",
+                        "expanded": "https://twitter.com/messages/media/700921094409056259",
+                        "display": "pic.twitter.com/kuJj6jjLhJ",
+                    }
+                ],
+            },
+            {
+                "conversationId": "846137120209190912-3330610905",
+                "createdAt": "2018-02-20T05:53:06.308Z",
+                "id": "9015632455460",
+                "mediaUrls": [
+                    "https://video.twimg.com/dm_gif/705625850826223617/STB-shdfkhsjKDJSFKJSj-unT0KsNH5zslGh.mp4"
+                ],
+                "reactions": [],
+                "recipientId": "846137120209190912",
+                "senderId": "3330610905",
+                "text": "Duis iaculis pretium lorem, id sodales ante accumsan nec. Maecenas. https://t.co/kuJj6jjLhJ",
+                "type": "messageCreate",
+                "urls": [
+                    {
+                        "url": "https://t.co/kuJj6jjLhJ",
+                        "expanded": "https://twitter.com/messages/media/700921094409056259",
+                        "display": "pic.twitter.com/kuJj6jjLhJ",
+                    }
+                ],
+            },
+            {
+                "reactions": [],
+                "urls": [],
+                "text": "Donec sit amet turpis enim. Etiam id feugiat diam, non.",
+                "mediaUrls": [],
+                "senderId": "56783491",
+                "id": "700928326240632835",
+                "createdAt": "2016-02-20T06:21:50.277Z",
+                "type": "messageCreate",
+                "conversationId": "a_group_chat",
+            },
+            {
+                "initiatingUserId": "864856772913184772",
+                "name": "sphinx zone",
+                "createdAt": "2019-02-08T18:43:50.249Z",
+                "type": "conversationNameUpdate",
+                "conversationId": "another_group_chat",
+            },
+            {
+                "initiatingUserId": "56783491",
+                "name": "bulldogs zone",
+                "createdAt": "2017-02-08T18:43:50.249Z",
+                "type": "conversationNameUpdate",
+                "conversationId": "a_group_chat",
+            },
+            {
+                "initiatingUserId": "16573941",
+                "userIds": ["56783491"],
+                "createdAt": "2016-02-09T01:38:06.141Z",
+                "conversationId": "a_group_chat",
+                "type": "participantsJoin",
+            },
+            {
+                "userIds": ["18393773"],
+                "createdAt": "2016-02-19T01:38:06.141Z",
+                "conversationId": "a_group_chat",
+                "type": "participantsLeave",
+            },
+            {
+                "initiatingUserId": "16573941",
+                "userIds": ["18393773"],
+                "createdAt": "2016-02-09T05:38:06.141Z",
+                "conversationId": "a_group_chat",
+                "type": "participantsJoin",
+            },
+            {
+                "initiatingUserId": "16573941",
+                "userIds": ["813286", "10010"],
+                "createdAt": "2016-02-09T05:38:06.141Z",
+                "conversationId": "a_group_chat",
+                "type": "participantsJoin",
+            },
+            {
+                "initiatingUserId": "3307595502",
+                "participantsSnapshot": [
+                    "8132865",
+                    "101",
+                    "90420314",
+                    "1588486417",
+                    "5162861",
+                    "4196983835",
+                    "16573941",
+                    "31239408",
+                ],
+                "createdAt": "2015-12-20T10:51:37.176Z",
+                "type": "joinConversation",
+                "conversationId": "a_group_chat",
+            },
         )
     )
 
 
 def test_db_initial_state(writer: TwitterDataWriter):
     assert writer.account == "test"
-    assert writer.account_id == 3330610905
-    assert writer.execute("select * from me;").fetchone()[0] == 3330610905
+    assert writer.account_id == MAIN_USER_ID
+    assert writer.execute("select * from me;").fetchone()[0] == MAIN_USER_ID
 
 
 def test_add_normal_message(
@@ -124,50 +252,226 @@ def test_add_message_with_link(writer: TwitterDataWriter, messages: deque[dict])
         int(message["id"]),
     )
 
-    # check media; check if group conversation records are created correctly; check
-    # if participant records are updated with join and leave events; check if name
-    # update records are created. >:(
 
-
-def message_add_with_checks(
-    writer: TwitterDataWriter, message: dict, group_dm: bool = False
-):
-    old_added_messages = writer.added_messages
-    old_added_users = writer.added_users
-    new_users = 0
-    if (not group_dm) and message["recipientId"] not in writer.added_users_cache:
-        new_users += 1
-    if message["senderId"] not in writer.added_users_cache:
-        new_users += 1
-    writer.add_message(message, group_dm)
-    # check that cache was updated
-    assert writer.added_messages == old_added_messages + 1
-    assert writer.added_users == old_added_users + new_users
-    assert (not group_dm) or message["recipientId"] in writer.added_users_cache
-    assert message["senderId"] in writer.added_users_cache
-    assert (
-        message["senderId"],
-        message["conversationId"],
-    ) in writer.added_participants_cache
-    assert (not group_dm) or (
-        message["recipientId"],
-        message["conversationId"],
-    ) in writer.added_participants_cache
-    # check that conversation record was added
-    other_person = (
-        None
-        if group_dm
-        else (
-            set((int(message["recipientId"]), int(message["senderId"])))
-            - set((MAIN_USER_ID,))
-        ).pop()
+def test_add_message_with_media(writer: TwitterDataWriter, messages: deque[dict]):
+    image_message = messages.popleft()
+    message_add_with_checks(writer, image_message)
+    image_url = image_message["mediaUrls"][0]
+    image_url_comps = image_url.replace("https://", "").split("/")
+    assert writer.execute(
+        "select * from media where message=?", (int(image_message["id"]),)
+    ).fetchone() == (
+        int(image_url_comps[3]),
+        image_url,
+        "image",
+        image_url_comps[-1],
+        int(image_url_comps[2]),
     )
+
+    video_message = messages.popleft()
+    message_add_with_checks(writer, video_message)
+    video_url = video_message["mediaUrls"][0]
+    video_url_comps = video_url.replace("https://", "").split("/")
+    assert writer.execute(
+        "select * from media where message=?;", (int(video_message["id"]),)
+    ).fetchone() == (
+        int(video_url_comps[2]),
+        video_url,
+        "video",
+        video_url_comps[-1],
+        int(video_message["id"]),
+    )
+
+    gif_message = messages.popleft()
+    message_add_with_checks(writer, gif_message)
+    gif_url = gif_message["mediaUrls"][0]
+    gif_url_comps = gif_url.replace("https://", "").split("/")
+    assert writer.execute(
+        "select * from media where message=?;", (int(gif_message["id"]),)
+    ).fetchone() == (
+        int(gif_url_comps[2]),
+        gif_url,
+        "gif",
+        gif_url_comps[-1],
+        int(gif_message["id"]),
+    )
+
+
+def test_add_group_message(writer: TwitterDataWriter, messages: deque[dict]):
+    message_add_with_checks(writer, messages.popleft(), True)
+
+
+def test_new_convo_name_update(writer: TwitterDataWriter, messages: deque[dict]):
+    check_name_update(writer, messages.popleft())
+
+
+def test_old_convo_name_update(writer: TwitterDataWriter, messages: deque[dict]):
+    check_name_update(writer, messages.popleft())
+
+
+def test_known_participant_join(writer: TwitterDataWriter, messages: deque[dict]):
+    join_event = messages.popleft()
+    writer.add_message(join_event, True)
+    check_conversation(writer, join_event, True)
+    check_user(writer, join_event["initiatingUserId"])
+    check_participant(
+        writer, join_event["initiatingUserId"], join_event["conversationId"]
+    )
+    for user in join_event["userIds"]:
+        check_user(writer, user)
+        assert writer.execute(
+            "select * from participants where participant=? and conversation=?;",
+            (int(user), join_event["conversationId"]),
+        ).fetchone() == (
+            int(user),
+            join_event["conversationId"],
+            None,
+            join_event["createdAt"],
+            None,
+            int(join_event["initiatingUserId"]),
+        )
+
+
+def test_participant_leave(writer: TwitterDataWriter, messages: deque[dict]):
+    leave_event = messages.popleft()
+    writer.add_message(leave_event, True)
+    check_conversation(writer, leave_event, True)
+    for user in leave_event["userIds"]:
+        check_user(writer, user)
+        assert writer.execute(
+            "select * from participants where participant=? and conversation=?;",
+            (int(user), leave_event["conversationId"]),
+        ).fetchone() == (
+            int(user),
+            leave_event["conversationId"],
+            None,
+            None,
+            leave_event["createdAt"],
+            None,
+        )
+
+
+def test_join_after_leave(writer: TwitterDataWriter, messages: deque[dict]):
+    join_event = messages.popleft()
+    writer.add_message(join_event, True)
+    check_conversation(writer, join_event, True)
+    check_participant(
+        writer, join_event["initiatingUserId"], join_event["conversationId"]
+    )
+    user = join_event["userIds"][0]
+    check_user(writer, user)
+    assert writer.execute(
+        "select * from participants where participant=? and conversation=?;",
+        (int(user), join_event["conversationId"]),
+    ).fetchone() == (
+        int(user),
+        join_event["conversationId"],
+        None,
+        join_event["createdAt"],
+        # todo: with separate fixtures for each test's data this wouldn't have to be
+        # hard-coded; it can be taken from the data for the above tests
+        "2016-02-19T01:38:06.141Z",
+        16573941,
+    )
+
+
+def test_new_participants_join(writer: TwitterDataWriter, messages: deque[dict]):
+    join_event = messages.popleft()
+    writer.add_message(join_event, True)
+    check_conversation(writer, join_event, True)
+    check_participant(
+        writer, join_event["initiatingUserId"], join_event["conversationId"]
+    )
+    for user in join_event["userIds"]:
+        check_user(writer, user)
+        assert writer.execute(
+            "select * from participants where participant=? and conversation=?;",
+            (int(user), join_event["conversationId"]),
+        ).fetchone() == (
+            int(user),
+            join_event["conversationId"],
+            None,
+            join_event["createdAt"],
+            None,
+            int(join_event["initiatingUserId"]),
+        )
+
+
+def test_self_being_added(writer: TwitterDataWriter, messages: deque[dict]):
+    message = messages.popleft()
+    writer.add_message(message, True)
+    assert writer.execute(
+        "select * from conversations where id=?;", (message["conversationId"],)
+    ).fetchone() == (
+        message["conversationId"],
+        "group",
+        None,
+        None,
+        None,
+        None,
+        message["createdAt"],
+        None,
+        0,
+        int(message["initiatingUserId"]),
+        None,
+        None,
+    )
+    check_user(writer, message["initiatingUserId"])
+    check_participant(writer, message["initiatingUserId"], message["conversationId"])
+    assert writer.execute(
+        "select * from participants where participant=? and conversation=?;",
+        (MAIN_USER_ID, message["conversationId"]),
+    ).fetchone() == (
+        MAIN_USER_ID,
+        message["conversationId"],
+        None,
+        message["createdAt"],
+        None,
+        int(message["initiatingUserId"]),
+    )
+    for user in message["participantsSnapshot"]:
+        check_user(writer, user)
+        assert (
+            writer.execute(
+                """select start_time
+                    from participants where conversation=? and participant=?;""",
+                (message["conversationId"], int(user)),
+            ).fetchone()
+            == (None,)
+        )
+
+
+def check_name_update(writer: TwitterDataWriter, name_update: dict):
+    writer.add_message(name_update, True)
+    check_conversation(writer, name_update, True)
+    check_user(writer, name_update["initiatingUserId"])
+    check_participant(
+        writer, name_update["initiatingUserId"], name_update["conversationId"]
+    )
+    assert writer.execute(
+        "select * from name_updates where conversation=?;",
+        (name_update["conversationId"],),
+    ).fetchone() == (
+        name_update["createdAt"],
+        int(name_update["initiatingUserId"]),
+        name_update["name"],
+        name_update["conversationId"],
+    )
+
+
+def check_conversation(writer: TwitterDataWriter, message: dict, group_dm: bool):
+    if group_dm:
+        other_person = None
+    elif int(message["recipientId"]) == MAIN_USER_ID:
+        other_person = int(message["senderId"])
+    else:
+        other_person = int(message["recipientId"])
     assert writer.execute(
         """select * from conversations where id=?;""",
         (message["conversationId"],),
     ).fetchone() == (
         message["conversationId"],
-        "individual",
+        "group" if group_dm else "individual",
         None,
         None,
         None,
@@ -179,6 +483,77 @@ def message_add_with_checks(
         None,
         None,
     )
+    check_participant(writer, MAIN_USER_ID, message["conversationId"])
+
+
+def check_user(writer: TwitterDataWriter, user_id: str):
+    assert writer.execute(
+        "select * from users where id=?",
+        (int(user_id),),
+    ).fetchone() == (
+        int(user_id),
+        None,
+        0,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+
+
+def check_participant(writer: TwitterDataWriter, user: str, conversation: str):
+    assert writer.execute(
+        "select * from participants where participant=? and conversation=?;",
+        (int(user), conversation),
+    ).fetchone() == (
+        int(user),
+        conversation,
+        None,
+        None,
+        None,
+        None,
+    )
+
+
+def message_add_with_checks(
+    writer: TwitterDataWriter, message: dict, group_dm: bool = False
+):
+    old_added_messages = writer.added_messages
+    old_added_users = writer.added_users
+    old_conversations = writer.added_conversations
+    new_conversation = (
+        message["conversationId"] not in writer.added_conversations_cache
+    )
+    new_users = 0
+    if (not group_dm) and message["recipientId"] not in writer.added_users_cache:
+        new_users += 1
+    if message["senderId"] not in writer.added_users_cache:
+        new_users += 1
+    writer.add_message(message, group_dm)
+    # check that cache was updated
+    if new_conversation:
+        assert writer.added_conversations == old_conversations + 1
+    assert writer.added_messages == old_added_messages + 1
+    assert writer.added_users == old_added_users + new_users
+    assert group_dm or message["recipientId"] in writer.added_users_cache
+    assert message["senderId"] in writer.added_users_cache
+    assert (
+        message["senderId"],
+        message["conversationId"],
+    ) in writer.added_participants_cache
+    assert (
+        group_dm
+        or (
+            message["recipientId"],
+            message["conversationId"],
+        )
+        in writer.added_participants_cache
+    )
+    # check that conversation record was added
+    check_conversation(writer, message, group_dm)
     # check that message record was added
     assert writer.execute(
         "select sent_time, id, sender, content from messages where id=?",
@@ -199,65 +574,13 @@ def message_add_with_checks(
             messages_text_search='{first_word}' and rowid=?;""",
             (int(message["id"]),),
         ).fetchone()
-    else:
+    else:  # pragma: no cover
         print("no searchable words found in text")
     # check that user records were added
-    assert writer.execute(
-        "select * from users where id=?",
-        (int(message["senderId"]),),
-    ).fetchone() == (
-        int(message["senderId"]),
-        None,
-        0,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
+    check_user(writer, message["senderId"])
     if not group_dm:
-        assert writer.execute(
-            "select * from users where id=?",
-            (
-                int(
-                    message["recipientId"],
-                ),
-            ),
-        ).fetchone() == (
-            int(message["recipientId"]),
-            None,
-            0,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
+        check_user(writer, message["recipientId"])
     # check that participant records were added
-    assert writer.execute(
-        "select * from participants where participant=? and conversation=?;",
-        (message["senderId"], message["conversationId"]),
-    ).fetchone() == (
-        int(message["senderId"]),
-        message["conversationId"],
-        None,
-        None,
-        None,
-        None,
-    )
+    check_participant(writer, message["senderId"], message["conversationId"])
     if not group_dm:
-        assert writer.execute(
-            "select * from participants where participant=? and conversation=?;",
-            (message["recipientId"], message["conversationId"]),
-        ).fetchone() == (
-            int(message["recipientId"]),
-            message["conversationId"],
-            None,
-            None,
-            None,
-            None,
-        )
+        check_participant(writer, message["recipientId"], message["conversationId"])
