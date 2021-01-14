@@ -187,6 +187,9 @@ class SimpleTwitterAPIClient:
         if len(self.queued_users) == 100:
             asyncio.create_task(self.flush_queue())
 
+    def close(self):
+        self.http_client.close()
+
 
 class TwitterDataWriter(Connection):
     """creates a database containing group and individual direct messages and associated data.
@@ -575,6 +578,7 @@ class TwitterDataWriter(Connection):
             self.executescript(conversation_stats_script.read())
 
         await self.api_client.flush_queue()
+        self.api_client.close()
 
         self.execute("pragma optimize;")
 
