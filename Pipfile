@@ -13,6 +13,7 @@ coverage = "*"
 ijson = "*"
 tornado = "*"
 pip = "*"
+pytest-asyncio = "*"
 
 [requires]
 python_version = "3.9"
