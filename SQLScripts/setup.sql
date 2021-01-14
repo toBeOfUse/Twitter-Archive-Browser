@@ -21,7 +21,6 @@ create table conversations (
     created_by_me integer check(created_by_me in (0, 1)) default 1,
     -- null unless group chat and not created_by_me
     added_by integer,
-    -- null unless group chat
     num_participants integer,
     num_name_updates integer,
     /* if we created the chat then participant info might not be comprehensive (the
@@ -121,7 +120,9 @@ create table participants (
     participant integer not null,
     conversation text not null,
     messages_sent integer,
-    -- if null, they were in the conversation since before you
+    -- null unless we witnessed them join the conversation; if we didn't, they were
+    -- already there when we joined (group conversation) or trivially always there
+    -- (individual conversation)
     start_time text,
     -- if null they never left
     end_time text,

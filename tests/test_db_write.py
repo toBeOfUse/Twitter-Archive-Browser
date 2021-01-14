@@ -1,5 +1,9 @@
 """these tests sequentially add messages to a test database and check that the
-corresponding records were added"""
+corresponding records were added. this module checks for the accuracy of the data
+that are immediately added to the database when a message is added; information about
+users obtained from the twitter api or final stats about conversations or
+participants calculated in cache_conversation_stats.sql are assumed to be absent
+here"""
 
 from ArchiveAccess.DBWrite import TwitterDataWriter
 from pytest import fixture

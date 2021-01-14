@@ -93,14 +93,6 @@ set num_name_updates = (
     );
 
 update participants
-set start_time = (
-        select first_time
-        from conversations
-        where conversations.id = participants.conversation
-    )
-where start_time is null;
-
-update participants
 set messages_sent = (
         select count()
         from messages
