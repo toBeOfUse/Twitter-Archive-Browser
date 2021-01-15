@@ -1,4 +1,5 @@
 from ArchiveAccess.DBWrite import TwitterDataWriter
+from ArchiveAccess.DBRead import TwitterDataReader
 from pytest import fixture
 from datetime import datetime
 from typing import Final, Iterable
@@ -18,7 +19,9 @@ AMAZINGPHIL: Final = 14631115
 
 @fixture
 def writer():
-    tdw = TwitterDataWriter("test", MAIN_USER_ID, in_memory=True)
+    tdw = TwitterDataWriter(
+        "file:memdb1?mode=memory&cache=shared", "test", MAIN_USER_ID
+    )
     tdw.api_client.http_client = DummyHTTPClient()
     yield tdw
     tdw.close()
@@ -26,9 +29,18 @@ def writer():
 
 @fixture
 def connected_writer():
-    tdw = TwitterDataWriter("test", MAIN_USER_ID, in_memory=True)
+    tdw = TwitterDataWriter(
+        "file:memdb1?mode=memory&cache=shared", "test", MAIN_USER_ID
+    )
     yield tdw
     tdw.close()
+
+
+@fixture
+def reader():
+    tdr = TwitterDataReader("file:memdb1?mode=memory&cache=shared")
+    yield tdr
+    tdr.close()
 
 
 class DummyHTTPResponse:

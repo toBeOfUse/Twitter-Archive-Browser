@@ -31,7 +31,7 @@ def set_row_mode(connection: sqlite3.Connection, row_factory: Callable) -> None:
 
     Can be used just like this:
 
-    >>> with set_row_mode(my_connection, UserRow):
+    >>> with set_row_mode(my_connection, UserRow.from_row):
     ...     return my_cursor.execute("select * from users;").fetchall()
     """
     prev_row_factory = connection.row_factory
@@ -41,6 +41,9 @@ def set_row_mode(connection: sqlite3.Connection, row_factory: Callable) -> None:
 
 
 class WhereClause:
+    """stupid-simple class for accumulating boolean expressions in sql as strings
+    that concatenates them together with 'and's when formatted as a string."""
+
     def __init__(self):
         self.conditions = []
 
@@ -58,6 +61,12 @@ class WhereClause:
 @dataclass(frozen=True)
 class DBRow:
 
+    """base class for dataclasses that store information taken from a database row.
+    subclasses of this store some data in a form friendly to the API, store the
+    select statement that will retrieve the data to construct this kind of object,
+    and contain a factory method that can be called as a sqlite3 row factory function
+    to construct an object of this type."""
+
     db_select = "select 1 from sqlite_master"
 
     def serialize(self) -> dict:
@@ -70,10 +79,9 @@ class DBRow:
 
 @dataclass(frozen=True)
 class ArchivedUserSummary(DBRow):
-    """Dataclass that stores some user data in a form friendly to the API, stores the
-    select statement that will retrieve the data to construct this kind of object,
-    and contains a factory method that can be called as a sqlite3 row factory
-    function to construct an object of this type."""
+    """class that stores a limited amount of user data fetched from the database.
+    intended to be used to accompany conversations or messages, not to be used as
+    payloads in and of themselves."""
 
     _source_fields: ClassVar = (
         "id",
@@ -83,6 +91,7 @@ class ArchivedUserSummary(DBRow):
         "avatar_extension",
         "loaded_full_data",
     )
+
     db_select: ClassVar = f"select {', '.join(_source_fields)} from users"
 
     id: str
@@ -90,6 +99,7 @@ class ArchivedUserSummary(DBRow):
     handle: str
     display_name: str
     avatar_url: str
+    loaded_full_data: bool
 
     @staticmethod
     def _get_formatted_tuple(row: tuple):
@@ -101,6 +111,7 @@ class ArchivedUserSummary(DBRow):
             f"{AVATAR_API_URL}{row[0]}.{row[4]}"
             if row[5]
             else INDIVIDUAL_DM_DEFAULT_URL,
+            bool(row[5]),
         )
 
     @classmethod
@@ -119,6 +130,10 @@ class ArchivedUserSummary(DBRow):
 
 @dataclass(frozen=True)
 class ArchivedUser(ArchivedUserSummary):
+    """subclass of ArchivedUserSummary that adds the remaining fields available in
+    the database. intended to be used in payloads for database endpoints that return
+    user data."""
+
     _source_fields: ClassVar = ArchivedUserSummary._source_fields + (
         "number_of_messages",
         "bio",
@@ -144,6 +159,8 @@ class ArchivedUser(ArchivedUserSummary):
 
 @dataclass(frozen=True)
 class Conversation(DBRow):
+    """dataclass representing a conversation record. contains ArchivedUserSummary
+    objects instead of just IDs."""
 
     db_select: ClassVar = """select id, type, notes, number_of_messages,
     messages_from_you, first_time, last_time, num_participants, num_name_updates,
@@ -227,15 +244,22 @@ class Conversation(DBRow):
 
 @dataclass(frozen=True)
 class MessageLike(DBRow):
+    """Abstract class representing objects that can fit in the flow of a conversation
+    as messages do. the following three properties must be implemented by
+    subclasses in addition to the normal DBRow properties."""
 
     timestamp_field: ClassVar = ""
+    """the field that will be used in database queries to filter rows by time"""
 
     @property
-    def sort_by_timestamp(self):
+    def sort_by_timestamp(self) -> str:
+        """returns a string timestamp that objects of a type should be sorted by to
+        integrate them into the conversation"""
         raise NotImplementedError
 
     @property
-    def user_ids(self):
+    def user_ids(self) -> Iterable[int]:
+        """returns a list of any user ids that are referenced in this object"""
         raise NotImplementedError
 
 
@@ -407,7 +431,7 @@ class TwitterDataReader(sqlite3.Connection):
     and the database."""
 
     def __init__(self, db_path: PathLike):
-        """Takes in the path to a database created by DBWrite and opens it it for
+        """Takes in the path to a database created by DBWrite and opens it for
         querying."""
         super(TwitterDataReader, self).__init__(db_path)
         self.row_factory = sqlite3.Row

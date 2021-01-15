@@ -219,17 +219,13 @@ class TwitterDataWriter(Connection):
             owner for progress reports
     """
 
-    def __init__(
-        self, account_name, account_id, automatic_overwrite=False, in_memory=False
-    ):
+    def __init__(self, db_path, account_name, account_id, automatic_overwrite=False):
         """creates a database file for an archive for a specific account, initializes
         it with a sql script that creates tables within it, begins our overall sql
         transaction, and saves the id of the account being archived in the
         database."""
-        if in_memory:
-            db_path = ":memory:"
-        else:  # pragma: no cover
-            db_path = Path.cwd() / "db" / Path(account_name + ".db")
+        db_path = Path(db_path)
+        if (":memory:" not in str(db_path)) and ("mode=memory" not in str(db_path)):
             if db_path.exists():
                 if (
                     automatic_overwrite
@@ -243,7 +239,9 @@ class TwitterDataWriter(Connection):
                         prev_journal.unlink()
                 else:
                     raise RuntimeError(f"Database for {account_name} already exists")
-        super(TwitterDataWriter, self).__init__(db_path)
+        super(TwitterDataWriter, self).__init__(
+            db_path, uri=("mode=memory" in str(db_path))
+        )
         self.account = account_name
 
         # keeps python from automatically creating and ending database transactions
@@ -589,22 +587,3 @@ class TwitterDataWriter(Connection):
 
         print("smallifying database size...")
         self.execute("vacuum")
-
-
-async def smoke_test():  # pragma: no cover
-    """this checks if the code can be run without crashing."""
-    db = TwitterDataWriter("test", 846137120209190912, automatic_overwrite=True)
-    for message in JSONStream.MessageStream(
-        Path.cwd() / "testdata/individual_dms_test.js"
-    ):
-        db.add_message(message, group_dm=False)
-    for message in JSONStream.MessageStream(
-        Path.cwd() / "testdata/group_dms_test.js"
-    ):
-        db.add_message(message, group_dm=True)
-    await db.finalize()
-
-
-if __name__ == "__main__":  # pragma: no cover
-    # using asyncio.run results in tornado raising an exception :(
-    IOLoop.current().run_sync(smoke_test)

@@ -10,7 +10,9 @@ async def main(manifest_path):
     with PrefixedJSON(manifest_path) as manifest_file:
         manifest = json.load(manifest_file)
     db_store = TwitterDataWriter(
-        manifest["userInfo"]["userName"], manifest["userInfo"]["accountId"]
+        Path.cwd() / "db" / Path(manifest["userInfo"]["userName"] + ".db"),
+        manifest["userInfo"]["userName"],
+        manifest["userInfo"]["accountId"],
     )
 
     def process_file(file_dict, group_dm):
