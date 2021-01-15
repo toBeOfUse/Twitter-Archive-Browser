@@ -10,14 +10,7 @@ from pytest import fixture
 from collections import deque
 from typing import Final
 import re
-
-MAIN_USER_ID: Final = 3330610905
-
-
-@fixture(scope="module")
-def writer() -> TwitterDataWriter:
-    return TwitterDataWriter("test", 3330610905, automatic_overwrite=True)
-
+from tests.message_utils import MAIN_USER_ID, writer
 
 # todo: each dict could probably be a separate fixture
 @fixture(scope="module")
@@ -336,7 +329,7 @@ def test_known_participant_join(writer: TwitterDataWriter, messages: deque[dict]
         )
 
 
-def test_participant_leave(writer: TwitterDataWriter, messages: deque[dict]):
+def test_join_after_leave(writer: TwitterDataWriter, messages: deque[dict]):
     leave_event = messages.popleft()
     writer.add_message(leave_event, True)
     check_conversation(writer, leave_event, True)
@@ -354,8 +347,6 @@ def test_participant_leave(writer: TwitterDataWriter, messages: deque[dict]):
             None,
         )
 
-
-def test_join_after_leave(writer: TwitterDataWriter, messages: deque[dict]):
     join_event = messages.popleft()
     writer.add_message(join_event, True)
     check_conversation(writer, join_event, True)

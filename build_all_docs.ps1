@@ -1,2 +1,2 @@
-sphinx-apidoc -e -o ./docs -f ./
+sphinx-apidoc -e -o ./docs -f ./ *tests*
 ./docs/make html

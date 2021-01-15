@@ -219,27 +219,30 @@ class TwitterDataWriter(Connection):
             owner for progress reports
     """
 
-    def __init__(self, account_name, account_id, automatic_overwrite=False):
+    def __init__(
+        self, account_name, account_id, automatic_overwrite=False, in_memory=False
+    ):
         """creates a database file for an archive for a specific account, initializes
         it with a sql script that creates tables within it, begins our overall sql
         transaction, and saves the id of the account being archived in the
         database."""
-        db_path = Path.cwd() / "db" / Path(account_name + ".db")
-        if db_path.exists():
-            if (
-                automatic_overwrite
-                or input(
-                    "database for this account name already exists. overwrite? (y/n) "
-                ).lower()
-                == "y"
-            ):
-                db_path.unlink()
+        if in_memory:
+            db_path = ":memory:"
+        else:  # pragma: no cover
+            db_path = Path.cwd() / "db" / Path(account_name + ".db")
+            if db_path.exists():
                 if (
-                    prev_journal := Path(str(db_path) + "-journal")
-                ).exists():  # pragma: no cover
-                    prev_journal.unlink()
-            else:  # pragma: no cover
-                raise RuntimeError(f"Database for {account_name} already exists")
+                    automatic_overwrite
+                    or input(
+                        "database for this account name already exists. overwrite? (y/n) "
+                    ).lower()
+                    == "y"
+                ):
+                    db_path.unlink()
+                    if (prev_journal := Path(str(db_path) + "-journal")).exists():
+                        prev_journal.unlink()
+                else:
+                    raise RuntimeError(f"Database for {account_name} already exists")
         super(TwitterDataWriter, self).__init__(db_path)
         self.account = account_name
 

@@ -6,4 +6,3 @@ server
 
    ArchiveAccess
    main
-   test
