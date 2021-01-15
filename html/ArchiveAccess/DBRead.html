@@ -1,0 +1,2980 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>ArchiveAccess.DBRead API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>ArchiveAccess.DBRead</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from __future__ import annotations
+
+import sqlite3
+from pprint import pprint
+from typing import Union, Final, ClassVar
+from collections.abc import Iterable, Callable
+from collections import namedtuple
+from dataclasses import dataclass, asdict
+from os import PathLike
+from contextlib import contextmanager
+from copy import deepcopy
+
+CONVERSATIONS_PER_PAGE: Final = 20
+CONVERSATION_NAMES_PER_PAGE: Final = 50
+MESSAGES_PER_PAGE: Final = 40
+
+AVATAR_API_URL: Final = &#34;/api/avatar/&#34;
+MEDIA_API_URL: Final = &#34;/api/media/&#34;
+
+# todo: create these assets
+INDIVIDUAL_DM_DEFAULT_URL: Final = &#34;/api/assets/dm.svg&#34;
+GROUP_DM_DEFAULT_URL: Final = &#34;/api/assets/group.svg&#34;
+USER_AVATAR_DEFAULT_URL: Final = &#34;/api/assets/mysteryuser.svg&#34;
+
+
+@contextmanager
+def set_row_mode(connection: sqlite3.Connection, row_factory: Callable) -&gt; None:
+    &#34;&#34;&#34;Simple context manager to make a sqlite3 Connection temporarily return rows
+    processed in a specific way and then switch back to using the row factory that it
+    was previously using.
+
+    Can be used just like this:
+
+    &gt;&gt;&gt; with set_row_mode(my_connection, UserRow.from_row):
+    ...     return my_cursor.execute(&#34;select * from users;&#34;).fetchall()
+    &#34;&#34;&#34;
+    prev_row_factory = connection.row_factory
+    connection.row_factory = row_factory
+    yield
+    connection.row_factory = prev_row_factory
+
+
+class WhereClause:
+    &#34;&#34;&#34;stupid-simple class for accumulating boolean expressions in sql as strings
+    that concatenates them together with &#39;and&#39;s when formatted as a string.&#34;&#34;&#34;
+
+    def __init__(self):
+        self.conditions = []
+
+    def add(self, condition: str) -&gt; None:
+        if clean := condition.strip():
+            self.conditions.append(clean)
+
+    def __format__(self, params) -&gt; str:
+        if len(self.conditions):
+            return &#34;where &#34; + &#34; and &#34;.join(f&#34;({x})&#34; for x in self.conditions)
+        else:
+            return &#34;&#34;
+
+
+@dataclass(frozen=True)
+class DBRow:
+
+    &#34;&#34;&#34;base class for dataclasses that store information taken from a database row.
+    subclasses of this store some data in a form friendly to the API, store the
+    select statement that will retrieve the data to construct this kind of object,
+    and contain a factory method that can be called as a sqlite3 row factory function
+    to construct an object of this type.&#34;&#34;&#34;
+
+    db_select = &#34;select 1 from sqlite_master&#34;
+
+    def serialize(self) -&gt; dict:
+        return asdict(self) | {&#34;schema&#34;: type(self).__name__}
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class ArchivedUserSummary(DBRow):
+    &#34;&#34;&#34;class that stores a limited amount of user data fetched from the database.
+    intended to be used to accompany conversations or messages, not to be used as
+    payloads in and of themselves.&#34;&#34;&#34;
+
+    _source_fields: ClassVar = (
+        &#34;id&#34;,
+        &#34;nickname&#34;,
+        &#34;handle&#34;,
+        &#34;display_name&#34;,
+        &#34;avatar_extension&#34;,
+        &#34;loaded_full_data&#34;,
+    )
+
+    db_select: ClassVar = f&#34;select {&#39;, &#39;.join(_source_fields)} from users&#34;
+
+    id: str
+    nickname: str
+    handle: str
+    display_name: str
+    avatar_url: str
+    loaded_full_data: bool
+
+    @staticmethod
+    def _get_formatted_tuple(row: tuple):
+        return (
+            str(row[0]),
+            row[1] or &#34;&#34;,
+            row[2] if row[5] else str(row[0]),
+            row[3] if row[5] else &#34;Mystery User&#34;,
+            f&#34;{AVATAR_API_URL}{row[0]}.{row[4]}&#34;
+            if row[5]
+            else INDIVIDUAL_DM_DEFAULT_URL,
+            bool(row[5]),
+        )
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ArchivedUserSummary:
+        &#34;&#34;&#34;Converts a row fetched from the users table to an ArchivedUserSummary
+        object that can be used in the web API.
+
+        If Twitter profile data for the user was not able to be acquired, this method
+        fills it in with default values; it also places a value in the avatar_url
+        field based on the api url that will retrieve it. Also, it makes the user&#39;s
+        64-bit int id a string to make it JavaScript-safe.
+        &#34;&#34;&#34;
+        assert tuple(x[0] for x in cursor.description) == cls._source_fields
+        return cls(*cls._get_formatted_tuple(row))
+
+
+@dataclass(frozen=True)
+class ArchivedUser(ArchivedUserSummary):
+    &#34;&#34;&#34;subclass of ArchivedUserSummary that adds the remaining fields available in
+    the database. intended to be used in payloads for database endpoints that return
+    user data.&#34;&#34;&#34;
+
+    _source_fields: ClassVar = ArchivedUserSummary._source_fields + (
+        &#34;number_of_messages&#34;,
+        &#34;bio&#34;,
+        &#34;notes&#34;,
+    )
+    # todo: figure out whether this actually needs to be re-declared in this subclass
+    db_select: ClassVar = f&#34;select {&#39;, &#39;.join(_source_fields)} from users&#34;
+
+    number_of_messages: int
+    bio: str
+    notes: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ArchivedUser:
+        assert tuple(x[0] for x in cursor.description) == cls._source_fields
+        return cls(
+            *(
+                ArchivedUserSummary._get_formatted_tuple(row)
+                + (row[6], row[7] or &#34;&#34;, row[8] or &#34;&#34;)
+            )
+        )
+
+
+@dataclass(frozen=True)
+class Conversation(DBRow):
+    &#34;&#34;&#34;dataclass representing a conversation record. contains ArchivedUserSummary
+    objects instead of just IDs.&#34;&#34;&#34;
+
+    db_select: ClassVar = &#34;&#34;&#34;select id, type, notes, number_of_messages,
+    messages_from_you, first_time, last_time, num_participants, num_name_updates,
+    created_by_me, other_person, added_by from conversations&#34;&#34;&#34;
+
+    # todo: deal with non-passthrough values in a post_init stage?
+
+    # pass-through values that are the same in the db and this class:
+    id: str
+    type: str
+    notes: str
+    number_of_messages: int
+    messages_from_you: int
+    first_time: str
+    last_time: str
+    num_participants: int
+    num_name_updates: int
+    # derived values:
+    created_by_me: bool
+    other_person: ArchivedUserSummary
+    added_by: ArchivedUserSummary
+    name: str
+    image_url: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; Conversation:
+
+        pass_through_values = row[0:9]
+        created_by_me = bool(row[9])
+
+        with set_row_mode(cursor.connection, ArchivedUserSummary.from_row):
+            other_person = (
+                cursor.connection.get_users_by_id([row[10]])[0] if row[10] else {}
+            )
+            added_by = (
+                cursor.connection.get_users_by_id([row[11]])[0] if row[11] else {}
+            )
+
+        if row[1] == &#34;individual&#34;:
+            name = (
+                other_person.nickname
+                or other_person.display_name + &#34; (@&#34; + other_person.handle + &#34;)&#34;
+            )
+            image_url = other_person.avatar_url
+        else:
+            image_url = GROUP_DM_DEFAULT_URL
+            with set_row_mode(cursor.connection, None):
+                last_name = cursor.connection.execute(
+                    &#34;select new_name from name_updates &#34;
+                    &#34;where conversation=? &#34;
+                    &#34;order by update_time desc limit 1;&#34;,
+                    (row[0],),
+                ).fetchone()
+            if last_name:
+                name = last_name[0]
+            else:
+                # todo: probably want this call as a method in the TwitterDataReader
+                # connection class
+                with set_row_mode(cursor.connection, None):
+                    participant_rows = cursor.connection.execute(
+                        &#34;select nickname, display_name, participant from participants &#34;
+                        &#34;join users on participants.participant=users.id &#34;
+                        &#34;order by messages_sent desc limit 11;&#34;
+                    ).fetchall()
+                participants = [
+                    x[0] if x[0] else (x[1] if x[1] else f&#34;@{x[2]}&#34;)
+                    for x in participant_rows
+                ]
+                name = &#34;, &#34;.join(participants[0:9])
+                if len(participants) == 11:
+                    name += &#34;, etc.&#34;
+        return cls(
+            *pass_through_values,
+            created_by_me,
+            other_person,
+            added_by,
+            name,
+            image_url,
+        )
+
+
+@dataclass(frozen=True)
+class MessageLike(DBRow):
+    &#34;&#34;&#34;Abstract class representing objects that can fit in the flow of a conversation
+    as messages do. the following three properties must be implemented by
+    subclasses in addition to the normal DBRow properties.&#34;&#34;&#34;
+
+    timestamp_field: ClassVar = &#34;&#34;
+    &#34;&#34;&#34;the field that will be used in database queries to filter rows by time&#34;&#34;&#34;
+
+    @property
+    def sort_by_timestamp(self) -&gt; str:
+        &#34;&#34;&#34;returns a string timestamp that objects of a type should be sorted by to
+        integrate them into the conversation&#34;&#34;&#34;
+        raise NotImplementedError
+
+    @property
+    def user_ids(self) -&gt; Iterable[int]:
+        &#34;&#34;&#34;returns a list of any user ids that are referenced in this object&#34;&#34;&#34;
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class NameUpdate(MessageLike):
+    db_select: ClassVar = &#34;&#34;&#34;select update_time, initiator, new_name, conversation
+        from name_updates&#34;&#34;&#34;
+    timestamp_field: ClassVar = &#34;update_time&#34;
+
+    update_time: str
+    initiator: str
+    new_name: str
+    conversation: str
+
+    @property
+    def sort_by_timestamp(self) -&gt; str:
+        return self.update_time
+
+    @property
+    def user_ids(self) -&gt; list[int]:
+        return [int(self.initiator)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; NameUpdate:
+        return cls(*(str(x) for x in row))
+
+
+@dataclass(frozen=True)
+class ParticipantJoin(MessageLike):
+    db_select: ClassVar = &#34;&#34;&#34;select participant, conversation, start_time from
+        participants&#34;&#34;&#34;
+    timestamp_field: ClassVar = &#34;start_time&#34;
+
+    participant: str
+    added_by: str
+    conversation: str
+    time: str
+
+    @property
+    def sort_by_timestamp(self) -&gt; self:
+        return self.time
+
+    @property
+    def user_ids(self) -&gt; list[int]:
+        return [int(self.participant), int(self.added_by)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ParticipantJoin:
+        return cls(*(str(x) for x in row))
+
+
+@dataclass(frozen=True)
+class ParticipantLeave(MessageLike):
+    db_select: ClassVar = &#34;&#34;&#34;select participant, conversation, end_time from
+        participants&#34;&#34;&#34;
+    timestamp_field: ClassVar = &#34;end_time&#34;
+
+    participant: str
+    conversation: str
+    time: str
+
+    @property
+    def sort_by_timestamp(self) -&gt; self:
+        return self.time
+
+    @property
+    def user_ids(self) -&gt; list[int]:
+        return [int(self.participant)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ParticipantJoin:
+        return cls(*(str(x) for x in row))
+
+
+@dataclass(frozen=True)
+class Reaction(DBRow):
+    db_select: ClassVar = &#34;select emotion, creation_time, creator from reactions&#34;
+
+    emotion: str
+    creation_time: str
+    creator: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        return cls(row[0], row[1], str(row[2]))
+
+
+@dataclass(frozen=True)
+class Media(DBRow):
+    db_select: ClassVar = &#34;select id, type, message, filename from media&#34;
+
+    id: str
+    type: str
+    filename: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        return cls(row[0], row[1], f&#34;{row[2]}-{row[3]}&#34;)
+
+
+@dataclass(frozen=True)
+class Message(MessageLike):
+    db_select_fields: ClassVar = (
+        &#34;&#34;&#34;select sent_time, conversation, content, sender, id from &#34;&#34;&#34;
+    )
+    timestamp_field: ClassVar = &#34;sent_time&#34;
+
+    db_select: ClassVar = db_select_fields + &#34;messages&#34;
+    db_select_for_search: ClassVar = db_select_fields + &#34;messages_text_search&#34;
+
+    sent_time: str
+    conversation: str
+    content: str
+    sender: str
+    id: str
+    reactions: list[Reaction]
+    media_urls: list[Media]
+    html_content: str
+
+    @property
+    def sort_by_timestamp(self) -&gt; str:
+        return self.sent_time
+
+    @property
+    def user_ids(self) -&gt; list[int]:
+        return [int(self.sender)] + [int(x.creator) for x in self.reactions]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        with set_row_mode(cursor.connection, Reaction.from_row):
+            reactions = cursor.connection.execute(
+                Reaction.db_select + &#34;where message=?;&#34;, [row[4]]
+            ).fetchall()
+
+        with set_row_mode(cursor.connection, Media.from_row):
+            media = cursor.connection.execute(
+                Media.db_select + &#34;where message=?;&#34;, [row[4]]
+            ).fetchall()
+
+        with set_row_mode(cursor.connection, sqlite3.Row):
+            link_rows = cursor.connection.execute(
+                &#34;&#34;&#34;select orig_url, url_preview, twitter_shortened_url
+                    from links where message=?&#34;&#34;&#34;,
+                (message_row[&#34;id&#34;],),
+            ).fetchall()
+            html_content = message_row[&#34;content&#34;]
+            for link in link_rows:
+                if link[&#34;orig_url&#34;].startswith(
+                    &#34;https://twitter.com/messages/media/&#34;
+                ) and link[&#34;url_preview&#34;].startwith(&#34;pic.twitter.com/&#34;):
+                    html_content.replace(link[&#34;twitter_shortened_url&#34;], &#34;&#34;)
+                else:
+                    html_content.replace(
+                        link[&#34;twitter_shortened_url&#34;],
+                        f&#39;&lt;a href=&#34;{link[&#34;orig_url&#34;]}&#34;&gt;{link[&#34;url_preview&#34;]}&lt;/a&gt;&#39;,
+                    )
+        return cls(
+            *row[0:3],
+            str(row[3]),
+            str(row[4]),
+            reactions,
+            media,
+            html_content.strip(),
+        )
+
+
+class TwitterDataReader(sqlite3.Connection):
+    &#34;&#34;&#34;Provides an interface between the server that will create the API endpoints
+    and the database.&#34;&#34;&#34;
+
+    def __init__(self, db_path: PathLike):
+        &#34;&#34;&#34;Takes in the path to a database created by DBWrite and opens it for
+        querying.&#34;&#34;&#34;
+        super(TwitterDataReader, self).__init__(db_path)
+        self.row_factory = sqlite3.Row
+
+    def get_users_by_id(
+        self, user_ids: Iterable[int], sidecar: bool = True
+    ) -&gt; list[Union[ArchivedUserSummary, ArchivedUser]]:
+        &#34;&#34;&#34;Uses ids to retrieve user records from the database.
+
+        &#34;Sidecar&#34; objects are defined as those that accompany messages and don&#39;t
+        contain the full data for a user; they are represented by ArchivedUserSummary
+        objects.
+        &#34;&#34;&#34;
+        user_class = ArchivedUserSummary if sidecar else ArchivedUser
+
+        with set_row_mode(self, user_class.from_row):
+            return self.execute(
+                user_class.db_select
+                + f&#34; where id in ({&#39;, &#39;.join([&#39;?&#39; for _ in range(len(user_ids))])});&#34;,
+                user_ids,
+            ).fetchall()
+
+    def set_user_nickname(self, user_id: str, new_nickname: str) -&gt; None:
+        self.execute(
+            &#34;update users set nickname=? where id=?;&#34;,
+            (new_nickname[0:50], int(user_id)),
+        )
+
+    def set_user_notes(self, user_id: str, new_notes: str) -&gt; None:
+        self.execute(
+            &#34;update users set notes=? where id=?;&#34;,
+            (new_notes, int(user_id)),
+        )
+
+    def get_user_avatar(self, id: Union[int, str]) -&gt; bytes:
+        &#34;&#34;&#34;Retrieves user avatar image file as bytes.&#34;&#34;&#34;
+        return self.execute(
+            &#34;select avatar from users where id=?;&#34;, (id,)
+        ).fetchone()[0]
+
+    def get_conversations(
+        self,
+        group: bool,
+        individual: bool,
+        order_by: str,
+        page_number: int = 1,
+        where: str = &#34;&#34;,
+        placeholders: Iterable = [],
+    ) -&gt; list[Conversation]:
+        &#34;&#34;&#34;Generalized conversation record retrieval method.
+
+        Arguments:
+            group: boolean indicating whether to retrieve records for group
+                conversations.
+            individual: boolean indicating whether to retrieve records for individual
+                conversations.
+            order_by: order by clause in sql indicating how to sort the results.
+                examples: &#34;order by first_time asc&#34;, &#34;order by number_of_messages desc&#34;
+            page_number: indicates what page we are on. page numbers start at 1;
+                pages contain `CONVERSATIONS_PER_PAGE` conversations.
+            where: optional string containing sql statements that will be
+                added to the default where conditions with an &#34;and&#34;.
+            placeholders: optional iterable containing values corresponding to any ?s
+                in the previous two sql strings
+        &#34;&#34;&#34;
+        type_clause = WhereClause()
+        if group and individual:
+            pass
+        elif group:
+            type_clause = type_clause.add(&#34;type=&#39;group&#39;&#34;)
+        elif individual:
+            type_clause = type_clause.add(&#34;type=&#39;individual&#39;&#34;)
+        else:
+            return []
+        type_clause.add(where)
+        placeholders = list(placeholders) + [
+            CONVERSATIONS_PER_PAGE,
+            CONVERSATIONS_PER_PAGE * (page_number - 1),
+        ]
+        with set_row_mode(self, Conversation.from_row):
+            return self.execute(
+                Conversation.db_select + f&#34; {type_clause} &#34;
+                f&#34; {order_by} &#34;
+                f&#34;limit ? &#34;
+                f&#34;offset ?;&#34;,
+                placeholders,
+            ).fetchall()
+
+    def get_conversations_by_time(
+        self,
+        page_number: int,
+        asc: bool = True,
+        group: bool = True,
+        individual: bool = True,
+    ) -&gt; list[ConversationRow]:
+        &#34;&#34;&#34;Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by when their most
+        or least recent messages were sent. Most of the arguments are passed on to
+        :func:`~DBRead.TwitterDataReader.get_conversations`, except for:
+
+        Arguments:
+            asc: If this boolean is True, conversations are sorted based on their
+                oldest message, with the oldest first; if it&#39;s False, conversations are
+                sorted by their newest message, with the newest first.
+
+        &#34;&#34;&#34;
+        order_by = f&#34;order by {&#39;first_time asc&#39; if asc else &#39;last_time desc&#39;}&#34;
+        return self.get_conversations(group, individual, order_by, page_number)
+
+    def get_conversations_by_message_count(
+        self,
+        page_number: int,
+        group: bool = True,
+        individual: bool = True,
+        by_me: bool = False,
+    ) -&gt; list[ConversationRow]:
+        &#34;&#34;&#34;Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by how many
+        messages were sent in them or by how many messages were sent in them by you.
+        Most of the arguments are passed on to
+        :func:`~DBRead.TwitterDataReader.get_conversations`, except for:
+
+        Arguments:
+            by_me: if this is true, then conversations with the most messages sent by
+                you are presented first; if it&#39;s false, the conversations with the most
+                messages period are presented first.
+        &#34;&#34;&#34;
+        order_by = (
+            f&#34;order by {&#39;number_of_messages&#39; if by_me else &#39;messages_from_you&#39;} desc&#34;
+        )
+        return self.get_conversations(group, individual, order_by, page_number)
+
+    def get_conversations_by_user(
+        self, user_id: Union[str, int], page_number: int
+    ) -&gt; list[ConversationRow]:
+
+        order_by = &#34;&#34;&#34;order by
+                (select messages_sent from participants
+                where conversation=conversations.id)
+                desc&#34;&#34;&#34;
+        exists_clause = f&#34;&#34;&#34;exists(
+                select 1 from participants
+                where participant=? and conversation=conversations.id
+            )&#34;&#34;&#34;
+        return self.get_conversations(
+            True, True, order_by, page_number, exists_clause, (user_id,)
+        )
+
+    def get_conversation_by_id(self, conversation_id: str) -&gt; ConversationRow:
+        &#34;&#34;&#34;Retrieves the record for a specific conversation with a specific id.&#34;&#34;&#34;
+        c = self.get_conversations(True, True, &#34;&#34;, 1, &#34;id=?&#34;, [conversation_id])[0]
+        return c
+
+    def get_conversation_names(
+        self, conversation_id: str, oldest_first=True, page_number: int = 1
+    ) -&gt; list[NameUpdate]:
+        &#34;&#34;&#34;Gets the records for CONVERSATION_NAMES_PER_PAGE names that a conversation
+        has had.&#34;&#34;&#34;
+        with set_row_mode(self, NameUpdate.from_row):
+            names = self.execute(
+                f&#34;&#34;&#34;{NameUpdate.db_select}
+                where conversation=?
+                order by update_time {&#39;asc&#39; if oldest_first else &#39;desc&#39;}
+                limit ? offset ?;&#34;&#34;&#34;,
+                (
+                    conversation_id,
+                    CONVERSATION_NAMES_PER_PAGE,
+                    CONVERSATION_NAMES_PER_PAGE * (page_number - 1),
+                ),
+            ).fetchall()
+        users = self.get_users_by_id(int(x) for x in sum(x.user_ids for x in names))
+        return {&#34;results&#34;: names, &#34;users&#34;: users}
+
+    def set_conversation_notes(self, conversation_id: str, notes: str) -&gt; None:
+        &#34;&#34;&#34;Updates a conversation&#39;s notes field. hooray&#34;&#34;&#34;
+        self.execute(
+            &#34;update conversations set notes=? where id=?;&#34;, (notes, conversation_id)
+        )
+
+    def traverse_messages(
+        self,
+        conversation=&#34;&#34;,
+        user=&#34;&#34;,
+        after: str = &#34;&#34;,
+        before: str = &#34;&#34;,
+        at: str = &#34;&#34;,
+        search: str = &#34;&#34;,
+    ):
+        assert (bool(after) ^ bool(before)) or (
+            bool(before) ^ bool(at)
+        ), &#34;traversing messages is unidirectional&#34;
+
+        sort = &#34;sent_time asc&#34;
+
+        where = WhereClause()
+        placeholders = []
+        if conversation:
+            where.add(&#34;conversation=?&#34;)
+            placeholders.append(conversation)
+        if user:
+            where.add(&#34;user=?&#34;)
+            placeholders.append(user)
+
+        messages = []
+
+        if search:
+            where.add(&#34;messages_text_search=?&#34;)
+            placeholders.append(search)
+            select = Message.db_select
+        else:
+            select = Message.db_select_for_search
+
+        with set_row_mode(self, Message.from_row):
+            if at:
+                first_where = where
+                first_where.add(&#34;sent_time &lt;= ?&#34;)
+                second_where = deepcopy(where)
+                second_where.add(&#34;sent_time &gt; ?&#34;)
+
+                # `at` must be the last added placeholder so it can work for both
+                # versions of the where clause
+                placeholders.add(at)
+
+                messages += self.execute(
+                    f&#34;&#34;&#34;{select}
+                    where {first_where}
+                    order by sent_time desc
+                    limit {int(MESSAGES_PER_PAGE/2)};&#34;&#34;&#34;
+                ).fetchall()
+
+                messages += self.execute(
+                    f&#34;&#34;&#34;{select}
+                    where {second_where}
+                    order by sent_time desc
+                    limit {int(MESSAGES_PER_PAGE/2)};&#34;&#34;&#34;
+                ).fetchall()
+
+            else:
+                if before:
+                    if before == &#34;end&#34;:
+                        sort = &#34;sent_time desc&#34;
+                    else:
+                        where.add(&#34;sent_time &lt; ?&#34;)
+                        placeholders.append(before)
+                elif after:
+                    if after != &#34;beginning&#34;:
+                        where.add(&#34;sent_time &gt; ?&#34;)
+                        placeholders.append(after)
+            messages += self.execute(
+                f&#34;&#34;&#34;{Message.db_select}
+                    where {where}
+                    order by {sort}
+                    limit {MESSAGES_PER_PAGE};&#34;&#34;&#34;
+            ).fetchall()
+
+        sequence_start = after or messages[0].sort_by_timestamp
+        sequence_end = before or messages[-1].sort_by_timestamp
+
+        if conversation:
+            with set_row_mode(self, NameUpdate.from_row):
+                messages += self.execute(
+                    NameUpdate.db_select
+                    + &#34; where conversation=? and update_time &gt; ? and update_time &lt; ?;&#34;,
+                    (conversation, sequence_start, sequence_end),
+                )
+
+        joining_where = WhereClause()
+        if conversation:
+            joining_where.add(&#34;conversation=?&#34;)
+        elif user:
+            joining_where.add(&#34;participant=?&#34;)
+        leaving_where = deepcopy(joining_where)
+        leaving_where.add(&#34;end_time &gt; ? and end_time &lt; ?&#34;)
+        joining_where.add(&#34;start_time &gt; ? and start_time &lt; ?&#34;)
+
+        with set_row_mode(self, ParticipantJoin.from_row):
+            messages += self.execute(
+                ParticipantJoin.db_select + f&#34; {joining_where};&#34;
+            ).fetchall()
+        with set_row_mode(self, ParticipantLeave.from_row):
+            messages += self.execute(
+                ParticipantLeave.db_select + f&#34; {leaving_where};&#34;
+            )
+
+        sorted(messages, key=lambda x: x.sort_by_timestamp)
+
+        users = self.get_users_by_id(
+            int(x) for x in sum(x.user_ids for x in messages)
+        )
+        return {&#34;results&#34;: messages, &#34;users&#34;: users}
+
+    def get_message(self, id: int):
+        with set_row_mode(self, Message.from_row):
+            return self.execute(Message.db_select + &#34; where id=?;&#34;, (id,)).fetchone()
+
+
+if __name__ == &#34;__main__&#34;:
+    source = TwitterDataReader(&#34;./db/test.db&#34;)
+    pprint(source.get_conversations_by_time(1))
+    pprint(source.get_conversations_by_message_count(1))
+    pprint([x.serialize() for x in source.get_conversations_by_user(4196983835, 1)])</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="ArchiveAccess.DBRead.set_row_mode"><code class="name flex">
+<span>def <span class="ident">set_row_mode</span></span>(<span>connection: sqlite3.Connection, row_factory: Callable) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Simple context manager to make a sqlite3 Connection temporarily return rows
+processed in a specific way and then switch back to using the row factory that it
+was previously using.</p>
+<p>Can be used just like this:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; with set_row_mode(my_connection, UserRow.from_row):
+...     return my_cursor.execute(&quot;select * from users;&quot;).fetchall()
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@contextmanager
+def set_row_mode(connection: sqlite3.Connection, row_factory: Callable) -&gt; None:
+    &#34;&#34;&#34;Simple context manager to make a sqlite3 Connection temporarily return rows
+    processed in a specific way and then switch back to using the row factory that it
+    was previously using.
+
+    Can be used just like this:
+
+    &gt;&gt;&gt; with set_row_mode(my_connection, UserRow.from_row):
+    ...     return my_cursor.execute(&#34;select * from users;&#34;).fetchall()
+    &#34;&#34;&#34;
+    prev_row_factory = connection.row_factory
+    connection.row_factory = row_factory
+    yield
+    connection.row_factory = prev_row_factory</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="ArchiveAccess.DBRead.ArchivedUser"><code class="flex name class">
+<span>class <span class="ident">ArchivedUser</span></span>
+<span>(</span><span>id: str, nickname: str, handle: str, display_name: str, avatar_url: str, loaded_full_data: bool, number_of_messages: int, bio: str, notes: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>subclass of ArchivedUserSummary that adds the remaining fields available in
+the database. intended to be used in payloads for database endpoints that return
+user data.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class ArchivedUser(ArchivedUserSummary):
+    &#34;&#34;&#34;subclass of ArchivedUserSummary that adds the remaining fields available in
+    the database. intended to be used in payloads for database endpoints that return
+    user data.&#34;&#34;&#34;
+
+    _source_fields: ClassVar = ArchivedUserSummary._source_fields + (
+        &#34;number_of_messages&#34;,
+        &#34;bio&#34;,
+        &#34;notes&#34;,
+    )
+    # todo: figure out whether this actually needs to be re-declared in this subclass
+    db_select: ClassVar = f&#34;select {&#39;, &#39;.join(_source_fields)} from users&#34;
+
+    number_of_messages: int
+    bio: str
+    notes: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ArchivedUser:
+        assert tuple(x[0] for x in cursor.description) == cls._source_fields
+        return cls(
+            *(
+                ArchivedUserSummary._get_formatted_tuple(row)
+                + (row[6], row[7] or &#34;&#34;, row[8] or &#34;&#34;)
+            )
+        )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a></li>
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.ArchivedUser.bio"><code class="name">var <span class="ident">bio</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUser.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUser.notes"><code class="name">var <span class="ident">notes</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUser.number_of_messages"><code class="name">var <span class="ident">number_of_messages</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a></b></code>:
+<ul class="hlist">
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.from_row" href="#ArchiveAccess.DBRead.ArchivedUserSummary.from_row">from_row</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary"><code class="flex name class">
+<span>class <span class="ident">ArchivedUserSummary</span></span>
+<span>(</span><span>id: str, nickname: str, handle: str, display_name: str, avatar_url: str, loaded_full_data: bool)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>class that stores a limited amount of user data fetched from the database.
+intended to be used to accompany conversations or messages, not to be used as
+payloads in and of themselves.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class ArchivedUserSummary(DBRow):
+    &#34;&#34;&#34;class that stores a limited amount of user data fetched from the database.
+    intended to be used to accompany conversations or messages, not to be used as
+    payloads in and of themselves.&#34;&#34;&#34;
+
+    _source_fields: ClassVar = (
+        &#34;id&#34;,
+        &#34;nickname&#34;,
+        &#34;handle&#34;,
+        &#34;display_name&#34;,
+        &#34;avatar_extension&#34;,
+        &#34;loaded_full_data&#34;,
+    )
+
+    db_select: ClassVar = f&#34;select {&#39;, &#39;.join(_source_fields)} from users&#34;
+
+    id: str
+    nickname: str
+    handle: str
+    display_name: str
+    avatar_url: str
+    loaded_full_data: bool
+
+    @staticmethod
+    def _get_formatted_tuple(row: tuple):
+        return (
+            str(row[0]),
+            row[1] or &#34;&#34;,
+            row[2] if row[5] else str(row[0]),
+            row[3] if row[5] else &#34;Mystery User&#34;,
+            f&#34;{AVATAR_API_URL}{row[0]}.{row[4]}&#34;
+            if row[5]
+            else INDIVIDUAL_DM_DEFAULT_URL,
+            bool(row[5]),
+        )
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ArchivedUserSummary:
+        &#34;&#34;&#34;Converts a row fetched from the users table to an ArchivedUserSummary
+        object that can be used in the web API.
+
+        If Twitter profile data for the user was not able to be acquired, this method
+        fills it in with default values; it also places a value in the avatar_url
+        field based on the api url that will retrieve it. Also, it makes the user&#39;s
+        64-bit int id a string to make it JavaScript-safe.
+        &#34;&#34;&#34;
+        assert tuple(x[0] for x in cursor.description) == cls._source_fields
+        return cls(*cls._get_formatted_tuple(row))</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.ArchivedUser" href="#ArchiveAccess.DBRead.ArchivedUser">ArchivedUser</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary.avatar_url"><code class="name">var <span class="ident">avatar_url</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary.display_name"><code class="name">var <span class="ident">display_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary.handle"><code class="name">var <span class="ident">handle</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary.loaded_full_data"><code class="name">var <span class="ident">loaded_full_data</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary.nickname"><code class="name">var <span class="ident">nickname</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.ArchivedUserSummary.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple) ‑> <a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Converts a row fetched from the users table to an ArchivedUserSummary
+object that can be used in the web API.</p>
+<p>If Twitter profile data for the user was not able to be acquired, this method
+fills it in with default values; it also places a value in the avatar_url
+field based on the api url that will retrieve it. Also, it makes the user's
+64-bit int id a string to make it JavaScript-safe.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ArchivedUserSummary:
+    &#34;&#34;&#34;Converts a row fetched from the users table to an ArchivedUserSummary
+    object that can be used in the web API.
+
+    If Twitter profile data for the user was not able to be acquired, this method
+    fills it in with default values; it also places a value in the avatar_url
+    field based on the api url that will retrieve it. Also, it makes the user&#39;s
+    64-bit int id a string to make it JavaScript-safe.
+    &#34;&#34;&#34;
+    assert tuple(x[0] for x in cursor.description) == cls._source_fields
+    return cls(*cls._get_formatted_tuple(row))</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation"><code class="flex name class">
+<span>class <span class="ident">Conversation</span></span>
+<span>(</span><span>id: str, type: str, notes: str, number_of_messages: int, messages_from_you: int, first_time: str, last_time: str, num_participants: int, num_name_updates: int, created_by_me: bool, other_person: <a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a>, added_by: <a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a>, name: str, image_url: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>dataclass representing a conversation record. contains ArchivedUserSummary
+objects instead of just IDs.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class Conversation(DBRow):
+    &#34;&#34;&#34;dataclass representing a conversation record. contains ArchivedUserSummary
+    objects instead of just IDs.&#34;&#34;&#34;
+
+    db_select: ClassVar = &#34;&#34;&#34;select id, type, notes, number_of_messages,
+    messages_from_you, first_time, last_time, num_participants, num_name_updates,
+    created_by_me, other_person, added_by from conversations&#34;&#34;&#34;
+
+    # todo: deal with non-passthrough values in a post_init stage?
+
+    # pass-through values that are the same in the db and this class:
+    id: str
+    type: str
+    notes: str
+    number_of_messages: int
+    messages_from_you: int
+    first_time: str
+    last_time: str
+    num_participants: int
+    num_name_updates: int
+    # derived values:
+    created_by_me: bool
+    other_person: ArchivedUserSummary
+    added_by: ArchivedUserSummary
+    name: str
+    image_url: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; Conversation:
+
+        pass_through_values = row[0:9]
+        created_by_me = bool(row[9])
+
+        with set_row_mode(cursor.connection, ArchivedUserSummary.from_row):
+            other_person = (
+                cursor.connection.get_users_by_id([row[10]])[0] if row[10] else {}
+            )
+            added_by = (
+                cursor.connection.get_users_by_id([row[11]])[0] if row[11] else {}
+            )
+
+        if row[1] == &#34;individual&#34;:
+            name = (
+                other_person.nickname
+                or other_person.display_name + &#34; (@&#34; + other_person.handle + &#34;)&#34;
+            )
+            image_url = other_person.avatar_url
+        else:
+            image_url = GROUP_DM_DEFAULT_URL
+            with set_row_mode(cursor.connection, None):
+                last_name = cursor.connection.execute(
+                    &#34;select new_name from name_updates &#34;
+                    &#34;where conversation=? &#34;
+                    &#34;order by update_time desc limit 1;&#34;,
+                    (row[0],),
+                ).fetchone()
+            if last_name:
+                name = last_name[0]
+            else:
+                # todo: probably want this call as a method in the TwitterDataReader
+                # connection class
+                with set_row_mode(cursor.connection, None):
+                    participant_rows = cursor.connection.execute(
+                        &#34;select nickname, display_name, participant from participants &#34;
+                        &#34;join users on participants.participant=users.id &#34;
+                        &#34;order by messages_sent desc limit 11;&#34;
+                    ).fetchall()
+                participants = [
+                    x[0] if x[0] else (x[1] if x[1] else f&#34;@{x[2]}&#34;)
+                    for x in participant_rows
+                ]
+                name = &#34;, &#34;.join(participants[0:9])
+                if len(participants) == 11:
+                    name += &#34;, etc.&#34;
+        return cls(
+            *pass_through_values,
+            created_by_me,
+            other_person,
+            added_by,
+            name,
+            image_url,
+        )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.Conversation.added_by"><code class="name">var <span class="ident">added_by</span> : <a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.created_by_me"><code class="name">var <span class="ident">created_by_me</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.first_time"><code class="name">var <span class="ident">first_time</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.image_url"><code class="name">var <span class="ident">image_url</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.last_time"><code class="name">var <span class="ident">last_time</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.messages_from_you"><code class="name">var <span class="ident">messages_from_you</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.notes"><code class="name">var <span class="ident">notes</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.num_name_updates"><code class="name">var <span class="ident">num_name_updates</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.num_participants"><code class="name">var <span class="ident">num_participants</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.number_of_messages"><code class="name">var <span class="ident">number_of_messages</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.other_person"><code class="name">var <span class="ident">other_person</span> : <a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Conversation.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.Conversation.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple) ‑> <a title="ArchiveAccess.DBRead.Conversation" href="#ArchiveAccess.DBRead.Conversation">Conversation</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; Conversation:
+
+    pass_through_values = row[0:9]
+    created_by_me = bool(row[9])
+
+    with set_row_mode(cursor.connection, ArchivedUserSummary.from_row):
+        other_person = (
+            cursor.connection.get_users_by_id([row[10]])[0] if row[10] else {}
+        )
+        added_by = (
+            cursor.connection.get_users_by_id([row[11]])[0] if row[11] else {}
+        )
+
+    if row[1] == &#34;individual&#34;:
+        name = (
+            other_person.nickname
+            or other_person.display_name + &#34; (@&#34; + other_person.handle + &#34;)&#34;
+        )
+        image_url = other_person.avatar_url
+    else:
+        image_url = GROUP_DM_DEFAULT_URL
+        with set_row_mode(cursor.connection, None):
+            last_name = cursor.connection.execute(
+                &#34;select new_name from name_updates &#34;
+                &#34;where conversation=? &#34;
+                &#34;order by update_time desc limit 1;&#34;,
+                (row[0],),
+            ).fetchone()
+        if last_name:
+            name = last_name[0]
+        else:
+            # todo: probably want this call as a method in the TwitterDataReader
+            # connection class
+            with set_row_mode(cursor.connection, None):
+                participant_rows = cursor.connection.execute(
+                    &#34;select nickname, display_name, participant from participants &#34;
+                    &#34;join users on participants.participant=users.id &#34;
+                    &#34;order by messages_sent desc limit 11;&#34;
+                ).fetchall()
+            participants = [
+                x[0] if x[0] else (x[1] if x[1] else f&#34;@{x[2]}&#34;)
+                for x in participant_rows
+            ]
+            name = &#34;, &#34;.join(participants[0:9])
+            if len(participants) == 11:
+                name += &#34;, etc.&#34;
+    return cls(
+        *pass_through_values,
+        created_by_me,
+        other_person,
+        added_by,
+        name,
+        image_url,
+    )</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="ArchiveAccess.DBRead.DBRow"><code class="flex name class">
+<span>class <span class="ident">DBRow</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>base class for dataclasses that store information taken from a database row.
+subclasses of this store some data in a form friendly to the API, store the
+select statement that will retrieve the data to construct this kind of object,
+and contain a factory method that can be called as a sqlite3 row factory function
+to construct an object of this type.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class DBRow:
+
+    &#34;&#34;&#34;base class for dataclasses that store information taken from a database row.
+    subclasses of this store some data in a form friendly to the API, store the
+    select statement that will retrieve the data to construct this kind of object,
+    and contain a factory method that can be called as a sqlite3 row factory function
+    to construct an object of this type.&#34;&#34;&#34;
+
+    db_select = &#34;select 1 from sqlite_master&#34;
+
+    def serialize(self) -&gt; dict:
+        return asdict(self) | {&#34;schema&#34;: type(self).__name__}
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        raise NotImplementedError</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a></li>
+<li><a title="ArchiveAccess.DBRead.Conversation" href="#ArchiveAccess.DBRead.Conversation">Conversation</a></li>
+<li><a title="ArchiveAccess.DBRead.Media" href="#ArchiveAccess.DBRead.Media">Media</a></li>
+<li><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></li>
+<li><a title="ArchiveAccess.DBRead.Reaction" href="#ArchiveAccess.DBRead.Reaction">Reaction</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.DBRow.db_select"><code class="name">var <span class="ident">db_select</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.DBRow.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+    raise NotImplementedError</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.DBRow.serialize"><code class="name flex">
+<span>def <span class="ident">serialize</span></span>(<span>self) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def serialize(self) -&gt; dict:
+    return asdict(self) | {&#34;schema&#34;: type(self).__name__}</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="ArchiveAccess.DBRead.Media"><code class="flex name class">
+<span>class <span class="ident">Media</span></span>
+<span>(</span><span>id: str, type: str, filename: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Media(id: 'str', type: 'str', filename: 'str')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class Media(DBRow):
+    db_select: ClassVar = &#34;select id, type, message, filename from media&#34;
+
+    id: str
+    type: str
+    filename: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        return cls(row[0], row[1], f&#34;{row[2]}-{row[3]}&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.Media.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Media.filename"><code class="name">var <span class="ident">filename</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Media.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Media.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.Media.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+    return cls(row[0], row[1], f&#34;{row[2]}-{row[3]}&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message"><code class="flex name class">
+<span>class <span class="ident">Message</span></span>
+<span>(</span><span>sent_time: str, conversation: str, content: str, sender: str, id: str, reactions: list[<a title="ArchiveAccess.DBRead.Reaction" href="#ArchiveAccess.DBRead.Reaction">Reaction</a>], media_urls: list[<a title="ArchiveAccess.DBRead.Media" href="#ArchiveAccess.DBRead.Media">Media</a>], html_content: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Message(sent_time: 'str', conversation: 'str', content: 'str', sender: 'str', id: 'str', reactions: 'list[Reaction]', media_urls: 'list[Media]', html_content: 'str')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class Message(MessageLike):
+    db_select_fields: ClassVar = (
+        &#34;&#34;&#34;select sent_time, conversation, content, sender, id from &#34;&#34;&#34;
+    )
+    timestamp_field: ClassVar = &#34;sent_time&#34;
+
+    db_select: ClassVar = db_select_fields + &#34;messages&#34;
+    db_select_for_search: ClassVar = db_select_fields + &#34;messages_text_search&#34;
+
+    sent_time: str
+    conversation: str
+    content: str
+    sender: str
+    id: str
+    reactions: list[Reaction]
+    media_urls: list[Media]
+    html_content: str
+
+    @property
+    def sort_by_timestamp(self) -&gt; str:
+        return self.sent_time
+
+    @property
+    def user_ids(self) -&gt; list[int]:
+        return [int(self.sender)] + [int(x.creator) for x in self.reactions]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        with set_row_mode(cursor.connection, Reaction.from_row):
+            reactions = cursor.connection.execute(
+                Reaction.db_select + &#34;where message=?;&#34;, [row[4]]
+            ).fetchall()
+
+        with set_row_mode(cursor.connection, Media.from_row):
+            media = cursor.connection.execute(
+                Media.db_select + &#34;where message=?;&#34;, [row[4]]
+            ).fetchall()
+
+        with set_row_mode(cursor.connection, sqlite3.Row):
+            link_rows = cursor.connection.execute(
+                &#34;&#34;&#34;select orig_url, url_preview, twitter_shortened_url
+                    from links where message=?&#34;&#34;&#34;,
+                (message_row[&#34;id&#34;],),
+            ).fetchall()
+            html_content = message_row[&#34;content&#34;]
+            for link in link_rows:
+                if link[&#34;orig_url&#34;].startswith(
+                    &#34;https://twitter.com/messages/media/&#34;
+                ) and link[&#34;url_preview&#34;].startwith(&#34;pic.twitter.com/&#34;):
+                    html_content.replace(link[&#34;twitter_shortened_url&#34;], &#34;&#34;)
+                else:
+                    html_content.replace(
+                        link[&#34;twitter_shortened_url&#34;],
+                        f&#39;&lt;a href=&#34;{link[&#34;orig_url&#34;]}&#34;&gt;{link[&#34;url_preview&#34;]}&lt;/a&gt;&#39;,
+                    )
+        return cls(
+            *row[0:3],
+            str(row[3]),
+            str(row[4]),
+            reactions,
+            media,
+            html_content.strip(),
+        )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></li>
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.Message.content"><code class="name">var <span class="ident">content</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.conversation"><code class="name">var <span class="ident">conversation</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.db_select_fields"><code class="name">var <span class="ident">db_select_fields</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.db_select_for_search"><code class="name">var <span class="ident">db_select_for_search</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.html_content"><code class="name">var <span class="ident">html_content</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.media_urls"><code class="name">var <span class="ident">media_urls</span> : list[<a title="ArchiveAccess.DBRead.Media" href="#ArchiveAccess.DBRead.Media">Media</a>]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.reactions"><code class="name">var <span class="ident">reactions</span> : list[<a title="ArchiveAccess.DBRead.Reaction" href="#ArchiveAccess.DBRead.Reaction">Reaction</a>]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.sender"><code class="name">var <span class="ident">sender</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Message.sent_time"><code class="name">var <span class="ident">sent_time</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.Message.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+    with set_row_mode(cursor.connection, Reaction.from_row):
+        reactions = cursor.connection.execute(
+            Reaction.db_select + &#34;where message=?;&#34;, [row[4]]
+        ).fetchall()
+
+    with set_row_mode(cursor.connection, Media.from_row):
+        media = cursor.connection.execute(
+            Media.db_select + &#34;where message=?;&#34;, [row[4]]
+        ).fetchall()
+
+    with set_row_mode(cursor.connection, sqlite3.Row):
+        link_rows = cursor.connection.execute(
+            &#34;&#34;&#34;select orig_url, url_preview, twitter_shortened_url
+                from links where message=?&#34;&#34;&#34;,
+            (message_row[&#34;id&#34;],),
+        ).fetchall()
+        html_content = message_row[&#34;content&#34;]
+        for link in link_rows:
+            if link[&#34;orig_url&#34;].startswith(
+                &#34;https://twitter.com/messages/media/&#34;
+            ) and link[&#34;url_preview&#34;].startwith(&#34;pic.twitter.com/&#34;):
+                html_content.replace(link[&#34;twitter_shortened_url&#34;], &#34;&#34;)
+            else:
+                html_content.replace(
+                    link[&#34;twitter_shortened_url&#34;],
+                    f&#39;&lt;a href=&#34;{link[&#34;orig_url&#34;]}&#34;&gt;{link[&#34;url_preview&#34;]}&lt;/a&gt;&#39;,
+                )
+    return cls(
+        *row[0:3],
+        str(row[3]),
+        str(row[4]),
+        reactions,
+        media,
+        html_content.strip(),
+    )</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></b></code>:
+<ul class="hlist">
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.sort_by_timestamp" href="#ArchiveAccess.DBRead.MessageLike.sort_by_timestamp">sort_by_timestamp</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.timestamp_field" href="#ArchiveAccess.DBRead.MessageLike.timestamp_field">timestamp_field</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.user_ids" href="#ArchiveAccess.DBRead.MessageLike.user_ids">user_ids</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="ArchiveAccess.DBRead.MessageLike"><code class="flex name class">
+<span>class <span class="ident">MessageLike</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Abstract class representing objects that can fit in the flow of a conversation
+as messages do. the following three properties must be implemented by
+subclasses in addition to the normal DBRow properties.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class MessageLike(DBRow):
+    &#34;&#34;&#34;Abstract class representing objects that can fit in the flow of a conversation
+    as messages do. the following three properties must be implemented by
+    subclasses in addition to the normal DBRow properties.&#34;&#34;&#34;
+
+    timestamp_field: ClassVar = &#34;&#34;
+    &#34;&#34;&#34;the field that will be used in database queries to filter rows by time&#34;&#34;&#34;
+
+    @property
+    def sort_by_timestamp(self) -&gt; str:
+        &#34;&#34;&#34;returns a string timestamp that objects of a type should be sorted by to
+        integrate them into the conversation&#34;&#34;&#34;
+        raise NotImplementedError
+
+    @property
+    def user_ids(self) -&gt; Iterable[int]:
+        &#34;&#34;&#34;returns a list of any user ids that are referenced in this object&#34;&#34;&#34;
+        raise NotImplementedError</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.Message" href="#ArchiveAccess.DBRead.Message">Message</a></li>
+<li><a title="ArchiveAccess.DBRead.NameUpdate" href="#ArchiveAccess.DBRead.NameUpdate">NameUpdate</a></li>
+<li><a title="ArchiveAccess.DBRead.ParticipantJoin" href="#ArchiveAccess.DBRead.ParticipantJoin">ParticipantJoin</a></li>
+<li><a title="ArchiveAccess.DBRead.ParticipantLeave" href="#ArchiveAccess.DBRead.ParticipantLeave">ParticipantLeave</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.MessageLike.timestamp_field"><code class="name">var <span class="ident">timestamp_field</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"><p>the field that will be used in database queries to filter rows by time</p></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.MessageLike.sort_by_timestamp"><code class="name">var <span class="ident">sort_by_timestamp</span> : str</code></dt>
+<dd>
+<div class="desc"><p>returns a string timestamp that objects of a type should be sorted by to
+integrate them into the conversation</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def sort_by_timestamp(self) -&gt; str:
+    &#34;&#34;&#34;returns a string timestamp that objects of a type should be sorted by to
+    integrate them into the conversation&#34;&#34;&#34;
+    raise NotImplementedError</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.MessageLike.user_ids"><code class="name">var <span class="ident">user_ids</span> : collections.abc.Iterable</code></dt>
+<dd>
+<div class="desc"><p>returns a list of any user ids that are referenced in this object</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def user_ids(self) -&gt; Iterable[int]:
+    &#34;&#34;&#34;returns a list of any user ids that are referenced in this object&#34;&#34;&#34;
+    raise NotImplementedError</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="ArchiveAccess.DBRead.NameUpdate"><code class="flex name class">
+<span>class <span class="ident">NameUpdate</span></span>
+<span>(</span><span>update_time: str, initiator: str, new_name: str, conversation: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>NameUpdate(update_time: 'str', initiator: 'str', new_name: 'str', conversation: 'str')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class NameUpdate(MessageLike):
+    db_select: ClassVar = &#34;&#34;&#34;select update_time, initiator, new_name, conversation
+        from name_updates&#34;&#34;&#34;
+    timestamp_field: ClassVar = &#34;update_time&#34;
+
+    update_time: str
+    initiator: str
+    new_name: str
+    conversation: str
+
+    @property
+    def sort_by_timestamp(self) -&gt; str:
+        return self.update_time
+
+    @property
+    def user_ids(self) -&gt; list[int]:
+        return [int(self.initiator)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; NameUpdate:
+        return cls(*(str(x) for x in row))</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></li>
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.NameUpdate.conversation"><code class="name">var <span class="ident">conversation</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.NameUpdate.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.NameUpdate.initiator"><code class="name">var <span class="ident">initiator</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.NameUpdate.new_name"><code class="name">var <span class="ident">new_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.NameUpdate.update_time"><code class="name">var <span class="ident">update_time</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.NameUpdate.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple) ‑> <a title="ArchiveAccess.DBRead.NameUpdate" href="#ArchiveAccess.DBRead.NameUpdate">NameUpdate</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; NameUpdate:
+    return cls(*(str(x) for x in row))</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></b></code>:
+<ul class="hlist">
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.sort_by_timestamp" href="#ArchiveAccess.DBRead.MessageLike.sort_by_timestamp">sort_by_timestamp</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.timestamp_field" href="#ArchiveAccess.DBRead.MessageLike.timestamp_field">timestamp_field</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.user_ids" href="#ArchiveAccess.DBRead.MessageLike.user_ids">user_ids</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantJoin"><code class="flex name class">
+<span>class <span class="ident">ParticipantJoin</span></span>
+<span>(</span><span>participant: str, added_by: str, conversation: str, time: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>ParticipantJoin(participant: 'str', added_by: 'str', conversation: 'str', time: 'str')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class ParticipantJoin(MessageLike):
+    db_select: ClassVar = &#34;&#34;&#34;select participant, conversation, start_time from
+        participants&#34;&#34;&#34;
+    timestamp_field: ClassVar = &#34;start_time&#34;
+
+    participant: str
+    added_by: str
+    conversation: str
+    time: str
+
+    @property
+    def sort_by_timestamp(self) -&gt; self:
+        return self.time
+
+    @property
+    def user_ids(self) -&gt; list[int]:
+        return [int(self.participant), int(self.added_by)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ParticipantJoin:
+        return cls(*(str(x) for x in row))</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></li>
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.ParticipantJoin.added_by"><code class="name">var <span class="ident">added_by</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantJoin.conversation"><code class="name">var <span class="ident">conversation</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantJoin.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantJoin.participant"><code class="name">var <span class="ident">participant</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantJoin.time"><code class="name">var <span class="ident">time</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.ParticipantJoin.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple) ‑> <a title="ArchiveAccess.DBRead.ParticipantJoin" href="#ArchiveAccess.DBRead.ParticipantJoin">ParticipantJoin</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ParticipantJoin:
+    return cls(*(str(x) for x in row))</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></b></code>:
+<ul class="hlist">
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.sort_by_timestamp" href="#ArchiveAccess.DBRead.MessageLike.sort_by_timestamp">sort_by_timestamp</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.timestamp_field" href="#ArchiveAccess.DBRead.MessageLike.timestamp_field">timestamp_field</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.user_ids" href="#ArchiveAccess.DBRead.MessageLike.user_ids">user_ids</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantLeave"><code class="flex name class">
+<span>class <span class="ident">ParticipantLeave</span></span>
+<span>(</span><span>participant: str, conversation: str, time: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>ParticipantLeave(participant: 'str', conversation: 'str', time: 'str')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class ParticipantLeave(MessageLike):
+    db_select: ClassVar = &#34;&#34;&#34;select participant, conversation, end_time from
+        participants&#34;&#34;&#34;
+    timestamp_field: ClassVar = &#34;end_time&#34;
+
+    participant: str
+    conversation: str
+    time: str
+
+    @property
+    def sort_by_timestamp(self) -&gt; self:
+        return self.time
+
+    @property
+    def user_ids(self) -&gt; list[int]:
+        return [int(self.participant)]
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ParticipantJoin:
+        return cls(*(str(x) for x in row))</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></li>
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.ParticipantLeave.conversation"><code class="name">var <span class="ident">conversation</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantLeave.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantLeave.participant"><code class="name">var <span class="ident">participant</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.ParticipantLeave.time"><code class="name">var <span class="ident">time</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.ParticipantLeave.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple) ‑> <a title="ArchiveAccess.DBRead.ParticipantJoin" href="#ArchiveAccess.DBRead.ParticipantJoin">ParticipantJoin</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -&gt; ParticipantJoin:
+    return cls(*(str(x) for x in row))</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></b></code>:
+<ul class="hlist">
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.sort_by_timestamp" href="#ArchiveAccess.DBRead.MessageLike.sort_by_timestamp">sort_by_timestamp</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.timestamp_field" href="#ArchiveAccess.DBRead.MessageLike.timestamp_field">timestamp_field</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.user_ids" href="#ArchiveAccess.DBRead.MessageLike.user_ids">user_ids</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="ArchiveAccess.DBRead.Reaction"><code class="flex name class">
+<span>class <span class="ident">Reaction</span></span>
+<span>(</span><span>emotion: str, creation_time: str, creator: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reaction(emotion: 'str', creation_time: 'str', creator: 'str')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class Reaction(DBRow):
+    db_select: ClassVar = &#34;select emotion, creation_time, creator from reactions&#34;
+
+    emotion: str
+    creation_time: str
+    creator: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        return cls(row[0], row[1], str(row[2]))</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.Reaction.creation_time"><code class="name">var <span class="ident">creation_time</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Reaction.creator"><code class="name">var <span class="ident">creator</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Reaction.db_select"><code class="name">var <span class="ident">db_select</span> : ClassVar</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="ArchiveAccess.DBRead.Reaction.emotion"><code class="name">var <span class="ident">emotion</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.Reaction.from_row"><code class="name flex">
+<span>def <span class="ident">from_row</span></span>(<span>cursor: sqlite3.Cursor, row: tuple)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+    return cls(row[0], row[1], str(row[2]))</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader"><code class="flex name class">
+<span>class <span class="ident">TwitterDataReader</span></span>
+<span>(</span><span>db_path: PathLike)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Provides an interface between the server that will create the API endpoints
+and the database.</p>
+<p>Takes in the path to a database created by DBWrite and opens it for
+querying.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TwitterDataReader(sqlite3.Connection):
+    &#34;&#34;&#34;Provides an interface between the server that will create the API endpoints
+    and the database.&#34;&#34;&#34;
+
+    def __init__(self, db_path: PathLike):
+        &#34;&#34;&#34;Takes in the path to a database created by DBWrite and opens it for
+        querying.&#34;&#34;&#34;
+        super(TwitterDataReader, self).__init__(db_path)
+        self.row_factory = sqlite3.Row
+
+    def get_users_by_id(
+        self, user_ids: Iterable[int], sidecar: bool = True
+    ) -&gt; list[Union[ArchivedUserSummary, ArchivedUser]]:
+        &#34;&#34;&#34;Uses ids to retrieve user records from the database.
+
+        &#34;Sidecar&#34; objects are defined as those that accompany messages and don&#39;t
+        contain the full data for a user; they are represented by ArchivedUserSummary
+        objects.
+        &#34;&#34;&#34;
+        user_class = ArchivedUserSummary if sidecar else ArchivedUser
+
+        with set_row_mode(self, user_class.from_row):
+            return self.execute(
+                user_class.db_select
+                + f&#34; where id in ({&#39;, &#39;.join([&#39;?&#39; for _ in range(len(user_ids))])});&#34;,
+                user_ids,
+            ).fetchall()
+
+    def set_user_nickname(self, user_id: str, new_nickname: str) -&gt; None:
+        self.execute(
+            &#34;update users set nickname=? where id=?;&#34;,
+            (new_nickname[0:50], int(user_id)),
+        )
+
+    def set_user_notes(self, user_id: str, new_notes: str) -&gt; None:
+        self.execute(
+            &#34;update users set notes=? where id=?;&#34;,
+            (new_notes, int(user_id)),
+        )
+
+    def get_user_avatar(self, id: Union[int, str]) -&gt; bytes:
+        &#34;&#34;&#34;Retrieves user avatar image file as bytes.&#34;&#34;&#34;
+        return self.execute(
+            &#34;select avatar from users where id=?;&#34;, (id,)
+        ).fetchone()[0]
+
+    def get_conversations(
+        self,
+        group: bool,
+        individual: bool,
+        order_by: str,
+        page_number: int = 1,
+        where: str = &#34;&#34;,
+        placeholders: Iterable = [],
+    ) -&gt; list[Conversation]:
+        &#34;&#34;&#34;Generalized conversation record retrieval method.
+
+        Arguments:
+            group: boolean indicating whether to retrieve records for group
+                conversations.
+            individual: boolean indicating whether to retrieve records for individual
+                conversations.
+            order_by: order by clause in sql indicating how to sort the results.
+                examples: &#34;order by first_time asc&#34;, &#34;order by number_of_messages desc&#34;
+            page_number: indicates what page we are on. page numbers start at 1;
+                pages contain `CONVERSATIONS_PER_PAGE` conversations.
+            where: optional string containing sql statements that will be
+                added to the default where conditions with an &#34;and&#34;.
+            placeholders: optional iterable containing values corresponding to any ?s
+                in the previous two sql strings
+        &#34;&#34;&#34;
+        type_clause = WhereClause()
+        if group and individual:
+            pass
+        elif group:
+            type_clause = type_clause.add(&#34;type=&#39;group&#39;&#34;)
+        elif individual:
+            type_clause = type_clause.add(&#34;type=&#39;individual&#39;&#34;)
+        else:
+            return []
+        type_clause.add(where)
+        placeholders = list(placeholders) + [
+            CONVERSATIONS_PER_PAGE,
+            CONVERSATIONS_PER_PAGE * (page_number - 1),
+        ]
+        with set_row_mode(self, Conversation.from_row):
+            return self.execute(
+                Conversation.db_select + f&#34; {type_clause} &#34;
+                f&#34; {order_by} &#34;
+                f&#34;limit ? &#34;
+                f&#34;offset ?;&#34;,
+                placeholders,
+            ).fetchall()
+
+    def get_conversations_by_time(
+        self,
+        page_number: int,
+        asc: bool = True,
+        group: bool = True,
+        individual: bool = True,
+    ) -&gt; list[ConversationRow]:
+        &#34;&#34;&#34;Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by when their most
+        or least recent messages were sent. Most of the arguments are passed on to
+        :func:`~DBRead.TwitterDataReader.get_conversations`, except for:
+
+        Arguments:
+            asc: If this boolean is True, conversations are sorted based on their
+                oldest message, with the oldest first; if it&#39;s False, conversations are
+                sorted by their newest message, with the newest first.
+
+        &#34;&#34;&#34;
+        order_by = f&#34;order by {&#39;first_time asc&#39; if asc else &#39;last_time desc&#39;}&#34;
+        return self.get_conversations(group, individual, order_by, page_number)
+
+    def get_conversations_by_message_count(
+        self,
+        page_number: int,
+        group: bool = True,
+        individual: bool = True,
+        by_me: bool = False,
+    ) -&gt; list[ConversationRow]:
+        &#34;&#34;&#34;Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by how many
+        messages were sent in them or by how many messages were sent in them by you.
+        Most of the arguments are passed on to
+        :func:`~DBRead.TwitterDataReader.get_conversations`, except for:
+
+        Arguments:
+            by_me: if this is true, then conversations with the most messages sent by
+                you are presented first; if it&#39;s false, the conversations with the most
+                messages period are presented first.
+        &#34;&#34;&#34;
+        order_by = (
+            f&#34;order by {&#39;number_of_messages&#39; if by_me else &#39;messages_from_you&#39;} desc&#34;
+        )
+        return self.get_conversations(group, individual, order_by, page_number)
+
+    def get_conversations_by_user(
+        self, user_id: Union[str, int], page_number: int
+    ) -&gt; list[ConversationRow]:
+
+        order_by = &#34;&#34;&#34;order by
+                (select messages_sent from participants
+                where conversation=conversations.id)
+                desc&#34;&#34;&#34;
+        exists_clause = f&#34;&#34;&#34;exists(
+                select 1 from participants
+                where participant=? and conversation=conversations.id
+            )&#34;&#34;&#34;
+        return self.get_conversations(
+            True, True, order_by, page_number, exists_clause, (user_id,)
+        )
+
+    def get_conversation_by_id(self, conversation_id: str) -&gt; ConversationRow:
+        &#34;&#34;&#34;Retrieves the record for a specific conversation with a specific id.&#34;&#34;&#34;
+        c = self.get_conversations(True, True, &#34;&#34;, 1, &#34;id=?&#34;, [conversation_id])[0]
+        return c
+
+    def get_conversation_names(
+        self, conversation_id: str, oldest_first=True, page_number: int = 1
+    ) -&gt; list[NameUpdate]:
+        &#34;&#34;&#34;Gets the records for CONVERSATION_NAMES_PER_PAGE names that a conversation
+        has had.&#34;&#34;&#34;
+        with set_row_mode(self, NameUpdate.from_row):
+            names = self.execute(
+                f&#34;&#34;&#34;{NameUpdate.db_select}
+                where conversation=?
+                order by update_time {&#39;asc&#39; if oldest_first else &#39;desc&#39;}
+                limit ? offset ?;&#34;&#34;&#34;,
+                (
+                    conversation_id,
+                    CONVERSATION_NAMES_PER_PAGE,
+                    CONVERSATION_NAMES_PER_PAGE * (page_number - 1),
+                ),
+            ).fetchall()
+        users = self.get_users_by_id(int(x) for x in sum(x.user_ids for x in names))
+        return {&#34;results&#34;: names, &#34;users&#34;: users}
+
+    def set_conversation_notes(self, conversation_id: str, notes: str) -&gt; None:
+        &#34;&#34;&#34;Updates a conversation&#39;s notes field. hooray&#34;&#34;&#34;
+        self.execute(
+            &#34;update conversations set notes=? where id=?;&#34;, (notes, conversation_id)
+        )
+
+    def traverse_messages(
+        self,
+        conversation=&#34;&#34;,
+        user=&#34;&#34;,
+        after: str = &#34;&#34;,
+        before: str = &#34;&#34;,
+        at: str = &#34;&#34;,
+        search: str = &#34;&#34;,
+    ):
+        assert (bool(after) ^ bool(before)) or (
+            bool(before) ^ bool(at)
+        ), &#34;traversing messages is unidirectional&#34;
+
+        sort = &#34;sent_time asc&#34;
+
+        where = WhereClause()
+        placeholders = []
+        if conversation:
+            where.add(&#34;conversation=?&#34;)
+            placeholders.append(conversation)
+        if user:
+            where.add(&#34;user=?&#34;)
+            placeholders.append(user)
+
+        messages = []
+
+        if search:
+            where.add(&#34;messages_text_search=?&#34;)
+            placeholders.append(search)
+            select = Message.db_select
+        else:
+            select = Message.db_select_for_search
+
+        with set_row_mode(self, Message.from_row):
+            if at:
+                first_where = where
+                first_where.add(&#34;sent_time &lt;= ?&#34;)
+                second_where = deepcopy(where)
+                second_where.add(&#34;sent_time &gt; ?&#34;)
+
+                # `at` must be the last added placeholder so it can work for both
+                # versions of the where clause
+                placeholders.add(at)
+
+                messages += self.execute(
+                    f&#34;&#34;&#34;{select}
+                    where {first_where}
+                    order by sent_time desc
+                    limit {int(MESSAGES_PER_PAGE/2)};&#34;&#34;&#34;
+                ).fetchall()
+
+                messages += self.execute(
+                    f&#34;&#34;&#34;{select}
+                    where {second_where}
+                    order by sent_time desc
+                    limit {int(MESSAGES_PER_PAGE/2)};&#34;&#34;&#34;
+                ).fetchall()
+
+            else:
+                if before:
+                    if before == &#34;end&#34;:
+                        sort = &#34;sent_time desc&#34;
+                    else:
+                        where.add(&#34;sent_time &lt; ?&#34;)
+                        placeholders.append(before)
+                elif after:
+                    if after != &#34;beginning&#34;:
+                        where.add(&#34;sent_time &gt; ?&#34;)
+                        placeholders.append(after)
+            messages += self.execute(
+                f&#34;&#34;&#34;{Message.db_select}
+                    where {where}
+                    order by {sort}
+                    limit {MESSAGES_PER_PAGE};&#34;&#34;&#34;
+            ).fetchall()
+
+        sequence_start = after or messages[0].sort_by_timestamp
+        sequence_end = before or messages[-1].sort_by_timestamp
+
+        if conversation:
+            with set_row_mode(self, NameUpdate.from_row):
+                messages += self.execute(
+                    NameUpdate.db_select
+                    + &#34; where conversation=? and update_time &gt; ? and update_time &lt; ?;&#34;,
+                    (conversation, sequence_start, sequence_end),
+                )
+
+        joining_where = WhereClause()
+        if conversation:
+            joining_where.add(&#34;conversation=?&#34;)
+        elif user:
+            joining_where.add(&#34;participant=?&#34;)
+        leaving_where = deepcopy(joining_where)
+        leaving_where.add(&#34;end_time &gt; ? and end_time &lt; ?&#34;)
+        joining_where.add(&#34;start_time &gt; ? and start_time &lt; ?&#34;)
+
+        with set_row_mode(self, ParticipantJoin.from_row):
+            messages += self.execute(
+                ParticipantJoin.db_select + f&#34; {joining_where};&#34;
+            ).fetchall()
+        with set_row_mode(self, ParticipantLeave.from_row):
+            messages += self.execute(
+                ParticipantLeave.db_select + f&#34; {leaving_where};&#34;
+            )
+
+        sorted(messages, key=lambda x: x.sort_by_timestamp)
+
+        users = self.get_users_by_id(
+            int(x) for x in sum(x.user_ids for x in messages)
+        )
+        return {&#34;results&#34;: messages, &#34;users&#34;: users}
+
+    def get_message(self, id: int):
+        with set_row_mode(self, Message.from_row):
+            return self.execute(Message.db_select + &#34; where id=?;&#34;, (id,)).fetchone()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>sqlite3.Connection</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_conversation_by_id"><code class="name flex">
+<span>def <span class="ident">get_conversation_by_id</span></span>(<span>self, conversation_id: str) ‑> ConversationRow</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves the record for a specific conversation with a specific id.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_conversation_by_id(self, conversation_id: str) -&gt; ConversationRow:
+    &#34;&#34;&#34;Retrieves the record for a specific conversation with a specific id.&#34;&#34;&#34;
+    c = self.get_conversations(True, True, &#34;&#34;, 1, &#34;id=?&#34;, [conversation_id])[0]
+    return c</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_conversation_names"><code class="name flex">
+<span>def <span class="ident">get_conversation_names</span></span>(<span>self, conversation_id: str, oldest_first=True, page_number: int = 1) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Gets the records for CONVERSATION_NAMES_PER_PAGE names that a conversation
+has had.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_conversation_names(
+    self, conversation_id: str, oldest_first=True, page_number: int = 1
+) -&gt; list[NameUpdate]:
+    &#34;&#34;&#34;Gets the records for CONVERSATION_NAMES_PER_PAGE names that a conversation
+    has had.&#34;&#34;&#34;
+    with set_row_mode(self, NameUpdate.from_row):
+        names = self.execute(
+            f&#34;&#34;&#34;{NameUpdate.db_select}
+            where conversation=?
+            order by update_time {&#39;asc&#39; if oldest_first else &#39;desc&#39;}
+            limit ? offset ?;&#34;&#34;&#34;,
+            (
+                conversation_id,
+                CONVERSATION_NAMES_PER_PAGE,
+                CONVERSATION_NAMES_PER_PAGE * (page_number - 1),
+            ),
+        ).fetchall()
+    users = self.get_users_by_id(int(x) for x in sum(x.user_ids for x in names))
+    return {&#34;results&#34;: names, &#34;users&#34;: users}</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_conversations"><code class="name flex">
+<span>def <span class="ident">get_conversations</span></span>(<span>self, group: bool, individual: bool, order_by: str, page_number: int = 1, where: str = '', placeholders: Iterable = []) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generalized conversation record retrieval method.</p>
+<h2 id="arguments">Arguments</h2>
+<p>group: boolean indicating whether to retrieve records for group
+conversations.
+individual: boolean indicating whether to retrieve records for individual
+conversations.
+order_by: order by clause in sql indicating how to sort the results.
+examples: "order by first_time asc", "order by number_of_messages desc"
+page_number: indicates what page we are on. page numbers start at 1;
+pages contain <code>CONVERSATIONS_PER_PAGE</code> conversations.
+where: optional string containing sql statements that will be
+added to the default where conditions with an "and".
+placeholders: optional iterable containing values corresponding to any ?s
+in the previous two sql strings</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_conversations(
+    self,
+    group: bool,
+    individual: bool,
+    order_by: str,
+    page_number: int = 1,
+    where: str = &#34;&#34;,
+    placeholders: Iterable = [],
+) -&gt; list[Conversation]:
+    &#34;&#34;&#34;Generalized conversation record retrieval method.
+
+    Arguments:
+        group: boolean indicating whether to retrieve records for group
+            conversations.
+        individual: boolean indicating whether to retrieve records for individual
+            conversations.
+        order_by: order by clause in sql indicating how to sort the results.
+            examples: &#34;order by first_time asc&#34;, &#34;order by number_of_messages desc&#34;
+        page_number: indicates what page we are on. page numbers start at 1;
+            pages contain `CONVERSATIONS_PER_PAGE` conversations.
+        where: optional string containing sql statements that will be
+            added to the default where conditions with an &#34;and&#34;.
+        placeholders: optional iterable containing values corresponding to any ?s
+            in the previous two sql strings
+    &#34;&#34;&#34;
+    type_clause = WhereClause()
+    if group and individual:
+        pass
+    elif group:
+        type_clause = type_clause.add(&#34;type=&#39;group&#39;&#34;)
+    elif individual:
+        type_clause = type_clause.add(&#34;type=&#39;individual&#39;&#34;)
+    else:
+        return []
+    type_clause.add(where)
+    placeholders = list(placeholders) + [
+        CONVERSATIONS_PER_PAGE,
+        CONVERSATIONS_PER_PAGE * (page_number - 1),
+    ]
+    with set_row_mode(self, Conversation.from_row):
+        return self.execute(
+            Conversation.db_select + f&#34; {type_clause} &#34;
+            f&#34; {order_by} &#34;
+            f&#34;limit ? &#34;
+            f&#34;offset ?;&#34;,
+            placeholders,
+        ).fetchall()</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_message_count"><code class="name flex">
+<span>def <span class="ident">get_conversations_by_message_count</span></span>(<span>self, page_number: int, group: bool = True, individual: bool = True, by_me: bool = False) ‑> list[ConversationRow]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves <code>CONVERSATIONS_PER_PAGE</code> conversations ordered by how many
+messages were sent in them or by how many messages were sent in them by you.
+Most of the arguments are passed on to
+:func:<code>~DBRead.TwitterDataReader.get_conversations</code>, except for:</p>
+<h2 id="arguments">Arguments</h2>
+<p>by_me: if this is true, then conversations with the most messages sent by
+you are presented first; if it's false, the conversations with the most
+messages period are presented first.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_conversations_by_message_count(
+    self,
+    page_number: int,
+    group: bool = True,
+    individual: bool = True,
+    by_me: bool = False,
+) -&gt; list[ConversationRow]:
+    &#34;&#34;&#34;Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by how many
+    messages were sent in them or by how many messages were sent in them by you.
+    Most of the arguments are passed on to
+    :func:`~DBRead.TwitterDataReader.get_conversations`, except for:
+
+    Arguments:
+        by_me: if this is true, then conversations with the most messages sent by
+            you are presented first; if it&#39;s false, the conversations with the most
+            messages period are presented first.
+    &#34;&#34;&#34;
+    order_by = (
+        f&#34;order by {&#39;number_of_messages&#39; if by_me else &#39;messages_from_you&#39;} desc&#34;
+    )
+    return self.get_conversations(group, individual, order_by, page_number)</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_time"><code class="name flex">
+<span>def <span class="ident">get_conversations_by_time</span></span>(<span>self, page_number: int, asc: bool = True, group: bool = True, individual: bool = True) ‑> list[ConversationRow]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves <code>CONVERSATIONS_PER_PAGE</code> conversations ordered by when their most
+or least recent messages were sent. Most of the arguments are passed on to
+:func:<code>~DBRead.TwitterDataReader.get_conversations</code>, except for:</p>
+<h2 id="arguments">Arguments</h2>
+<p>asc: If this boolean is True, conversations are sorted based on their
+oldest message, with the oldest first; if it's False, conversations are
+sorted by their newest message, with the newest first.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_conversations_by_time(
+    self,
+    page_number: int,
+    asc: bool = True,
+    group: bool = True,
+    individual: bool = True,
+) -&gt; list[ConversationRow]:
+    &#34;&#34;&#34;Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by when their most
+    or least recent messages were sent. Most of the arguments are passed on to
+    :func:`~DBRead.TwitterDataReader.get_conversations`, except for:
+
+    Arguments:
+        asc: If this boolean is True, conversations are sorted based on their
+            oldest message, with the oldest first; if it&#39;s False, conversations are
+            sorted by their newest message, with the newest first.
+
+    &#34;&#34;&#34;
+    order_by = f&#34;order by {&#39;first_time asc&#39; if asc else &#39;last_time desc&#39;}&#34;
+    return self.get_conversations(group, individual, order_by, page_number)</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_user"><code class="name flex">
+<span>def <span class="ident">get_conversations_by_user</span></span>(<span>self, user_id: Union[str, int], page_number: int) ‑> list[ConversationRow]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_conversations_by_user(
+    self, user_id: Union[str, int], page_number: int
+) -&gt; list[ConversationRow]:
+
+    order_by = &#34;&#34;&#34;order by
+            (select messages_sent from participants
+            where conversation=conversations.id)
+            desc&#34;&#34;&#34;
+    exists_clause = f&#34;&#34;&#34;exists(
+            select 1 from participants
+            where participant=? and conversation=conversations.id
+        )&#34;&#34;&#34;
+    return self.get_conversations(
+        True, True, order_by, page_number, exists_clause, (user_id,)
+    )</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_message"><code class="name flex">
+<span>def <span class="ident">get_message</span></span>(<span>self, id: int)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_message(self, id: int):
+    with set_row_mode(self, Message.from_row):
+        return self.execute(Message.db_select + &#34; where id=?;&#34;, (id,)).fetchone()</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_user_avatar"><code class="name flex">
+<span>def <span class="ident">get_user_avatar</span></span>(<span>self, id: Union[int, str]) ‑> bytes</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves user avatar image file as bytes.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_user_avatar(self, id: Union[int, str]) -&gt; bytes:
+    &#34;&#34;&#34;Retrieves user avatar image file as bytes.&#34;&#34;&#34;
+    return self.execute(
+        &#34;select avatar from users where id=?;&#34;, (id,)
+    ).fetchone()[0]</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.get_users_by_id"><code class="name flex">
+<span>def <span class="ident">get_users_by_id</span></span>(<span>self, user_ids: Iterable[int], sidecar: bool = True) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Uses ids to retrieve user records from the database.</p>
+<p>"Sidecar" objects are defined as those that accompany messages and don't
+contain the full data for a user; they are represented by ArchivedUserSummary
+objects.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_users_by_id(
+    self, user_ids: Iterable[int], sidecar: bool = True
+) -&gt; list[Union[ArchivedUserSummary, ArchivedUser]]:
+    &#34;&#34;&#34;Uses ids to retrieve user records from the database.
+
+    &#34;Sidecar&#34; objects are defined as those that accompany messages and don&#39;t
+    contain the full data for a user; they are represented by ArchivedUserSummary
+    objects.
+    &#34;&#34;&#34;
+    user_class = ArchivedUserSummary if sidecar else ArchivedUser
+
+    with set_row_mode(self, user_class.from_row):
+        return self.execute(
+            user_class.db_select
+            + f&#34; where id in ({&#39;, &#39;.join([&#39;?&#39; for _ in range(len(user_ids))])});&#34;,
+            user_ids,
+        ).fetchall()</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.set_conversation_notes"><code class="name flex">
+<span>def <span class="ident">set_conversation_notes</span></span>(<span>self, conversation_id: str, notes: str) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates a conversation's notes field. hooray</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_conversation_notes(self, conversation_id: str, notes: str) -&gt; None:
+    &#34;&#34;&#34;Updates a conversation&#39;s notes field. hooray&#34;&#34;&#34;
+    self.execute(
+        &#34;update conversations set notes=? where id=?;&#34;, (notes, conversation_id)
+    )</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.set_user_nickname"><code class="name flex">
+<span>def <span class="ident">set_user_nickname</span></span>(<span>self, user_id: str, new_nickname: str) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_user_nickname(self, user_id: str, new_nickname: str) -&gt; None:
+    self.execute(
+        &#34;update users set nickname=? where id=?;&#34;,
+        (new_nickname[0:50], int(user_id)),
+    )</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.set_user_notes"><code class="name flex">
+<span>def <span class="ident">set_user_notes</span></span>(<span>self, user_id: str, new_notes: str) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_user_notes(self, user_id: str, new_notes: str) -&gt; None:
+    self.execute(
+        &#34;update users set notes=? where id=?;&#34;,
+        (new_notes, int(user_id)),
+    )</code></pre>
+</details>
+</dd>
+<dt id="ArchiveAccess.DBRead.TwitterDataReader.traverse_messages"><code class="name flex">
+<span>def <span class="ident">traverse_messages</span></span>(<span>self, conversation='', user='', after: str = '', before: str = '', at: str = '', search: str = '')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def traverse_messages(
+    self,
+    conversation=&#34;&#34;,
+    user=&#34;&#34;,
+    after: str = &#34;&#34;,
+    before: str = &#34;&#34;,
+    at: str = &#34;&#34;,
+    search: str = &#34;&#34;,
+):
+    assert (bool(after) ^ bool(before)) or (
+        bool(before) ^ bool(at)
+    ), &#34;traversing messages is unidirectional&#34;
+
+    sort = &#34;sent_time asc&#34;
+
+    where = WhereClause()
+    placeholders = []
+    if conversation:
+        where.add(&#34;conversation=?&#34;)
+        placeholders.append(conversation)
+    if user:
+        where.add(&#34;user=?&#34;)
+        placeholders.append(user)
+
+    messages = []
+
+    if search:
+        where.add(&#34;messages_text_search=?&#34;)
+        placeholders.append(search)
+        select = Message.db_select
+    else:
+        select = Message.db_select_for_search
+
+    with set_row_mode(self, Message.from_row):
+        if at:
+            first_where = where
+            first_where.add(&#34;sent_time &lt;= ?&#34;)
+            second_where = deepcopy(where)
+            second_where.add(&#34;sent_time &gt; ?&#34;)
+
+            # `at` must be the last added placeholder so it can work for both
+            # versions of the where clause
+            placeholders.add(at)
+
+            messages += self.execute(
+                f&#34;&#34;&#34;{select}
+                where {first_where}
+                order by sent_time desc
+                limit {int(MESSAGES_PER_PAGE/2)};&#34;&#34;&#34;
+            ).fetchall()
+
+            messages += self.execute(
+                f&#34;&#34;&#34;{select}
+                where {second_where}
+                order by sent_time desc
+                limit {int(MESSAGES_PER_PAGE/2)};&#34;&#34;&#34;
+            ).fetchall()
+
+        else:
+            if before:
+                if before == &#34;end&#34;:
+                    sort = &#34;sent_time desc&#34;
+                else:
+                    where.add(&#34;sent_time &lt; ?&#34;)
+                    placeholders.append(before)
+            elif after:
+                if after != &#34;beginning&#34;:
+                    where.add(&#34;sent_time &gt; ?&#34;)
+                    placeholders.append(after)
+        messages += self.execute(
+            f&#34;&#34;&#34;{Message.db_select}
+                where {where}
+                order by {sort}
+                limit {MESSAGES_PER_PAGE};&#34;&#34;&#34;
+        ).fetchall()
+
+    sequence_start = after or messages[0].sort_by_timestamp
+    sequence_end = before or messages[-1].sort_by_timestamp
+
+    if conversation:
+        with set_row_mode(self, NameUpdate.from_row):
+            messages += self.execute(
+                NameUpdate.db_select
+                + &#34; where conversation=? and update_time &gt; ? and update_time &lt; ?;&#34;,
+                (conversation, sequence_start, sequence_end),
+            )
+
+    joining_where = WhereClause()
+    if conversation:
+        joining_where.add(&#34;conversation=?&#34;)
+    elif user:
+        joining_where.add(&#34;participant=?&#34;)
+    leaving_where = deepcopy(joining_where)
+    leaving_where.add(&#34;end_time &gt; ? and end_time &lt; ?&#34;)
+    joining_where.add(&#34;start_time &gt; ? and start_time &lt; ?&#34;)
+
+    with set_row_mode(self, ParticipantJoin.from_row):
+        messages += self.execute(
+            ParticipantJoin.db_select + f&#34; {joining_where};&#34;
+        ).fetchall()
+    with set_row_mode(self, ParticipantLeave.from_row):
+        messages += self.execute(
+            ParticipantLeave.db_select + f&#34; {leaving_where};&#34;
+        )
+
+    sorted(messages, key=lambda x: x.sort_by_timestamp)
+
+    users = self.get_users_by_id(
+        int(x) for x in sum(x.user_ids for x in messages)
+    )
+    return {&#34;results&#34;: messages, &#34;users&#34;: users}</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="ArchiveAccess.DBRead.WhereClause"><code class="flex name class">
+<span>class <span class="ident">WhereClause</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>stupid-simple class for accumulating boolean expressions in sql as strings
+that concatenates them together with 'and's when formatted as a string.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class WhereClause:
+    &#34;&#34;&#34;stupid-simple class for accumulating boolean expressions in sql as strings
+    that concatenates them together with &#39;and&#39;s when formatted as a string.&#34;&#34;&#34;
+
+    def __init__(self):
+        self.conditions = []
+
+    def add(self, condition: str) -&gt; None:
+        if clean := condition.strip():
+            self.conditions.append(clean)
+
+    def __format__(self, params) -&gt; str:
+        if len(self.conditions):
+            return &#34;where &#34; + &#34; and &#34;.join(f&#34;({x})&#34; for x in self.conditions)
+        else:
+            return &#34;&#34;</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="ArchiveAccess.DBRead.WhereClause.add"><code class="name flex">
+<span>def <span class="ident">add</span></span>(<span>self, condition: str) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add(self, condition: str) -&gt; None:
+    if clean := condition.strip():
+        self.conditions.append(clean)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="ArchiveAccess" href="index.html">ArchiveAccess</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.set_row_mode" href="#ArchiveAccess.DBRead.set_row_mode">set_row_mode</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.ArchivedUser" href="#ArchiveAccess.DBRead.ArchivedUser">ArchivedUser</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUser.bio" href="#ArchiveAccess.DBRead.ArchivedUser.bio">bio</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUser.db_select" href="#ArchiveAccess.DBRead.ArchivedUser.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUser.notes" href="#ArchiveAccess.DBRead.ArchivedUser.notes">notes</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUser.number_of_messages" href="#ArchiveAccess.DBRead.ArchivedUser.number_of_messages">number_of_messages</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary" href="#ArchiveAccess.DBRead.ArchivedUserSummary">ArchivedUserSummary</a></code></h4>
+<ul class="two-column">
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.avatar_url" href="#ArchiveAccess.DBRead.ArchivedUserSummary.avatar_url">avatar_url</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.db_select" href="#ArchiveAccess.DBRead.ArchivedUserSummary.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.display_name" href="#ArchiveAccess.DBRead.ArchivedUserSummary.display_name">display_name</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.from_row" href="#ArchiveAccess.DBRead.ArchivedUserSummary.from_row">from_row</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.handle" href="#ArchiveAccess.DBRead.ArchivedUserSummary.handle">handle</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.id" href="#ArchiveAccess.DBRead.ArchivedUserSummary.id">id</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.loaded_full_data" href="#ArchiveAccess.DBRead.ArchivedUserSummary.loaded_full_data">loaded_full_data</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ArchivedUserSummary.nickname" href="#ArchiveAccess.DBRead.ArchivedUserSummary.nickname">nickname</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.Conversation" href="#ArchiveAccess.DBRead.Conversation">Conversation</a></code></h4>
+<ul class="two-column">
+<li><code><a title="ArchiveAccess.DBRead.Conversation.added_by" href="#ArchiveAccess.DBRead.Conversation.added_by">added_by</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.created_by_me" href="#ArchiveAccess.DBRead.Conversation.created_by_me">created_by_me</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.db_select" href="#ArchiveAccess.DBRead.Conversation.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.first_time" href="#ArchiveAccess.DBRead.Conversation.first_time">first_time</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.from_row" href="#ArchiveAccess.DBRead.Conversation.from_row">from_row</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.id" href="#ArchiveAccess.DBRead.Conversation.id">id</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.image_url" href="#ArchiveAccess.DBRead.Conversation.image_url">image_url</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.last_time" href="#ArchiveAccess.DBRead.Conversation.last_time">last_time</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.messages_from_you" href="#ArchiveAccess.DBRead.Conversation.messages_from_you">messages_from_you</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.name" href="#ArchiveAccess.DBRead.Conversation.name">name</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.notes" href="#ArchiveAccess.DBRead.Conversation.notes">notes</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.num_name_updates" href="#ArchiveAccess.DBRead.Conversation.num_name_updates">num_name_updates</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.num_participants" href="#ArchiveAccess.DBRead.Conversation.num_participants">num_participants</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.number_of_messages" href="#ArchiveAccess.DBRead.Conversation.number_of_messages">number_of_messages</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.other_person" href="#ArchiveAccess.DBRead.Conversation.other_person">other_person</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Conversation.type" href="#ArchiveAccess.DBRead.Conversation.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.DBRow" href="#ArchiveAccess.DBRead.DBRow">DBRow</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.DBRow.db_select" href="#ArchiveAccess.DBRead.DBRow.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.DBRow.from_row" href="#ArchiveAccess.DBRead.DBRow.from_row">from_row</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.DBRow.serialize" href="#ArchiveAccess.DBRead.DBRow.serialize">serialize</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.Media" href="#ArchiveAccess.DBRead.Media">Media</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.Media.db_select" href="#ArchiveAccess.DBRead.Media.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Media.filename" href="#ArchiveAccess.DBRead.Media.filename">filename</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Media.from_row" href="#ArchiveAccess.DBRead.Media.from_row">from_row</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Media.id" href="#ArchiveAccess.DBRead.Media.id">id</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Media.type" href="#ArchiveAccess.DBRead.Media.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.Message" href="#ArchiveAccess.DBRead.Message">Message</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.Message.content" href="#ArchiveAccess.DBRead.Message.content">content</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.conversation" href="#ArchiveAccess.DBRead.Message.conversation">conversation</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.db_select" href="#ArchiveAccess.DBRead.Message.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.db_select_fields" href="#ArchiveAccess.DBRead.Message.db_select_fields">db_select_fields</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.db_select_for_search" href="#ArchiveAccess.DBRead.Message.db_select_for_search">db_select_for_search</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.from_row" href="#ArchiveAccess.DBRead.Message.from_row">from_row</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.html_content" href="#ArchiveAccess.DBRead.Message.html_content">html_content</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.id" href="#ArchiveAccess.DBRead.Message.id">id</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.media_urls" href="#ArchiveAccess.DBRead.Message.media_urls">media_urls</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.reactions" href="#ArchiveAccess.DBRead.Message.reactions">reactions</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.sender" href="#ArchiveAccess.DBRead.Message.sender">sender</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Message.sent_time" href="#ArchiveAccess.DBRead.Message.sent_time">sent_time</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.MessageLike" href="#ArchiveAccess.DBRead.MessageLike">MessageLike</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.sort_by_timestamp" href="#ArchiveAccess.DBRead.MessageLike.sort_by_timestamp">sort_by_timestamp</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.timestamp_field" href="#ArchiveAccess.DBRead.MessageLike.timestamp_field">timestamp_field</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.MessageLike.user_ids" href="#ArchiveAccess.DBRead.MessageLike.user_ids">user_ids</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.NameUpdate" href="#ArchiveAccess.DBRead.NameUpdate">NameUpdate</a></code></h4>
+<ul class="two-column">
+<li><code><a title="ArchiveAccess.DBRead.NameUpdate.conversation" href="#ArchiveAccess.DBRead.NameUpdate.conversation">conversation</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.NameUpdate.db_select" href="#ArchiveAccess.DBRead.NameUpdate.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.NameUpdate.from_row" href="#ArchiveAccess.DBRead.NameUpdate.from_row">from_row</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.NameUpdate.initiator" href="#ArchiveAccess.DBRead.NameUpdate.initiator">initiator</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.NameUpdate.new_name" href="#ArchiveAccess.DBRead.NameUpdate.new_name">new_name</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.NameUpdate.update_time" href="#ArchiveAccess.DBRead.NameUpdate.update_time">update_time</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.ParticipantJoin" href="#ArchiveAccess.DBRead.ParticipantJoin">ParticipantJoin</a></code></h4>
+<ul class="two-column">
+<li><code><a title="ArchiveAccess.DBRead.ParticipantJoin.added_by" href="#ArchiveAccess.DBRead.ParticipantJoin.added_by">added_by</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantJoin.conversation" href="#ArchiveAccess.DBRead.ParticipantJoin.conversation">conversation</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantJoin.db_select" href="#ArchiveAccess.DBRead.ParticipantJoin.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantJoin.from_row" href="#ArchiveAccess.DBRead.ParticipantJoin.from_row">from_row</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantJoin.participant" href="#ArchiveAccess.DBRead.ParticipantJoin.participant">participant</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantJoin.time" href="#ArchiveAccess.DBRead.ParticipantJoin.time">time</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.ParticipantLeave" href="#ArchiveAccess.DBRead.ParticipantLeave">ParticipantLeave</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.ParticipantLeave.conversation" href="#ArchiveAccess.DBRead.ParticipantLeave.conversation">conversation</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantLeave.db_select" href="#ArchiveAccess.DBRead.ParticipantLeave.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantLeave.from_row" href="#ArchiveAccess.DBRead.ParticipantLeave.from_row">from_row</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantLeave.participant" href="#ArchiveAccess.DBRead.ParticipantLeave.participant">participant</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.ParticipantLeave.time" href="#ArchiveAccess.DBRead.ParticipantLeave.time">time</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.Reaction" href="#ArchiveAccess.DBRead.Reaction">Reaction</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.Reaction.creation_time" href="#ArchiveAccess.DBRead.Reaction.creation_time">creation_time</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Reaction.creator" href="#ArchiveAccess.DBRead.Reaction.creator">creator</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Reaction.db_select" href="#ArchiveAccess.DBRead.Reaction.db_select">db_select</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Reaction.emotion" href="#ArchiveAccess.DBRead.Reaction.emotion">emotion</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.Reaction.from_row" href="#ArchiveAccess.DBRead.Reaction.from_row">from_row</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.TwitterDataReader" href="#ArchiveAccess.DBRead.TwitterDataReader">TwitterDataReader</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_conversation_by_id" href="#ArchiveAccess.DBRead.TwitterDataReader.get_conversation_by_id">get_conversation_by_id</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_conversation_names" href="#ArchiveAccess.DBRead.TwitterDataReader.get_conversation_names">get_conversation_names</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_conversations" href="#ArchiveAccess.DBRead.TwitterDataReader.get_conversations">get_conversations</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_message_count" href="#ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_message_count">get_conversations_by_message_count</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_time" href="#ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_time">get_conversations_by_time</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_user" href="#ArchiveAccess.DBRead.TwitterDataReader.get_conversations_by_user">get_conversations_by_user</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_message" href="#ArchiveAccess.DBRead.TwitterDataReader.get_message">get_message</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_user_avatar" href="#ArchiveAccess.DBRead.TwitterDataReader.get_user_avatar">get_user_avatar</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.get_users_by_id" href="#ArchiveAccess.DBRead.TwitterDataReader.get_users_by_id">get_users_by_id</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.set_conversation_notes" href="#ArchiveAccess.DBRead.TwitterDataReader.set_conversation_notes">set_conversation_notes</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.set_user_nickname" href="#ArchiveAccess.DBRead.TwitterDataReader.set_user_nickname">set_user_nickname</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.set_user_notes" href="#ArchiveAccess.DBRead.TwitterDataReader.set_user_notes">set_user_notes</a></code></li>
+<li><code><a title="ArchiveAccess.DBRead.TwitterDataReader.traverse_messages" href="#ArchiveAccess.DBRead.TwitterDataReader.traverse_messages">traverse_messages</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="ArchiveAccess.DBRead.WhereClause" href="#ArchiveAccess.DBRead.WhereClause">WhereClause</a></code></h4>
+<ul class="">
+<li><code><a title="ArchiveAccess.DBRead.WhereClause.add" href="#ArchiveAccess.DBRead.WhereClause.add">add</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

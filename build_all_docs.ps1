@@ -1,2 +1,1 @@
-sphinx-apidoc -e -o ./docs -f ./ *tests*
-./docs/make html
+pdoc --html ArchiveAccess

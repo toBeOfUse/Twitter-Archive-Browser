@@ -2,7 +2,7 @@
 API Documentation
 ###################
 
-All API requests must contain an Authorization cookie obtained from /api/authenticate. All query string parameters are required unless otherwise indicated. Page numbers start at 1. User-sidecar requests (as labeled below) come in the form of objects with a "results" key pointing to the main payload of the request and a "users" key pointing to an object mapping user ids onto objects containing "id", "handle", "display_name", "nickname", and "avatar_url" fields. The standard way to display a user's name is "display name (@handle) | nickname if it exists".
+All API requests must contain an Authorization cookie obtained from /api/authenticate. All query string parameters are required unless otherwise indicated. Page numbers start at 1. The standard way to display a user's name is "display name (@handle) | nickname if it exists".
 
 Authorization
 ================
@@ -10,7 +10,7 @@ Authorization
 ``GET /api/getpassword/:conversation_id``
 ------------------------------------------
 
-Asks the server for a randomly generated password that will grant access to a specific conversation, which can be placed in sharable links to conversations and messages. The response type will just be text/plain. This endpoint can only be used by users who were authenticated via the master password.
+Asks the server for a randomly generated password that will grant access to a specific conversation, which can be placed in sharable links to conversations and messages. The response type will be text/plain. This endpoint can only be used by users who were authenticated via the master password.
 
 ``POST /api/authenticate``
 -----------------------------
@@ -20,12 +20,7 @@ The body of this request should contain a password in plain text; an Authorizati
 Get/Set Conversations Data
 ===========================
 
-These endpoints return an object containing an array of up to 20 conversation objects pointed to by the key "conversations"; they have the same fields as the conversation database records documented in :ref:`setup.sql <sql_schema>` with the addition of:
-
-* ``name`` - in an individual dm this will be the name of the other person; otherwise it will be the most recent custom group chat name or a list of (up to) the 10 most active participants, as available
-* ``image_url`` - the url of the avatar of the other person, or, um, something else, as available.
-
-Also, user IDs are represented as strings to make them JavaScript-safe.
+These endpoints return up to 20 serialized objects corresponding to the Conversation class in DBRead.
 
 ``GET /api/conversations?first=[oldest|newest|mostused|mostusedbyme]&page=[1|2|3|...]&include=[group,individual]``
 -------------------------------------------------------------------------------------------------------------------
