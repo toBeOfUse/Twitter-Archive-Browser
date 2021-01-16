@@ -62,7 +62,8 @@ create virtual table messages_text_search using fts5(
     conversation unindexed,
     content,
     content = messages,
-    content_rowid = id
+    content_rowid = id,
+    tokenize = porter
 );
 
 -- messages don't get updated or deleted lol so other triggers aren't necessary

@@ -4,6 +4,11 @@ API Documentation
 
 All API requests must contain an Authorization cookie obtained from /api/authenticate. All query string parameters are required unless otherwise indicated. Page numbers start at 1. The standard way to display a user's name is "display name (@handle) | nickname if it exists".
 
+Messagelikes
+------------
+
+Messagelikes, represented here as objects that inherit from `ArchiveAccess.DBRead.MessageLike`, represent pieces of information that fit naturally in the flow of a conversation, including regular messages. Because messagelikes in any given conversation tend to reference the same users over and over again, it would be highly redundant for each of them to contain nested user objects; instead, they simply contain user ids, and when they are requested from the API, the top-level JSON object that is returned contains a "results" array and a "users" array, containing the requested serialized MessageLike objects and serialized `ArchiveAccess.DBRead.ArchivedUserSummary` objects, respectively.
+
 Authorization
 -------------
 
@@ -13,20 +18,20 @@ Asks the server for a randomly generated password that will grant access to a sp
 
 ### `POST /api/authenticate`
 
-The body of this request should contain a password in plain text; an Authorization cookie will be set by the response (which has no body) which will enable future API requests to succeed. The password can either be the master password or one generated for a specific conversation by /api/getpassword/:conversation\_id.
+The body of this request should contain a password in plain text; an Authorization cookie will be set by the response (which has no body) which will enable future API requests to succeed. The password can either be the master password or one generated for a specific conversation by /api/getpassword/:conversation_id.
 
 Get/Set Conversations Data
 --------------------------
 
-These endpoints return up to 20 serialized objects corresponding to the Conversation class in DBRead.
+These endpoints return up to 20 serialized `ArchiveAccess.DBRead.Conversation` objects.
 
 ### `GET /api/conversations?first=[oldest|newest|mostused|mostusedbyme]&page=[1|2|3|...]&include=[group,individual]`
 
-Gets conversations sorted by time. If you specify first=oldest, the conversations with the oldest first message will be returned first; if you specify first=newest, the conversations with the most recent last message will be returned first; the other options sort by the number of messages or the number of messages sent by you (descending.) The include parameter should be a comma-delimited list of the conversation types that will be included in the results. This is a user-sidecar endpoint (the users are the other people in the individual dms and the person who added you to group dms that you didn't create.)
+Gets conversations sorted by time. If you specify first=oldest, the conversations with the oldest first message will be returned first; if you specify first=newest, the conversations with the most recent last message will be returned first; the other options sort by the number of messages or the number of messages sent by you (descending.) The include parameter should be a comma-delimited list of the conversation types ("group" and "individual") that will be included in the results.
 
 ### `GET /api/conversations/withuser?id=[user_id]`
 
-Gets the conversations that a specific user has appeared in, ordered by the number of messages they sent in that conversation in descending order. This is a user-sidecar endpoint.
+Gets the conversations that a specific user has appeared in, ordered by the number of messages they sent in that conversation in descending order.
 
 ### `GET /api/conversation?id=[conversation_id]`
 
@@ -34,7 +39,7 @@ Gets the database record for a specific conversation.
 
 ### `GET /api/conversations/names?conversation=[conversation_id]&first=[oldest|newest]&page=[1|2|3...]`
 
-Gets all the names that a (group) conversation has ever had, sorted according to the `first` parameter. (Individual conversations cannot have custom names 🙁.) Each page contains 50 objects that correspond to name\_updates database records. This is a user-sidecar endpoint. The user ids in the initiator field are presented as strings.
+Gets all the names that a (group) conversation has ever had, sorted according to the `first` parameter. (Individual conversations cannot have custom names 🙁.) Each page contains up to 50 serialized `ArchiveAccess.DBRead.NameUpdate` objects. Because name updates are messagelikes, they are enclosed in a "results" array and accompanied by a "users" array in the returned JSON object.
 
 ### `POST /api/conversations/notes?id=[conversation_id]`
 
@@ -51,11 +56,11 @@ Timezone clause: `after=[timestamp]|before=[timestamp]|at=[timestamp]`
 
 Search clause (optional): `search=[query]`
 
-The main endpoint for obtaining messages from the API. "Messages" here includes name updates and participant leaving and joining events; each object received will have a "type" field indicating which of these it is ("message", "join", "leave", "name\_update"). Name update objects follow the name\_updates database schema; the joining and leaving objects each have a "user\_id" field pointing to a string user id and a "timestamp" field. This is a user-sidecar endpoint. Message IDs are presented as strings to make them JavaScript-safe. This endpoint returns 40 messages at a time; the name update and joining and leaving events are additional to that. Message/event objects are always sorted oldest to newest (ascending.)
+The main endpoint for obtaining messages from the API. This endpoint's payload includes all messagelike objects; in other words, any that inherit from `ArchiveAccess.DBRead.MessageLike`. You can tell which type each object has by looking at the "schema" field in the serialized result, which contains the name of the original object's class. This endpoint returns 40 normal messages at a time; the name update and joining and leaving events are additional to that. Message/event objects are always sorted oldest to newest (ascending.)
 
-Proper messages follow the database schema with the addition of a "media" field that contains media objects with a type field ("image", "video", or "gif") and a url field, a reactions array with reactions objects that follow the database reaction schema in the database, and an html\_contents field that does not include media urls but includes other links as HTML \<a\> entities.
+Note that the html_contents field in normal messages contains links presented as HTML \<a> tags.
 
-The filter clause is fairly self explanatory; pick either a conversation= or a byuser= parameter to send in. If it is omitted, any and all messages can come through. If displayed to an end user, conversation events will need to be presented with their conversation name to make things clear.
+The filter clause is fairly self explanatory; pick either a conversation= or a byuser= parameter to send in. If it is omitted, any and all messages can come through, and if displayed to an end user, conversation events will need to be presented with their conversation name to make things clear.
 
 The timezone clause's first two options can be either "beginning" or "end" respectively, to retrieve messages from the very beginning or very end of the conversation; the "at" option will return the 20 messages from immediately before the timestamp and 20 messages after; if a message was sent at that exact timestamp, it will count as being before it. Events are included if they happened after the given timestamp but before the 40th message if the first option is used and vice versa for the second; for the third, only events that happened after the first returned message and before the last returned message are included. Don't overthink the logic of retrieving a complete set of messages and events as you move in either direction in time; if you want to retrieve messages from before the ones you currently have loaded, just use the before option with the oldest timestamp you have in the messages and events you have; if you want to populate messages from after, use the after option with the newest timestamp you have.
 
@@ -63,7 +68,7 @@ The search clause allows you to further filter message results by their contents
 
 ### `GET /api/message?id=[message_id]`
 
-Gets the database record for a specific message.
+Gets the database record for a specific message; the message will still be contained in a "results" array alongside a "users" array.
 
 ### `GET /api/media/[conversation_id]/[message_id]/[filename]`
 
@@ -72,11 +77,11 @@ Retrieves a media item from the thing.
 Get/Set User Data
 -----------------
 
-User objects contain the same data as their database records (documented here \<sql\_schema\>) except that IDs are strings to make the data JavaScript-safe and the "avatar" and "avatar\_extension" fields are replaced with a single "avatar\_url" one (that corresponds to the avatar-retrieving endpoint below.) If a conversation query parameter is specified, user objects are joined with the participant record that links them to that conversation, which adds messages\_sent, start\_time, and end\_time fields.
+This endpoint returns serialized `ArchiveAccess.DBRead.ArchivedUser` objects; 20 are returned per page.
 
 ### `GET /api/users?conversation=[conversation_id]&page=[1|2|3|...]`
 
-Retrieves an array of users sorted by the number of messages that they have sent. The conversation parameter is optional; if it's supplied, only users with messages in the specified conversation will be returned and they'll be ordered by the number of messages they sent in that conversation.
+Retrieves an array of users sorted by the number of messages that they have sent. The conversation parameter is optional; if it's supplied, only users with messages in the specified conversation will be returned they'll be ordered by the number of messages they sent in that conversation, and the `ArchiveAccess.DBRead.ArchivedParticipant` class will be used instead of the `ArchiveAccess.DBRead.ArchivedUser` class.
 
 ### `GET /api/user?id=[user_id]`
 
