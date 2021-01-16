@@ -628,7 +628,9 @@ class TwitterDataReader(sqlite3.Connection):
                     CONVERSATION_NAMES_PER_PAGE * (page_number - 1),
                 ),
             ).fetchall()
-        users = self.get_users_by_id(int(x) for x in sum(x.user_ids for x in names))
+        users = self.get_users_by_id(
+            int(x) for x in set(sum(x.user_ids for x in names))
+        )
         return {&#34;results&#34;: names, &#34;users&#34;: users}
 
     def set_conversation_notes(self, conversation_id: str, notes: str) -&gt; None:
@@ -645,7 +647,7 @@ class TwitterDataReader(sqlite3.Connection):
         before: str = &#34;&#34;,
         at: str = &#34;&#34;,
         search: str = &#34;&#34;,
-    ):
+    ) -&gt; dict[str, list]:
         assert (bool(after) ^ bool(before)) or (
             bool(before) ^ bool(at)
         ), &#34;traversing messages is unidirectional&#34;
@@ -745,13 +747,17 @@ class TwitterDataReader(sqlite3.Connection):
         sorted(messages, key=lambda x: x.sort_by_timestamp)
 
         users = self.get_users_by_id(
-            int(x) for x in sum(x.user_ids for x in messages)
+            int(x) for x in set(sum(x.user_ids for x in messages))
         )
         return {&#34;results&#34;: messages, &#34;users&#34;: users}
 
-    def get_message(self, id: int):
+    def get_message(self, id: int) -&gt; dict[str, list]:
         with set_row_mode(self, Message.from_row):
-            return self.execute(Message.db_select + &#34; where id=?;&#34;, (id,)).fetchone()
+            message = self.execute(
+                Message.db_select + &#34; where id=?;&#34;, (id,)
+            ).fetchone()
+            users = self.get_users_by_id(set(message.user_ids))
+            return {&#34;results&#34;: [message], &#34;users&#34;: users}
 
 
 if __name__ == &#34;__main__&#34;:
@@ -2168,7 +2174,9 @@ querying.</p></div>
                     CONVERSATION_NAMES_PER_PAGE * (page_number - 1),
                 ),
             ).fetchall()
-        users = self.get_users_by_id(int(x) for x in sum(x.user_ids for x in names))
+        users = self.get_users_by_id(
+            int(x) for x in set(sum(x.user_ids for x in names))
+        )
         return {&#34;results&#34;: names, &#34;users&#34;: users}
 
     def set_conversation_notes(self, conversation_id: str, notes: str) -&gt; None:
@@ -2185,7 +2193,7 @@ querying.</p></div>
         before: str = &#34;&#34;,
         at: str = &#34;&#34;,
         search: str = &#34;&#34;,
-    ):
+    ) -&gt; dict[str, list]:
         assert (bool(after) ^ bool(before)) or (
             bool(before) ^ bool(at)
         ), &#34;traversing messages is unidirectional&#34;
@@ -2285,13 +2293,17 @@ querying.</p></div>
         sorted(messages, key=lambda x: x.sort_by_timestamp)
 
         users = self.get_users_by_id(
-            int(x) for x in sum(x.user_ids for x in messages)
+            int(x) for x in set(sum(x.user_ids for x in messages))
         )
         return {&#34;results&#34;: messages, &#34;users&#34;: users}
 
-    def get_message(self, id: int):
+    def get_message(self, id: int) -&gt; dict[str, list]:
         with set_row_mode(self, Message.from_row):
-            return self.execute(Message.db_select + &#34; where id=?;&#34;, (id,)).fetchone()</code></pre>
+            message = self.execute(
+                Message.db_select + &#34; where id=?;&#34;, (id,)
+            ).fetchone()
+            users = self.get_users_by_id(set(message.user_ids))
+            return {&#34;results&#34;: [message], &#34;users&#34;: users}</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2341,7 +2353,9 @@ has had.</p></div>
                 CONVERSATION_NAMES_PER_PAGE * (page_number - 1),
             ),
         ).fetchall()
-    users = self.get_users_by_id(int(x) for x in sum(x.user_ids for x in names))
+    users = self.get_users_by_id(
+        int(x) for x in set(sum(x.user_ids for x in names))
+    )
     return {&#34;results&#34;: names, &#34;users&#34;: users}</code></pre>
 </details>
 </dd>
@@ -2518,7 +2532,7 @@ sorted by their newest message, with the newest first.</p></div>
 </details>
 </dd>
 <dt id="ArchiveAccess.DBRead.TwitterDataReader.get_message"><code class="name flex">
-<span>def <span class="ident">get_message</span></span>(<span>self, id: int)</span>
+<span>def <span class="ident">get_message</span></span>(<span>self, id: int) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2526,9 +2540,13 @@ sorted by their newest message, with the newest first.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_message(self, id: int):
+<pre><code class="python">def get_message(self, id: int) -&gt; dict[str, list]:
     with set_row_mode(self, Message.from_row):
-        return self.execute(Message.db_select + &#34; where id=?;&#34;, (id,)).fetchone()</code></pre>
+        message = self.execute(
+            Message.db_select + &#34; where id=?;&#34;, (id,)
+        ).fetchone()
+        users = self.get_users_by_id(set(message.user_ids))
+        return {&#34;results&#34;: [message], &#34;users&#34;: users}</code></pre>
 </details>
 </dd>
 <dt id="ArchiveAccess.DBRead.TwitterDataReader.get_user_avatar"><code class="name flex">
@@ -2627,7 +2645,7 @@ objects.</p></div>
 </details>
 </dd>
 <dt id="ArchiveAccess.DBRead.TwitterDataReader.traverse_messages"><code class="name flex">
-<span>def <span class="ident">traverse_messages</span></span>(<span>self, conversation='', user='', after: str = '', before: str = '', at: str = '', search: str = '')</span>
+<span>def <span class="ident">traverse_messages</span></span>(<span>self, conversation='', user='', after: str = '', before: str = '', at: str = '', search: str = '') ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2643,7 +2661,7 @@ objects.</p></div>
     before: str = &#34;&#34;,
     at: str = &#34;&#34;,
     search: str = &#34;&#34;,
-):
+) -&gt; dict[str, list]:
     assert (bool(after) ^ bool(before)) or (
         bool(before) ^ bool(at)
     ), &#34;traversing messages is unidirectional&#34;
@@ -2743,7 +2761,7 @@ objects.</p></div>
     sorted(messages, key=lambda x: x.sort_by_timestamp)
 
     users = self.get_users_by_id(
-        int(x) for x in sum(x.user_ids for x in messages)
+        int(x) for x in set(sum(x.user_ids for x in messages))
     )
     return {&#34;results&#34;: messages, &#34;users&#34;: users}</code></pre>
 </details>

@@ -12,7 +12,6 @@ from typing import Final, Iterable
 from datetime import datetime
 from random import uniform, choice, randrange
 from string import ascii_letters
-from tornado.ioloop import IOLoop
 from tornado.httpclient import HTTPRequest
 import asyncio
 import json
@@ -26,9 +25,10 @@ from tests.message_utils import (
     generate_messages,
     generate_group_conversation,
 )
+from tornado.ioloop import IOLoop
 
 
-@pytest.fixture(scope="module")
+@fixture(scope="module")
 def event_loop():
     return IOLoop.current().asyncio_loop
 

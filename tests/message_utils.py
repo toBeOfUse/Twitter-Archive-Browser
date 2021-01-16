@@ -2,7 +2,7 @@ from ArchiveAccess.DBWrite import TwitterDataWriter
 from ArchiveAccess.DBRead import TwitterDataReader
 from pytest import fixture
 from datetime import datetime
-from typing import Final, Iterable
+from typing import Final, Iterable, Union
 from random import uniform, choice, randrange
 from string import ascii_letters
 import json
@@ -73,7 +73,7 @@ class DummyHTTPClient:
                         {
                             "name": "We Rate Dogs",
                             "screen_name": "dog_rates",
-                            "description": "",
+                            "description": "sample bio",
                             "profile_image_url_https": "https://google.com/normal.jpg",
                             "id_str": str(DOG_RATES),
                             "id": DOG_RATES,
@@ -88,12 +88,44 @@ class DummyHTTPClient:
         pass
 
 
-def datetime_to_z_time(dt: datetime):
+def datetime_to_z_time(dt: datetime) -> str:
     """this converts a datetime object to a string in the format that twitter uses"""
     return dt.strftime(DATE_FORMAT)[0:23] + "Z"
 
 
-def id_generator():
+def z_time_to_datetime(ztime: str) -> datetime:
+    return datetime.strptime(ztime, DATE_FORMAT)
+
+
+def random_datestring() -> str:
+    return datetime_to_z_time(
+        datetime.fromtimestamp(
+            uniform(datetime(2000, 1, 1).timestamp(), datetime.now().timestamp())
+        )
+    )
+
+
+def random_2000s_datestring() -> str:
+    return datetime_to_z_time(
+        datetime.fromtimestamp(
+            uniform(
+                datetime(2000, 1, 1).timestamp(), datetime(2009, 12, 31).timestamp()
+            )
+        )
+    )
+
+
+def random_2010s_datestring() -> str:
+    return datetime_to_z_time(
+        datetime.fromtimestamp(
+            uniform(
+                datetime(2010, 1, 1).timestamp(), datetime(2019, 12, 31).timestamp()
+            )
+        )
+    )
+
+
+def id_generator() -> int:
     i = 0
     while True:
         yield i
@@ -108,24 +140,34 @@ def generate_messages(
     start_time: str,
     end_time: str,
     conversation_id: str,
-    sender_id: str,
-    recipient_id: str = None,
-):
+    sender_id: Union[str, int],
+    recipient_id: Union[str, int] = None,
+) -> list[dict]:
     """generates messages with random timestamps between start_time and end_time,
-    where those are strings in DATE_FORMAT format."""
-    start_datetime = datetime.strptime(start_time, DATE_FORMAT)
-    end_datetime = datetime.strptime(end_time, DATE_FORMAT)
+    where those are strings in DATE_FORMAT format. end_time can be any string if you
+    only want 1 message"""
+    assert how_many > 0
+    start_datetime = z_time_to_datetime(start_time)
     generated_dates = [datetime_to_z_time(start_datetime)]
-    in_between_dates = [
-        datetime_to_z_time(
-            datetime.fromtimestamp(
-                uniform(start_datetime.timestamp() + 1, end_datetime.timestamp() - 1)
+    if how_many > 1:
+        end_datetime = z_time_to_datetime(end_time)
+        assert end_datetime > start_datetime
+        in_between_dates = [
+            datetime_to_z_time(
+                datetime.fromtimestamp(
+                    uniform(
+                        start_datetime.timestamp() + 1,
+                        end_datetime.timestamp() - 1,
+                    )
+                )
             )
-        )
-        for _ in range(how_many - 2)
-    ]
-    generated_dates += sorted(in_between_dates) + [datetime_to_z_time(end_datetime)]
-    return [
+            # this makes in_between_dates empty if how_many == 2
+            for _ in range(how_many - 2)
+        ]
+        generated_dates += sorted(in_between_dates) + [
+            datetime_to_z_time(end_datetime)
+        ]
+    generated_messages = [
         {
             "id": next(unique_id),
             "type": "messageCreate",
@@ -142,6 +184,7 @@ def generate_messages(
         | ({"recipientId": str(recipient_id)} if recipient_id else {})
         for date in generated_dates
     ]
+    return generated_messages
 
 
 def generate_group_conversation(
@@ -150,7 +193,7 @@ def generate_group_conversation(
     end_times: Iterable[str],
     conversation_id: str,
     users: Iterable[int],
-):
+) -> list[dict]:
     assert len(how_many) == len(start_times) == len(end_times) == len(users)
     messages = []
     for i in range(len(how_many)):

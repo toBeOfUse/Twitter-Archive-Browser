@@ -13,6 +13,7 @@ from copy import deepcopy
 CONVERSATIONS_PER_PAGE: Final = 20
 CONVERSATION_NAMES_PER_PAGE: Final = 50
 MESSAGES_PER_PAGE: Final = 40
+USERS_PER_PAGE: Final = 20
 
 AVATAR_API_URL: Final = "/api/avatar/"
 MEDIA_API_URL: Final = "/api/media/"
@@ -21,6 +22,8 @@ MEDIA_API_URL: Final = "/api/media/"
 INDIVIDUAL_DM_DEFAULT_URL: Final = "/api/assets/dm.svg"
 GROUP_DM_DEFAULT_URL: Final = "/api/assets/group.svg"
 USER_AVATAR_DEFAULT_URL: Final = "/api/assets/mysteryuser.svg"
+
+DEFAULT_DISPLAY_NAME: Final = "Mystery User"
 
 
 @contextmanager
@@ -107,10 +110,10 @@ class ArchivedUserSummary(DBRow):
             str(row[0]),
             row[1] or "",
             row[2] if row[5] else str(row[0]),
-            row[3] if row[5] else "Mystery User",
+            row[3] if row[5] else DEFAULT_DISPLAY_NAME,
             f"{AVATAR_API_URL}{row[0]}.{row[4]}"
             if row[5]
-            else INDIVIDUAL_DM_DEFAULT_URL,
+            else USER_AVATAR_DEFAULT_URL,
             bool(row[5]),
         )
 
@@ -153,6 +156,39 @@ class ArchivedUser(ArchivedUserSummary):
             *(
                 ArchivedUserSummary._get_formatted_tuple(row)
                 + (row[6], row[7] or "", row[8] or "")
+            )
+        )
+
+
+@dataclass(frozen=True)
+class ArchivedParticipant(ArchivedUser):
+    """Extends ArchivedUser to include information about the user's presence in a
+    specific conversation. Note: the conversation's id must be specified as a
+    SQL placeholder value when using the `db_select` field."""
+
+    _source_fields: ClassVar = ArchivedUser._source_fields + (
+        "participants.conversation",
+        "participants.messages_sent",
+        "participants.start_time",
+        "participants.end_time",
+    )
+    db_select: ClassVar = f"""select {', '.join(_source_fields)} from users 
+            join participants on 
+            participants.participant=users.id and
+            participants.conversation=?"""
+
+    conversation: str
+    messages_in_conversation: int
+    join_time: str
+    leave_time: str
+
+    @classmethod
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> ArchivedParticipant:
+        return cls(
+            *(
+                ArchivedUserSummary._get_formatted_tuple(row)
+                + (row[6], row[7] or "", row[8] or "")
+                + row[9:]
             )
         )
 
@@ -433,7 +469,9 @@ class TwitterDataReader(sqlite3.Connection):
     def __init__(self, db_path: PathLike):
         """Takes in the path to a database created by DBWrite and opens it for
         querying."""
-        super(TwitterDataReader, self).__init__(db_path)
+        super(TwitterDataReader, self).__init__(
+            db_path, uri=("mode=memory" in db_path)
+        )
         self.row_factory = sqlite3.Row
 
     def get_users_by_id(
@@ -454,17 +492,41 @@ class TwitterDataReader(sqlite3.Connection):
                 user_ids,
             ).fetchall()
 
-    def set_user_nickname(self, user_id: str, new_nickname: str) -> None:
+    def get_users_by_message_count(
+        self, page_number: int, conversation_id: str = None
+    ):
+        if conversation_id:
+            with set_row_mode(self, ArchivedParticipant.from_row):
+                return self.execute(
+                    ArchivedParticipant.db_select
+                    + " order by participants.messages_sent desc limit ? offset ?;",
+                    (
+                        conversation_id,
+                        USERS_PER_PAGE,
+                        (page_number - 1) * USERS_PER_PAGE,
+                    ),
+                ).fetchall()
+        else:
+            with set_row_mode(self, ArchivedUser.from_row):
+                return self.execute(
+                    ArchivedUser.db_select
+                    + " order by number_of_messages desc limit ? offset ?;",
+                    (USERS_PER_PAGE, (page_number - 1) * USERS_PER_PAGE),
+                ).fetchall()
+
+    def set_user_nickname(self, user_id: Union[str, int], new_nickname: str) -> None:
         self.execute(
             "update users set nickname=? where id=?;",
             (new_nickname[0:50], int(user_id)),
         )
+        self.commit()
 
-    def set_user_notes(self, user_id: str, new_notes: str) -> None:
+    def set_user_notes(self, user_id: Union[str, int], new_notes: str) -> None:
         self.execute(
             "update users set notes=? where id=?;",
             (new_notes, int(user_id)),
         )
+        self.commit()
 
     def get_user_avatar(self, id: Union[int, str]) -> bytes:
         """Retrieves user avatar image file as bytes."""
@@ -600,7 +662,9 @@ class TwitterDataReader(sqlite3.Connection):
                     CONVERSATION_NAMES_PER_PAGE * (page_number - 1),
                 ),
             ).fetchall()
-        users = self.get_users_by_id(int(x) for x in sum(x.user_ids for x in names))
+        users = self.get_users_by_id(
+            int(x) for x in set(sum(x.user_ids for x in names))
+        )
         return {"results": names, "users": users}
 
     def set_conversation_notes(self, conversation_id: str, notes: str) -> None:
@@ -608,6 +672,7 @@ class TwitterDataReader(sqlite3.Connection):
         self.execute(
             "update conversations set notes=? where id=?;", (notes, conversation_id)
         )
+        self.commit()
 
     def traverse_messages(
         self,
@@ -617,7 +682,7 @@ class TwitterDataReader(sqlite3.Connection):
         before: str = "",
         at: str = "",
         search: str = "",
-    ):
+    ) -> dict[str, list]:
         assert (bool(after) ^ bool(before)) or (
             bool(before) ^ bool(at)
         ), "traversing messages is unidirectional"
@@ -717,13 +782,17 @@ class TwitterDataReader(sqlite3.Connection):
         sorted(messages, key=lambda x: x.sort_by_timestamp)
 
         users = self.get_users_by_id(
-            int(x) for x in sum(x.user_ids for x in messages)
+            int(x) for x in set(sum(x.user_ids for x in messages))
         )
         return {"results": messages, "users": users}
 
-    def get_message(self, id: int):
+    def get_message(self, id: int) -> dict[str, list]:
         with set_row_mode(self, Message.from_row):
-            return self.execute(Message.db_select + " where id=?;", (id,)).fetchone()
+            message = self.execute(
+                Message.db_select + " where id=?;", (id,)
+            ).fetchone()
+            users = self.get_users_by_id(set(message.user_ids))
+            return {"results": [message], "users": users}
 
 
 if __name__ == "__main__":
