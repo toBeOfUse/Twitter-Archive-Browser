@@ -5,6 +5,7 @@ from tornado.ioloop import IOLoop
 import json
 import asyncio
 from collections import deque
+from typing import Union
 
 if __name__ == "__main__":  # pragma: no cover
     import JSONStream
@@ -300,7 +301,7 @@ class TwitterDataWriter(Connection):
                 ),
             )
 
-    def add_user_if_necessary(self, user_id):
+    def add_user_if_necessary(self, user_id: Union[int, str]):
         """one-stop shop for adding a user record for a user id to the
         database; should be called whenever a user id is encountered.
 
@@ -308,6 +309,7 @@ class TwitterDataWriter(Connection):
         queue with save_user_data as a callback function so that the row will be
         populated with data from the twitter api momentarily if it's available.
         """
+        user_id = str(user_id)
         if user_id not in self.added_users_cache:
             if not self.execute(
                 "select 1 from users where id=?;", (user_id,)
@@ -322,7 +324,12 @@ class TwitterDataWriter(Connection):
                 self.added_users_cache.add(user_id)
 
     def add_participant_if_necessary(
-        self, user_id, conversation_id, start_time=None, end_time=None, added_by=None
+        self,
+        user_id: Union[int, str],
+        conversation_id: str,
+        start_time: str = None,
+        end_time: str = None,
+        added_by: Union[int, str] = None,
     ):
         """one-stop shop for adding an record of a particular user appearing in a
         particular conversation to the database; should be called whenever a user id
@@ -342,12 +349,15 @@ class TwitterDataWriter(Connection):
             added_by: id of the user that added this participant to this
                 conversation. we know this if we're processing a participantsJoin event.
         """
+        user_id = str(user_id)
+        if added_by:
+            added_by = str(added_by)
         if (
             user_id,
             conversation_id,
         ) not in self.added_participants_cache:
             self.execute(
-                """insert or replace into participants
+                """insert into participants
                             (participant, conversation)
                             values (?, ?);""",
                 (user_id, conversation_id),
@@ -374,7 +384,12 @@ class TwitterDataWriter(Connection):
             )
 
     def add_conversation_if_necessary(
-        self, conversation_id, group_dm, other_person, first_time=None, added_by=None
+        self,
+        conversation_id: str,
+        group_dm: bool,
+        other_person: Union[int, str],
+        first_time: str = None,
+        added_by: Union[int, str] = None,
     ):
         """one-stop shop for adding a conversation record to the database. if
         first_time and added_by are present, we're processing a conversationJoin
@@ -382,6 +397,10 @@ class TwitterDataWriter(Connection):
         creating it if necessary.) missing information in any given conversation
         record will be filled in when finalize() is called.
         """
+        if other_person:
+            other_person = str(other_person)
+        if added_by:
+            added_by = str(added_by)
 
         if conversation_id not in self.added_conversations_cache:
             self.execute(
