@@ -23,7 +23,7 @@ from tests.message_utils import (
     writer,
     connected_writer,
     generate_messages,
-    generate_group_conversation,
+    generate_conversation,
 )
 from tornado.ioloop import IOLoop
 
@@ -249,9 +249,7 @@ async def test_simple_group_conversation(writer: TwitterDataWriter):
     users = (MAIN_USER_ID, DOG_RATES, OBAMA)
     conversation_id = "simple-group"
     messages = sorted(
-        generate_group_conversation(
-            message_counts, starts, ends, conversation_id, users
-        )
+        generate_conversation(message_counts, starts, ends, conversation_id, users)
         + [
             {
                 "type": "conversationNameUpdate",
@@ -316,7 +314,7 @@ async def test_group_conversations_started_by_various_events(writer):
     message_counts = (78, 102, 52)
     users = (MAIN_USER_ID, DOG_RATES, OBAMA)
 
-    base_conversation = lambda cname: generate_group_conversation(
+    base_conversation = lambda cname: generate_conversation(
         message_counts, starts, ends, cname, users
     )
 
@@ -418,7 +416,7 @@ async def test_conversation_ended_by_various_events(writer: TwitterDataWriter):
     message_counts = (78, 102, 52)
     users = (MAIN_USER_ID, DOG_RATES, OBAMA)
 
-    base_conversation = lambda cname: generate_group_conversation(
+    base_conversation = lambda cname: generate_conversation(
         message_counts, starts, ends, cname, users
     )
 
