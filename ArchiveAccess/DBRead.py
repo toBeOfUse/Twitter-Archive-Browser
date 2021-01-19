@@ -19,7 +19,6 @@ AVATAR_API_URL: Final = "/api/avatar/"
 MEDIA_API_URL: Final = "/api/media/"
 
 # todo: create these assets
-INDIVIDUAL_DM_DEFAULT_URL: Final = "/api/assets/dm.svg"
 GROUP_DM_DEFAULT_URL: Final = "/api/assets/group.svg"
 USER_AVATAR_DEFAULT_URL: Final = "/api/assets/mysteryuser.svg"
 
@@ -76,7 +75,7 @@ class DBRow:
         return asdict(self) | {"schema": type(self).__name__}
 
     @classmethod
-    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+    def from_row(cls, cursor: sqlite3.Cursor, row: tuple):  # pragma: no cover
         raise NotImplementedError
 
 
@@ -198,16 +197,15 @@ class Conversation(DBRow):
     """dataclass representing a conversation record. contains ArchivedUserSummary
     objects instead of just IDs."""
 
-    db_select: ClassVar = """select id, type, notes, number_of_messages,
+    db_select: ClassVar = """select id, type, number_of_messages,
     messages_from_you, first_time, last_time, num_participants, num_name_updates,
-    created_by_me, other_person, added_by from conversations"""
+    created_by_me, other_person, added_by, notes from conversations"""
 
     # todo: deal with non-passthrough values in a post_init stage?
 
     # pass-through values that are the same in the db and this class:
     id: str
     type: str
-    notes: str
     number_of_messages: int
     messages_from_you: int
     first_time: str
@@ -220,20 +218,20 @@ class Conversation(DBRow):
     added_by: ArchivedUserSummary
     name: str
     image_url: str
+    notes: str
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> Conversation:
 
-        pass_through_values = row[0:9]
-        created_by_me = bool(row[9])
+        pass_through_values = row[0:8]
+        created_by_me = bool(row[8])
 
-        with set_row_mode(cursor.connection, ArchivedUserSummary.from_row):
-            other_person = (
-                cursor.connection.get_users_by_id([row[10]])[0] if row[10] else {}
-            )
-            added_by = (
-                cursor.connection.get_users_by_id([row[11]])[0] if row[11] else {}
-            )
+        other_person = (
+            cursor.connection.get_users_by_id([row[9]])[0] if row[9] else None
+        )
+        added_by = (
+            cursor.connection.get_users_by_id([row[10]])[0] if row[10] else None
+        )
 
         if row[1] == "individual":
             name = (
@@ -268,6 +266,7 @@ class Conversation(DBRow):
                 name = ", ".join(participants[0:9])
                 if len(participants) == 11:
                     name += ", etc."
+        notes = row[11] or ""
         return cls(
             *pass_through_values,
             created_by_me,
@@ -275,6 +274,7 @@ class Conversation(DBRow):
             added_by,
             name,
             image_url,
+            notes,
         )
 
 
@@ -288,13 +288,13 @@ class MessageLike(DBRow):
     """the field that will be used in database queries to filter rows by time"""
 
     @property
-    def sort_by_timestamp(self) -> str:
+    def sort_by_timestamp(self) -> str:  # pragma: no cover
         """returns a string timestamp that objects of a type should be sorted by to
         integrate them into the conversation"""
         raise NotImplementedError
 
     @property
-    def user_ids(self) -> Iterable[int]:
+    def user_ids(self) -> Iterable[int]:  # pragma: no cover
         """returns a list of any user ids that are referenced in this object"""
         raise NotImplementedError
 
@@ -325,7 +325,7 @@ class NameUpdate(MessageLike):
 
 @dataclass(frozen=True)
 class ParticipantJoin(MessageLike):
-    db_select: ClassVar = """select participant, conversation, start_time from
+    db_select: ClassVar = """select participant, added_by, conversation, start_time from
         participants"""
     timestamp_field: ClassVar = "start_time"
 
@@ -427,21 +427,21 @@ class Message(MessageLike):
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
         with set_row_mode(cursor.connection, Reaction.from_row):
             reactions = cursor.connection.execute(
-                Reaction.db_select + "where message=?;", [row[4]]
+                Reaction.db_select + " where message=?;", [row[4]]
             ).fetchall()
 
         with set_row_mode(cursor.connection, Media.from_row):
             media = cursor.connection.execute(
-                Media.db_select + "where message=?;", [row[4]]
+                Media.db_select + " where message=?;", [row[4]]
             ).fetchall()
 
         with set_row_mode(cursor.connection, sqlite3.Row):
             link_rows = cursor.connection.execute(
                 """select orig_url, url_preview, twitter_shortened_url
                     from links where message=?""",
-                (message_row["id"],),
+                (row[4],),
             ).fetchall()
-            html_content = message_row["content"]
+            html_content = row[2]
             for link in link_rows:
                 if link["orig_url"].startswith(
                     "https://twitter.com/messages/media/"
@@ -563,9 +563,9 @@ class TwitterDataReader(sqlite3.Connection):
         if group and individual:
             pass
         elif group:
-            type_clause = type_clause.add("type='group'")
+            type_clause.add("type='group'")
         elif individual:
-            type_clause = type_clause.add("type='individual'")
+            type_clause.add("type='individual'")
         else:
             return []
         type_clause.add(where)
@@ -591,7 +591,7 @@ class TwitterDataReader(sqlite3.Connection):
     ) -> list[ConversationRow]:
         """Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by when their most
         or least recent messages were sent. Most of the arguments are passed on to
-        :func:`~DBRead.TwitterDataReader.get_conversations`, except for:
+        `ArchiveAccess.DBRead.TwitterDataReader.get_conversations`, except for:
 
         Arguments:
             asc: If this boolean is True, conversations are sorted based on their
@@ -620,24 +620,25 @@ class TwitterDataReader(sqlite3.Connection):
                 messages period are presented first.
         """
         order_by = (
-            f"order by {'number_of_messages' if by_me else 'messages_from_you'} desc"
+            f"order by {'messages_from_you' if by_me else 'number_of_messages'} desc"
         )
         return self.get_conversations(group, individual, order_by, page_number)
 
     def get_conversations_by_user(
         self, user_id: Union[str, int], page_number: int
     ) -> list[ConversationRow]:
+        """returns the conversations that a specific user has appeared in, sorted by
+        the number of messages they have sent in each conversation highest to
+        lowest."""
 
         order_by = """order by
                 (select messages_sent from participants
-                where conversation=conversations.id)
+                where participant=? and conversation=conversations.id)
                 desc"""
-        exists_clause = f"""exists(
-                select 1 from participants
-                where participant=? and conversation=conversations.id
-            )"""
+        where_clause = f"""id in (select conversation from participants where
+                        participant=?)"""
         return self.get_conversations(
-            True, True, order_by, page_number, exists_clause, (user_id,)
+            True, True, order_by, page_number, where_clause, (user_id, user_id)
         )
 
     def get_conversation_by_id(self, conversation_id: str) -> ConversationRow:
@@ -663,7 +664,7 @@ class TwitterDataReader(sqlite3.Connection):
                 ),
             ).fetchall()
         users = self.get_users_by_id(
-            int(x) for x in set(sum(x.user_ids for x in names))
+            [int(x) for x in set(sum((x.user_ids for x in names), []))]
         )
         return {"results": names, "users": users}
 
@@ -683,11 +684,26 @@ class TwitterDataReader(sqlite3.Connection):
         at: str = "",
         search: str = "",
     ) -> dict[str, list]:
+
+        # these should probably be global variables somewhere. idk
+
+        zeroes_time_string = "0000-00-00T00:00:00.000Z"
+        nines_time_string = "9999-99-99T99:99:99.999Z"
+
+        assert (
+            after or before or at
+        ), """time for messages must be specified (remember, you can use 'beginning'
+            or 'end' for the after and before parameters, respectively)"""
+
         assert (bool(after) ^ bool(before)) or (
             bool(before) ^ bool(at)
         ), "traversing messages is unidirectional"
 
-        sort = "sent_time asc"
+        assert (
+            after == "beginning"
+            or before == "end"
+            or zeroes_time_string <= (after or before or at) <= nines_time_string
+        )
 
         where = WhereClause()
         placeholders = []
@@ -695,94 +711,139 @@ class TwitterDataReader(sqlite3.Connection):
             where.add("conversation=?")
             placeholders.append(conversation)
         if user:
-            where.add("user=?")
+            where.add("sender=?")
             placeholders.append(user)
-
-        messages = []
 
         if search:
             where.add("messages_text_search=?")
             placeholders.append(search)
-            select = Message.db_select
-        else:
             select = Message.db_select_for_search
+        else:
+            select = Message.db_select
+
+        at_last_page = False
+        at_first_page = False
 
         with set_row_mode(self, Message.from_row):
             if at:
                 first_where = where
-                first_where.add("sent_time <= ?")
                 second_where = deepcopy(where)
+                first_where.add("sent_time <= ?")
                 second_where.add("sent_time > ?")
 
                 # `at` must be the last added placeholder so it can work for both
                 # versions of the where clause
-                placeholders.add(at)
+                placeholders.append(at)
 
-                messages += self.execute(
+                batch_size = int(MESSAGES_PER_PAGE / 2)
+
+                first_batch = self.execute(
                     f"""{select}
-                    where {first_where}
+                    {first_where}
                     order by sent_time desc
-                    limit {int(MESSAGES_PER_PAGE/2)};"""
+                    limit {batch_size};""",
+                    placeholders,
                 ).fetchall()
 
-                messages += self.execute(
+                if len(first_batch) < batch_size:
+                    at_first_page = True
+
+                second_batch = self.execute(
                     f"""{select}
-                    where {second_where}
-                    order by sent_time desc
-                    limit {int(MESSAGES_PER_PAGE/2)};"""
+                    {second_where}
+                    order by sent_time asc
+                    limit {batch_size};""",
+                    placeholders,
                 ).fetchall()
+
+                if len(second_batch) < batch_size:
+                    at_last_page = True
+
+                messages = first_batch + second_batch
 
             else:
+
                 if before:
-                    if before == "end":
-                        sort = "sent_time desc"
-                    else:
+                    sort = "sent_time desc"
+                    if before != "end":
                         where.add("sent_time < ?")
                         placeholders.append(before)
                 elif after:
+                    sort = "sent_time asc"
                     if after != "beginning":
                         where.add("sent_time > ?")
                         placeholders.append(after)
-            messages += self.execute(
-                f"""{Message.db_select}
-                    where {where}
-                    order by {sort}
-                    limit {MESSAGES_PER_PAGE};"""
-            ).fetchall()
+                messages = self.execute(
+                    f"""{select}
+                        {where}
+                        order by {sort}
+                        limit {MESSAGES_PER_PAGE};""",
+                    placeholders,
+                ).fetchall()
 
-        sequence_start = after or messages[0].sort_by_timestamp
-        sequence_end = before or messages[-1].sort_by_timestamp
+                if len(messages) < MESSAGES_PER_PAGE:
+                    if after:
+                        at_last_page = True
+                    elif before:
+                        at_first_page = True
 
-        if conversation:
+        if not search:  # conversation events not included in searches
+
+            if after == "beginning" or at_first_page:
+                sequence_start = zeroes_time_string
+            else:
+                sequence_start = after or min(x.sort_by_timestamp for x in messages)
+
+            if before == "end" or at_last_page:
+                sequence_end = nines_time_string
+            else:
+                sequence_end = before or max(x.sort_by_timestamp for x in messages)
+
             with set_row_mode(self, NameUpdate.from_row):
+                name_where = WhereClause()
+                name_placeholders = []
+                if conversation:
+                    name_where.add("conversation=?")
+                    name_placeholders.append(conversation)
+                if user:
+                    name_where.add("initiator=?")
+                    name_placeholders.append(user)
+                name_where.add(f"{NameUpdate.timestamp_field} > ?")
+                name_placeholders.append(sequence_start)
+                name_where.add(f"{NameUpdate.timestamp_field} < ?")
+                name_placeholders.append(sequence_end)
                 messages += self.execute(
-                    NameUpdate.db_select
-                    + " where conversation=? and update_time > ? and update_time < ?;",
-                    (conversation, sequence_start, sequence_end),
+                    NameUpdate.db_select + f" {name_where};", name_placeholders
                 )
 
-        joining_where = WhereClause()
-        if conversation:
-            joining_where.add("conversation=?")
-        elif user:
-            joining_where.add("participant=?")
-        leaving_where = deepcopy(joining_where)
-        leaving_where.add("end_time > ? and end_time < ?")
-        joining_where.add("start_time > ? and start_time < ?")
+            joining_where = WhereClause()
+            joining_leaving_placeholders = []
+            if conversation:
+                joining_where.add("conversation=?")
+                joining_leaving_placeholders.append(conversation)
+            elif user:
+                joining_where.add("participant=?")
+                joining_leaving_placeholders.append(user)
+            leaving_where = deepcopy(joining_where)
+            leaving_where.add("end_time > ? and end_time < ?")
+            joining_where.add("start_time > ? and start_time < ?")
+            joining_leaving_placeholders += [sequence_start, sequence_end]
 
-        with set_row_mode(self, ParticipantJoin.from_row):
-            messages += self.execute(
-                ParticipantJoin.db_select + f" {joining_where};"
-            ).fetchall()
-        with set_row_mode(self, ParticipantLeave.from_row):
-            messages += self.execute(
-                ParticipantLeave.db_select + f" {leaving_where};"
-            )
+            with set_row_mode(self, ParticipantJoin.from_row):
+                messages += self.execute(
+                    ParticipantJoin.db_select + f" {joining_where};",
+                    joining_leaving_placeholders,
+                ).fetchall()
+            with set_row_mode(self, ParticipantLeave.from_row):
+                messages += self.execute(
+                    ParticipantLeave.db_select + f" {leaving_where};",
+                    joining_leaving_placeholders,
+                )
 
-        sorted(messages, key=lambda x: x.sort_by_timestamp)
+        messages.sort(key=lambda x: x.sort_by_timestamp)
 
         users = self.get_users_by_id(
-            int(x) for x in set(sum(x.user_ids for x in messages))
+            [int(x) for x in set(sum((x.user_ids for x in messages), []))]
         )
         return {"results": messages, "users": users}
 
@@ -795,7 +856,7 @@ class TwitterDataReader(sqlite3.Connection):
             return {"results": [message], "users": users}
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     source = TwitterDataReader("./db/test.db")
     pprint(source.get_conversations_by_time(1))
     pprint(source.get_conversations_by_message_count(1))
