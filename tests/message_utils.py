@@ -128,11 +128,15 @@ def random_2010s_datestring() -> str:
 def id_generator() -> int:
     i = 0
     while True:
-        yield i
+        yield str(i)
         i += 1
 
 
 unique_id = id_generator()
+
+
+def get_random_text():
+    return "".join(choice(ascii_letters + " ") for _ in range(randrange(2, 25)))
 
 
 def generate_messages(
@@ -174,9 +178,7 @@ def generate_messages(
             "createdAt": date,
             "senderId": str(sender_id),
             "conversationId": conversation_id,
-            "text": "".join(
-                choice(ascii_letters + " ") for _ in range(randrange(2, 25))
-            ),
+            "text": get_random_text(),
             "mediaUrls": [],
             "reactions": [],
             "urls": [],
@@ -187,17 +189,39 @@ def generate_messages(
     return generated_messages
 
 
-def generate_group_conversation(
+def generate_conversation(
     how_many: Iterable[int],
     start_times: Iterable[str],
     end_times: Iterable[str],
     conversation_id: str,
     users: Iterable[int],
+    group: bool = True,
 ) -> list[dict]:
     assert len(how_many) == len(start_times) == len(end_times) == len(users)
+    if not group:
+        assert len(how_many) == 2, "individual conversations need to have two people"
     messages = []
     for i in range(len(how_many)):
-        messages += generate_messages(
-            how_many[i], start_times[i], end_times[i], conversation_id, users[i]
-        )
+        parameters = [
+            how_many[i],
+            start_times[i],
+            end_times[i],
+            conversation_id,
+            users[i],
+        ]
+        if not group:
+            parameters.append(users[0 if i == 1 else 1])
+        messages += generate_messages(*parameters)
     return sorted(messages, key=lambda x: x["createdAt"])
+
+
+def generate_name_update(
+    initiator: Union[str, int], new_name: str, time: str, conversation_id: str
+) -> dict:
+    return {
+        "initiatingUserId": str(initiator),
+        "name": new_name,
+        "createdAt": time,
+        "type": "conversationNameUpdate",
+        "conversationId": conversation_id,
+    }
