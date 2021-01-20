@@ -412,7 +412,7 @@ class Message(MessageLike):
     sender: str
     id: str
     reactions: list[Reaction]
-    media_urls: list[Media]
+    media: list[Media]
     html_content: str
 
     @property
@@ -445,10 +445,12 @@ class Message(MessageLike):
             for link in link_rows:
                 if link["orig_url"].startswith(
                     "https://twitter.com/messages/media/"
-                ) and link["url_preview"].startwith("pic.twitter.com/"):
-                    html_content.replace(link["twitter_shortened_url"], "")
+                ) and link["url_preview"].startswith("pic.twitter.com/"):
+                    html_content = html_content.replace(
+                        link["twitter_shortened_url"], ""
+                    )
                 else:
-                    html_content.replace(
+                    html_content = html_content.replace(
                         link["twitter_shortened_url"],
                         f'<a href="{link["orig_url"]}">{link["url_preview"]}</a>',
                     )
@@ -484,6 +486,9 @@ class TwitterDataReader(sqlite3.Connection):
         objects.
         """
         user_class = ArchivedUserSummary if sidecar else ArchivedUser
+
+        # to make sure that it isn't an unordered type like a set, for the below
+        user_ids = list(user_ids)
 
         with set_row_mode(self, user_class.from_row):
             return self.execute(
@@ -715,7 +720,7 @@ class TwitterDataReader(sqlite3.Connection):
             placeholders.append(user)
 
         if search:
-            where.add("messages_text_search=?")
+            where.add("messages_text_search MATCH ?")
             placeholders.append(search)
             select = Message.db_select_for_search
         else:
@@ -821,7 +826,7 @@ class TwitterDataReader(sqlite3.Connection):
             if conversation:
                 joining_where.add("conversation=?")
                 joining_leaving_placeholders.append(conversation)
-            elif user:
+            if user:
                 joining_where.add("participant=?")
                 joining_leaving_placeholders.append(user)
             leaving_where = deepcopy(joining_where)
