@@ -87,7 +87,7 @@ Retrieves an array of users sorted by the number of messages that they have sent
 
 Gets the database record for a specific user.
 
-### `GET /api/userspresent?conversation=[conversation_id]&time=[timestamp]`
+### `GET /api/userspresent?conversation=[conversation_id]&time=[timestamp]` NOT IMPLEMENTED YET
 
 Retrieves an array of users that were known to be present in a certain conversation at a certain time. This may be missing users that were added at the very beginning of a conversation that you created if they never gave any sign of their presence by sending a message or updating the conversation name or leaving; this information is simply left out of Twitter archives for unknown reasons.
 
@@ -95,11 +95,11 @@ Retrieves an array of users that were known to be present in a certain conversat
 
 Retrieves a user's avatar as an image file. The exact type of image file will be specified in the Content-Type header and can also be part of the url (although that is Optional; the correct file will be returned regardless.)
 
-### `POST /api/users/nickname?id=[user_id]`
+### `POST /api/user/nickname?id=[user_id]`
 
 Sets the nickname field in the database for a user to the plain text in the body of this request. Nicknames have a character limit of 50 characters. Can only be used by users authenticated with the master password.
 
-### `POST /api/users/notes?id=[user_id]`
+### `POST /api/user/notes?id=[user_id]`
 
 Sets the notes field for this user to the plain text in the body of this request. This endpoint can only be used by clients who were authenticated via the master password.
 

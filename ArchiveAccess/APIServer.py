@@ -179,6 +179,24 @@ class SingleUser(APIRequestHandler):
         )
 
 
+@handles(r"/api/user/nickname")
+class UserNickname(APIRequestHandler):
+    def get(self):
+        id = self.get_query_argument("id")
+        self.db.set_user_nickname(id, str(self.request.body, "utf-8"))
+        self.set_status(200)
+        self.finish()
+
+
+@handles(r"/api/user/notes")
+class UserNickname(APIRequestHandler):
+    def get(self):
+        id = self.get_query_argument("id")
+        self.db.set_user_notes(id, str(self.request.body, "utf-8"))
+        self.set_status(200)
+        self.finish()
+
+
 @handles(r"/api/media/(group|individual)/(.+)")
 class Media(APIRequestHandler):
     def get(self, type, filename):
