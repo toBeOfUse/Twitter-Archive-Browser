@@ -464,6 +464,9 @@ class TwitterDataWriter(Connection):
 
             for reaction in message["reactions"]:
                 self.add_user_if_necessary(reaction["senderId"])
+                self.add_participant_if_necessary(
+                    reaction["senderId"], message["conversationId"]
+                )
                 self.execute(
                     """insert into reactions (emotion, creation_time, creator, message)
                                 values (?, ?, ?, ?);""",
