@@ -57,6 +57,7 @@ create table messages (
 
 -- not actually sure if all the unindexed columns need to be listed out? probably tho
 create virtual table messages_text_search using fts5(
+    id unindexed,
     sent_time unindexed,
     sender unindexed,
     conversation unindexed,
