@@ -1,64 +1,87 @@
 from ArchiveAccess.JSONStream import PrefixedJSON, MessageStream
 import json
 from ArchiveAccess.DBWrite import TwitterDataWriter
+from ArchiveAccess.DBRead import TwitterDataReader
+from ArchiveAccess.APIServer import ArchiveAPIServer
 from pathlib import Path
 from tornado.ioloop import IOLoop
+import asyncio
+import sys
 
 
 async def main(manifest_path):
     base_path = Path(*Path(manifest_path).parts[:-2])
     with PrefixedJSON(manifest_path) as manifest_file:
         manifest = json.load(manifest_file)
-    db_store = TwitterDataWriter(
-        Path.cwd() / "db" / Path(manifest["userInfo"]["userName"] + ".db"),
-        manifest["userInfo"]["userName"],
-        manifest["userInfo"]["accountId"],
-    )
+    db_path = Path.cwd() / "db" / Path(manifest["userInfo"]["userName"] + ".db")
+    if not db_path.exists():
+        db_store = TwitterDataWriter(
+            db_path,
+            manifest["userInfo"]["userName"],
+            manifest["userInfo"]["accountId"],
+        )
 
-    def process_file(file_dict, group_dm):
-        print(f"processing file {file_dict['fileName']}")
-        for message in (s := MessageStream(Path(base_path, file_dict["fileName"]))) :
-            db_store.add_message(message, group_dm)
-            if db_store.added_messages % 1000 == 0:
-                print(
-                    f"\r{db_store.added_messages:,} total messages added; "
-                    + f"{s.percentage:.2f}% of the way through {file_dict['fileName']}",
-                    end="",
-                )
+        def process_file(file_dict, group_dm):
+            print(f"processing file {file_dict['fileName']}")
+            for message in (
+                s := MessageStream(Path(base_path, file_dict["fileName"]))
+            ) :
+                db_store.add_message(message, group_dm)
+                if db_store.added_messages % 1000 == 0:
+                    print(
+                        f"\r{db_store.added_messages:,} total messages added; "
+                        + f"{s.percentage:.2f}% of the way through {file_dict['fileName']}",
+                        end="",
+                    )
+            print(
+                f"\r{db_store.added_messages:,} total messages added; "
+                + f"{s.percentage:.2f}% of the way through {file_dict['fileName']}\n"
+            )
+
+        for individual_dm_file in manifest["dataTypes"]["directMessages"]["files"]:
+            process_file(individual_dm_file, False)
+
         print(
-            f"\r{db_store.added_messages:,} total messages added; "
-            + f"{s.percentage:.2f}% of the way through {file_dict['fileName']}\n"
+            "added {:,} direct messages from {:,} users across {:,} conversations\n".format(
+                dms := db_store.added_messages,
+                dm_users := db_store.added_users,
+                dm_convos := db_store.added_conversations,
+            )
         )
 
-    for individual_dm_file in manifest["dataTypes"]["directMessages"]["files"]:
-        process_file(individual_dm_file, False)
+        for group_dm_file in manifest["dataTypes"]["directMessagesGroup"]["files"]:
+            process_file(group_dm_file, True)
 
-    print(
-        "added {:,} direct messages from {:,} users across {:,} conversations\n".format(
-            dms := db_store.added_messages,
-            dm_users := db_store.added_users,
-            dm_convos := db_store.added_conversations,
+        print(
+            "added {:,} group chat messages from {:,} more users across {:,} conversations\n".format(
+                db_store.added_messages - dms,
+                db_store.added_users - dm_users,
+                db_store.added_conversations - dm_convos,
+            )
         )
-    )
 
-    for group_dm_file in manifest["dataTypes"]["directMessagesGroup"]["files"]:
-        process_file(group_dm_file, True)
-
-    print(
-        "added {:,} group chat messages from {:,} more users across {:,} conversations\n".format(
-            db_store.added_messages - dms,
-            db_store.added_users - dm_users,
-            db_store.added_conversations - dm_convos,
-        )
-    )
-
-    await db_store.finalize()
-    db_store.close()
+        await db_store.finalize()
+        db_store.close()
+    else:
+        print("found database " + str(db_path))
+    return db_path
 
 
 if __name__ == "__main__":
 
-    async def test_run():
-        await main("../data/manifest.js")
+    db_path = ""
+    data_path = sys.argv[1]
 
-    IOLoop.current().run_sync(test_run)
+    async def locate_or_create_db():
+        global db_path
+        db_path = await main(data_path + "manifest.js")
+
+    IOLoop.current().run_sync(locate_or_create_db)
+
+    reader = TwitterDataReader(db_path)
+    server = ArchiveAPIServer(
+        reader,
+        data_path + "direct_messages_media/",
+        data_path + "direct_messages_group_media/",
+    )
+    server.start()

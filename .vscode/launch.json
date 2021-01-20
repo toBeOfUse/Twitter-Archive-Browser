@@ -3,7 +3,14 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [
+    "configurations": [{
+            "name": "Python: Main",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["../data/"],
+            "console": "integratedTerminal"
+        },
         {
             "name": "Python: Current File",
             "type": "python",

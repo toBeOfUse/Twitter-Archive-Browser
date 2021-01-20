@@ -2,7 +2,7 @@
 API Documentation
 =================
 
-All API requests must contain an Authorization cookie obtained from /api/authenticate. All query string parameters are required unless otherwise indicated. Page numbers start at 1. The standard way to display a user's name is "display name (@handle) | nickname if it exists".
+All API requests must contain an Authorization cookie obtained from /api/authenticate. All query string parameters are required unless otherwise indicated. Page numbers start at 1. The standard way to display a user's name is "display name (@handle) | nickname if it exists". Because top-level JSON arrays constitute a security risk, arrays returned by these endpoints will be wrapped in an object with the key "results" pointing to the payload.
 
 Messagelikes
 ------------
@@ -25,11 +25,11 @@ Get/Set Conversations Data
 
 These endpoints return up to 20 serialized `ArchiveAccess.DBRead.Conversation` objects.
 
-### `GET /api/conversations?first=[oldest|newest|mostused|mostusedbyme]&page=[1|2|3|...]&include=[group,individual]`
+### `GET /api/conversations?first=[oldest|newest|mostused|mostusedbyme]&page=[1|2|3|...]&types=[group-individual]`
 
-Gets conversations sorted by time. If you specify first=oldest, the conversations with the oldest first message will be returned first; if you specify first=newest, the conversations with the most recent last message will be returned first; the other options sort by the number of messages or the number of messages sent by you (descending.) The include parameter should be a comma-delimited list of the conversation types ("group" and "individual") that will be included in the results.
+Gets conversations sorted by time. If you specify first=oldest, the conversations with the oldest first message will be returned first; if you specify first=newest, the conversations with the most recent last message will be returned first; the other options sort by the number of messages or the number of messages sent by you (descending.) The types parameter should be a dash-delimited list of the conversation types ("group" and "individual") that will be included in the results.
 
-### `GET /api/conversations/withuser?id=[user_id]`
+### `GET /api/conversations/withuser?id=[user_id]&page=[1|2|3]...`
 
 Gets the conversations that a specific user has appeared in, ordered by the number of messages they sent in that conversation in descending order.
 
@@ -72,7 +72,7 @@ Gets the database record for a specific message; the message will still be conta
 
 ### `GET /api/media/[group|individual]/[filename]`
 
-Retrieves media from the folder in the Twitter archive where it is stored. Media objects returned with messages already include the /group/ or /individual/ components in their "filepath" fields, so to get a url to retrieve media based on those, just append their filepath to "/api/media".
+Retrieves media from the folder in the Twitter archive where it is stored. Media objects returned with messages already include the /group/ or /individual/ components in their "file_path" fields, so to get a url to retrieve media based on those, just append their file_path to "/api/media".
 
 Get/Set User Data
 -----------------
