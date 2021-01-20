@@ -1,1 +1,1 @@
-pdoc --html ArchiveAccess
+pdoc --html ArchiveAccess --force
