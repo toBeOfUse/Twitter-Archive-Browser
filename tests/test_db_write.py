@@ -35,6 +35,11 @@ def messages() -> deque[dict]:
                 "id": "901563245546405896",
                 "mediaUrls": [],
                 "reactions": [
+                    # TODO: technically, this data is inconsistent; the
+                    # "recipientId" field indicates a message in an individual
+                    # conversation, but someone is leaving a reaction who is not
+                    # either the sender or the recipient. good enough for now; could
+                    # be fixed if this fixture is ever refactored like it should be.
                     {
                         "senderId": "3330610905",
                         "reactionKey": "funny",
@@ -42,7 +47,7 @@ def messages() -> deque[dict]:
                         "createdAt": "2020-10-27T04:33:47.424Z",
                     },
                     {
-                        "senderId": "846137120209190912",
+                        "senderId": "54456454645",
                         "reactionKey": "heart",
                         "eventId": "1320946773276291074",
                         "createdAt": "2020-10-28T04:33:47.424Z",
@@ -527,6 +532,13 @@ def message_add_with_checks(
         new_users += 1
     if message["senderId"] not in writer.added_users_cache:
         new_users += 1
+    for reactor in set(x["senderId"] for x in message["reactions"]):
+        if (
+            reactor not in writer.added_users_cache
+            and reactor != message["senderId"]
+            and (group_dm or reactor != message["recipientId"])
+        ):
+            new_users += 1
     writer.add_message(message, group_dm)
     # check that cache was updated
     if new_conversation:
@@ -539,6 +551,11 @@ def message_add_with_checks(
         message["senderId"],
         message["conversationId"],
     ) in writer.added_participants_cache
+    for reaction in message["reactions"]:
+        assert (
+            reaction["senderId"],
+            message["conversationId"],
+        ) in writer.added_participants_cache
     assert (
         group_dm
         or (
