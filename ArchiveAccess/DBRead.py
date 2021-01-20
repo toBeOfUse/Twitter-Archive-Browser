@@ -385,15 +385,21 @@ class Reaction(DBRow):
 
 @dataclass(frozen=True)
 class Media(DBRow):
-    db_select: ClassVar = "select id, type, message, filename from media"
+    db_select: ClassVar = (
+        "select id, type, message, filename, from_group_message from media"
+    )
 
     id: str
     type: str
-    filename: str
+    filepath: str
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
-        return cls(row[0], row[1], f"{row[2]}-{row[3]}")
+        return cls(
+            row[0],
+            row[1],
+            f"{'/group/' if row[4] else '/individual/'}{row[2]}-{row[3]}",
+        )
 
 
 @dataclass(frozen=True)

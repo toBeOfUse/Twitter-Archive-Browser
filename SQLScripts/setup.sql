@@ -95,6 +95,9 @@ create table media (
     type string not null check(type in ("image", "video", "gif")),
     filename text not null,
     message integer not null,
+    -- technically redundant: refers to the type field of the conversation that the
+    -- referenced message is in
+    from_group_message integer check(from_group_message in (0, 1)),
     foreign key(message) references messages(id)
 );
 

@@ -118,14 +118,13 @@ def messages() -> deque[dict]:
                 ],
             },
             {
-                "conversationId": "846137120209190912-3330610905",
+                "conversationId": "846137120209190912-3330610906",
                 "createdAt": "2018-02-20T05:53:06.308Z",
                 "id": "9015632455460",
                 "mediaUrls": [
                     "https://video.twimg.com/dm_gif/705625850826223617/STB-shdfkhsjKDJSFKJSj-unT0KsNH5zslGh.mp4"
                 ],
                 "reactions": [],
-                "recipientId": "846137120209190912",
                 "senderId": "3330610905",
                 "text": "Duis iaculis pretium lorem, id sodales ante accumsan nec. Maecenas. https://t.co/kuJj6jjLhJ",
                 "type": "messageCreate",
@@ -268,6 +267,7 @@ def test_add_message_with_media(writer: TwitterDataWriter, messages: deque[dict]
         "image",
         image_url_comps[-1],
         int(image_url_comps[2]),
+        0,
     )
 
     video_message = messages.popleft()
@@ -282,10 +282,11 @@ def test_add_message_with_media(writer: TwitterDataWriter, messages: deque[dict]
         "video",
         video_url_comps[-1],
         int(video_message["id"]),
+        0,
     )
 
     gif_message = messages.popleft()
-    message_add_with_checks(writer, gif_message)
+    message_add_with_checks(writer, gif_message, True)
     gif_url = gif_message["mediaUrls"][0]
     gif_url_comps = gif_url.replace("https://", "").split("/")
     assert writer.execute(
@@ -296,6 +297,7 @@ def test_add_message_with_media(writer: TwitterDataWriter, messages: deque[dict]
         "gif",
         gif_url_comps[-1],
         int(gif_message["id"]),
+        1,
     )
 
 
@@ -582,8 +584,8 @@ def message_add_with_checks(
         first_word = first_word_match.group(0).strip()
         print("test searching for word: ", first_word)
         assert writer.execute(
-            f"""select rowid from messages_text_search where
-            messages_text_search='{first_word}' and rowid=?;""",
+            f"""select id from messages_text_search where
+            messages_text_search='{first_word}' and id=?;""",
             (int(message["id"]),),
         ).fetchone()
     else:  # pragma: no cover

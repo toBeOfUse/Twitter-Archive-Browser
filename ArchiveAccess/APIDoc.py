@@ -70,9 +70,9 @@ The search clause allows you to further filter message results by their contents
 
 Gets the database record for a specific message; the message will still be contained in a "results" array alongside a "users" array.
 
-### `GET /api/media/[conversation_id]/[message_id]/[filename]`
+### `GET /api/media/[group|individual]/[filename]`
 
-Retrieves a media item from the thing.
+Retrieves media from the folder in the Twitter archive where it is stored. Media objects returned with messages already include the /group/ or /individual/ components in their "filepath" fields, so to get a url to retrieve media based on those, just append their filepath to "/api/media".
 
 Get/Set User Data
 -----------------

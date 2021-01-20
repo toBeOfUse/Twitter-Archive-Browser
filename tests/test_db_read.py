@@ -737,17 +737,120 @@ async def test_traverse_messages(
 
     all_results = []
     traverse_from = "beginning"
-    while results := reader.traverse_messages(after=traverse_from)["results"]:
+    results = "placeholder"
+    users = []
+    while True:
+        results_and_users = reader.traverse_messages(after=traverse_from)
+        results = results_and_users["results"]
+        if not results:
+            break
+        users += results_and_users["users"]
         all_results += results
         traverse_from = results[-1].sort_by_timestamp
 
-    pprint(all_results)
-
     assert len(all_results) == len(all_messages)
 
+    user_ids = set(x.id for x in users)
+    for message in all_results:
+        for user_id in message.user_ids:
+            assert str(user_id) in user_ids
 
-# TODO: in get_message_by_id, make sure message objects have their reactions and
-# links and html_contents and such to spec
+
+@mark.asyncio
+async def test_text_search(writer: TwitterDataWriter, reader: TwitterDataReader):
+    texts = ("i am home", "home i am", "being at home", "home is here")
+
+    messages = generate_messages(
+        20,
+        random_2000s_datestring(),
+        random_2010s_datestring(),
+        "searchyconvo",
+        MAIN_USER_ID,
+        AMAZINGPHIL,
+    )
+
+    for i in range(len(texts)):
+        messages[i]["text"] = texts[i]
+
+    for message in messages:
+        writer.add_message(message)
+    await writer.finalize()
+
+    results = reader.traverse_messages(after="beginning", search="home")["results"]
+    assert len(results) == len(texts)
+
+
+@mark.asyncio
+async def test_get_message(writer: TwitterDataWriter, reader: TwitterDataReader):
+    message_with_media = {
+        "conversationId": "846137120209190912-3330610905",
+        "createdAt": "2018-02-20T05:53:06.308Z",
+        "id": "1",
+        "mediaUrls": [
+            "https://video.twimg.com/dm_video/995295295943700480/vid/1280x720/rVyBaawRDLp1f2AdJdkdkDIKdmKDIdLCVecgWinASM.mp4",
+        ],
+        "reactions": [],
+        "recipientId": "846137120209190912",
+        "senderId": "3330610905",
+        "text": "Duis iaculis pretium lorem, id sodales ante accumsan nec. Maecenas. https://t.co/kuJj6jjLhJ",
+        "type": "messageCreate",
+        "urls": [
+            {
+                "url": "https://t.co/kuJj6jjLhJ",
+                "expanded": "https://twitter.com/messages/media/700921094409056259",
+                "display": "pic.twitter.com/kuJj6jjLhJ",
+            }
+        ],
+    }
+
+    message_with_link_and_reaction = {
+        "conversationId": "846137120209190912-3330610905",
+        "createdAt": "2017-09-26T09:00:00.000Z",
+        "id": "2",
+        "mediaUrls": [],
+        "reactions": [
+            {
+                "senderId": "3330610905",
+                "reactionKey": "funny",
+                "eventId": "1320946773276291073",
+                "createdAt": "2020-10-27T04:33:47.424Z",
+            },
+            {
+                "senderId": "846137120209190912",
+                "reactionKey": "heart",
+                "eventId": "1320946773276291074",
+                "createdAt": "2020-10-28T04:33:47.424Z",
+            },
+        ],
+        "recipientId": "3330610905",
+        "senderId": "846137120209190912",
+        "text": "https://t.co/somenonsense In incididunt velit id commodo officia deserunt ad aliquip voluptate quis id cillum.",
+        "type": "messageCreate",
+        "urls": [
+            {
+                "url": "https://t.co/somenonsense",
+                "expanded": "https://youtu.be/dQw4w9WgXcQ",
+                "display": "youtu.be/dQw4w9WgXcQ",
+            }
+        ],
+    }
+
+    writer.add_message(message_with_media)
+    writer.add_message(message_with_link_and_reaction)
+    await writer.finalize()
+
+    result_with_media = reader.get_message(1)["results"][0]
+    assert result_with_media.id == message_with_media["id"]
+    assert len(result_with_media.media) == len(message_with_media["mediaUrls"])
+    assert (
+        "/individual/"
+        + message_with_media["id"]
+        + "-"
+        + message_with_media["mediaUrls"][0].split("/")[-1]
+        == result_with_media.media[0].filepath
+    )
+    assert message_with_media["urls"][0]["url"] not in result_with_media.html_content
+
 
 # TODO: also, have a test that makes sure that the different user objects are
 # constructed correctly. and should probably go through and check conversation names

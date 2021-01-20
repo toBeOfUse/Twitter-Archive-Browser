@@ -506,15 +506,23 @@ class TwitterDataWriter(Connection):
                 elif type == "video":
                     media_id, _, _, filename = url_comps
                 self.execute(
-                    """insert into media (id, orig_url, filename, message, type)
-                                    values (?, ?, ?, ?, ?);""",
-                    (media_id, url, filename, message["id"], type),
+                    """insert into media (id, orig_url, filename, message, type, from_group_message)
+                                    values (?, ?, ?, ?, ?, ?);""",
+                    (
+                        media_id,
+                        url,
+                        filename,
+                        message["id"],
+                        type,
+                        1 if group_dm else 0,
+                    ),
                 )
 
             for link in message["urls"]:
                 self.execute(
-                    """insert into links (orig_url, url_preview, twitter_shortened_url, message)
-                                values (?, ?, ?, ?);""",
+                    """insert into links
+                        (orig_url, url_preview, twitter_shortened_url, message)
+                        values (?, ?, ?, ?);""",
                     (link["expanded"], link["display"], link["url"], message["id"]),
                 )
 
