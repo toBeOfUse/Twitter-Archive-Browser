@@ -35,8 +35,8 @@ class SimpleTwitterAPIClient:
         found_users: maps user ids to callbacks which will receive an object
             representing the user or None if no data is available.
         queued_http_requests: contains coroutine objects corresponding to http
-            requests, only the first 10 of which are live (being awaited) at a time; all
-            the rest are awaiting the one in front of them before they start.
+            requests, only the first 10 of which are live (being awaited) at a time;
+            all the rest are awaiting the one in front of them before they start.
 
     How to use:
         >>> stac = SimpleTwitterAPIClient("api_keys.json")
@@ -193,15 +193,16 @@ class SimpleTwitterAPIClient:
 
 
 class TwitterDataWriter(Connection):
-    """creates a database containing group and individual direct messages and associated data.
+    """creates a database containing group and individual direct messages and
+    associated data.
 
     broadly, this class receives a twitter account name and id, a series of messages
     and other conversation events through its add_message method, and turns the data
     into a sqlite3 database file that can be queried to obtain information about the
     recorded conversants and conversations in excruciating detail. setup.sql contains
-    the database schema that indicates the data that is preserved (and inferred.) note:
-    does very little type casting or checking; sqlite3 is expected to do this based on
-    each column of data's type affinity in the schema.
+    the database schema that indicates the data that is preserved (and inferred.)
+    note: does very little type casting or checking; sqlite3 is expected to do this
+    based on each column of data's type affinity in the schema.
 
     Attributes:
         account: string name for the account that is being preserved; used as the
@@ -506,8 +507,9 @@ class TwitterDataWriter(Connection):
                 elif type == "video":
                     media_id, _, _, filename = url_comps
                 self.execute(
-                    """insert into media (id, orig_url, filename, message, type, from_group_message)
-                                    values (?, ?, ?, ?, ?, ?);""",
+                    """insert into media 
+                        (id, orig_url, filename, message, type, from_group_message)
+                        values (?, ?, ?, ?, ?, ?);""",
                     (
                         media_id,
                         url,

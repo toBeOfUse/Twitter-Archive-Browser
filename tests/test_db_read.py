@@ -847,9 +847,21 @@ async def test_get_message(writer: TwitterDataWriter, reader: TwitterDataReader)
         + message_with_media["id"]
         + "-"
         + message_with_media["mediaUrls"][0].split("/")[-1]
-        == result_with_media.media[0].filepath
+        == result_with_media.media[0].file_path
     )
     assert message_with_media["urls"][0]["url"] not in result_with_media.html_content
+
+    result_with_links_and_reactions = reader.get_message(2)["results"][0]
+    for reactions_result, reaction in zip(
+        result_with_links_and_reactions.reactions,
+        message_with_link_and_reaction["reactions"],
+    ):
+        assert reactions_result.creation_time == reaction["createdAt"]
+        assert reactions_result.emotion == reaction["reactionKey"]
+    assert (
+        result_with_links_and_reactions.html_content
+        == '<a href="https://youtu.be/dQw4w9WgXcQ">youtu.be/dQw4w9WgXcQ</a> In incididunt velit id commodo officia deserunt ad aliquip voluptate quis id cillum.'
+    )
 
 
 # TODO: also, have a test that makes sure that the different user objects are

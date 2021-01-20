@@ -6,10 +6,11 @@ create index convo_firsttime_idx on conversations (first_time);
 
 create index convo_lasttime_idx on conversations (last_time);
 
--- hopefully this will index queries using "where conversation=? order by sent_time"
+create index users_by_messages on users (number_of_messages);
+
 create index messages_convo_chronological_idx on messages (conversation, sent_time);
 
-create index reactions_by_message_idx on reactions (message);
+create index reactions_by_message_chronological_idx on reactions (message, creation_time);
 
 create index media_by_message_idx on media (message);
 

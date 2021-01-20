@@ -255,16 +255,19 @@ class Conversation(DBRow):
                 # connection class
                 with set_row_mode(cursor.connection, None):
                     participant_rows = cursor.connection.execute(
-                        "select nickname, display_name, participant from participants "
-                        "join users on participants.participant=users.id "
-                        "order by messages_sent desc limit 11;"
+                        """select nickname, display_name, participant
+                        from participants
+                        join users on participants.participant=users.id
+                        where conversation=?
+                        order by messages_sent desc limit 6;""",
+                        (row[0],),
                     ).fetchall()
                 participants = [
                     x[0] if x[0] else (x[1] if x[1] else f"@{x[2]}")
                     for x in participant_rows
                 ]
-                name = ", ".join(participants[0:9])
-                if len(participants) == 11:
+                name = ", ".join(participants[0:5])
+                if len(participants) == 6:
                     name += ", etc."
         notes = row[11] or ""
         return cls(
@@ -391,7 +394,7 @@ class Media(DBRow):
 
     id: str
     type: str
-    filepath: str
+    file_path: str
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
@@ -433,7 +436,8 @@ class Message(MessageLike):
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
         with set_row_mode(cursor.connection, Reaction.from_row):
             reactions = cursor.connection.execute(
-                Reaction.db_select + " where message=?;", [row[4]]
+                Reaction.db_select + " where message=? order by creation_time;",
+                [row[4]],
             ).fetchall()
 
         with set_row_mode(cursor.connection, Media.from_row):
@@ -478,7 +482,7 @@ class TwitterDataReader(sqlite3.Connection):
         """Takes in the path to a database created by DBWrite and opens it for
         querying."""
         super(TwitterDataReader, self).__init__(
-            db_path, uri=("mode=memory" in db_path)
+            db_path, uri=("mode=memory" in str(db_path))
         )
         self.row_factory = sqlite3.Row
 
@@ -542,8 +546,8 @@ class TwitterDataReader(sqlite3.Connection):
     def get_user_avatar(self, id: Union[int, str]) -> bytes:
         """Retrieves user avatar image file as bytes."""
         return self.execute(
-            "select avatar from users where id=?;", (id,)
-        ).fetchone()[0]
+            "select avatar, avatar_extension from users where id=?;", (id,)
+        ).fetchone()
 
     def get_conversations(
         self,

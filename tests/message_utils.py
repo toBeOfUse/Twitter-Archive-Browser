@@ -39,6 +39,7 @@ def connected_writer():
 @fixture
 def reader():
     tdr = TwitterDataReader("file:memdb1?mode=memory&cache=shared")
+    tdr.set_trace_callback(lambda x: print("SQL: " + x))
     yield tdr
     tdr.close()
 
