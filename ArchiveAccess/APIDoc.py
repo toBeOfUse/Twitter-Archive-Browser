@@ -37,11 +37,11 @@ Gets the conversations that a specific user has appeared in, ordered by the numb
 
 Gets the database record for a specific conversation.
 
-### `GET /api/conversations/names?conversation=[conversation_id]&first=[oldest|newest]&page=[1|2|3...]`
+### `GET /api/conversation/names?conversation=[conversation_id]&first=[oldest|newest]&page=[1|2|3...]`
 
 Gets all the names that a (group) conversation has ever had, sorted according to the `first` parameter. (Individual conversations cannot have custom names 🙁.) Each page contains up to 50 serialized `ArchiveAccess.DBRead.NameUpdate` objects. Because name updates are messagelikes, they are enclosed in a "results" array and accompanied by a "users" array in the returned JSON object.
 
-### `POST /api/conversations/notes?id=[conversation_id]`
+### `POST /api/conversation/notes?id=[conversation_id]`
 
 Sets a conversation's "notes" field in the database to the plain text in the body of this request. This endpoint can only be used by clients who were authenticated via the master password.
 

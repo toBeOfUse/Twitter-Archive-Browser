@@ -1,7 +1,9 @@
 from tornado.web import RequestHandler, Application
 from tornado.ioloop import IOLoop
 from ArchiveAccess.DBRead import TwitterDataReader, DBRow
-from typing import Union
+from typing import Union, Iterable
+from mimetypes import guess_type
+from pathlib import Path
 
 query_string = r"\?.+"
 
@@ -13,13 +15,15 @@ class ArchiveAPIServer:
     def __init__(
         self,
         reader: TwitterDataReader,
-        group_media_path: str,
         individual_media_path: str,
+        group_media_path: str,
     ):
-        self.group_media_path = group_media_path
-        self.individual_media_path = individual_media_path
         self.db = reader
-        initializer = {"reader": self.db}
+        initializer = {
+            "reader": self.db,
+            "group_media": group_media_path,
+            "individual_media": individual_media_path,
+        }
         self.application = Application([x + (initializer,) for x in self.handlers])
 
     def start(self):
@@ -38,32 +42,52 @@ def handles(url):
 class APIRequestHandler(RequestHandler):
     """abstract base class"""
 
-    def initialize(self, reader: TwitterDataReader):
+    def initialize(
+        self, reader: TwitterDataReader, group_media: str, individual_media: str
+    ):
         self.db = reader
+        self.group_media = group_media
+        self.individual_media = individual_media
 
     def prepare(self):
         super().prepare()
         # TODO: check authentication; maybe using an access_level_required parameter
         # passed to initialize
 
-    @staticmethod
-    def serialize_chunk(chunk: Union[str, bytes, dict, DBRow, list, None]):
-        if isinstance(chunk, DBRow):
-            return chunk.serialize()
-        elif isinstance(chunk, list):
-            return {
-                "results": [
-                    (x.serialize() if isinstance(x, DBRow) else x) for x in chunk
-                ]
-            }
+    @classmethod
+    def recursive_serialize(cls, item):
+        if isinstance(item, DBRow):
+            return item.serialize()
+        elif isinstance(item, list):
+            return [(x.serialize() if isinstance(x, DBRow) else x) for x in item]
+        elif isinstance(item, dict):
+            for key in item:
+                item[key] = cls.recursive_serialize(item[key])
+            return item
         else:
-            return chunk
+            return item
+
+    @classmethod
+    def process_chunk(cls, chunk):
+        serialized_chunk = cls.recursive_serialize(chunk)
+        if isinstance(chunk, list):
+            return {"results": serialized_chunk}
+        return serialized_chunk
 
     def write(self, chunk: Union[str, bytes, dict, DBRow, list, None] = None):
-        return super().write(self.serialize_chunk(chunk))
+        return super().write(self.process_chunk(chunk))
 
     def finish(self, chunk: Union[str, bytes, dict, DBRow, list, None] = None):
-        return super().finish(self.serialize_chunk(chunk))
+        return super().finish(self.process_chunk(chunk))
+
+    def get_query_argument(self, name, *args):
+        if name == "page":
+            return int(super().get_query_argument(name, *args))
+        else:
+            return super().get_query_argument(name, *args)
+
+    def arguments(self, *args):
+        return tuple(self.get_query_argument(x, None) for x in args)
 
 
 @handles(r"/api/conversations")
@@ -72,8 +96,10 @@ class AllConversationsHandler(APIRequestHandler):
         types = self.get_query_argument("types").split("-")
         group = "group" in types
         individual = "individual" in types
-        method = self.get_query_argument("first")
-        page_number = int(self.get_query_argument("page"))
+        assert (
+            len([x for x in types if x not in ("group", "individual")]) == 0
+        ), "conversation types are limited to 'group' and 'individual'"
+        method, page_number = self.arguments("first", "page")
         if (asc := method == "oldest") or method == "newest":
             self.finish(
                 self.db.get_conversations_by_time(
@@ -91,8 +117,7 @@ class AllConversationsHandler(APIRequestHandler):
 @handles(r"/api/conversations/withuser")
 class ConversationsByUserHandler(APIRequestHandler):
     def get(self):
-        user_id = self.get_query_argument("id")
-        page_number = int(self.get_query_argument("page"))
+        user_id, page_number = self.arguments("id", "page")
         self.finish(self.db.get_conversations_by_user(user_id, page_number))
 
 
@@ -102,11 +127,80 @@ class ConversationByID(APIRequestHandler):
         self.finish(self.db.get_conversation_by_id(self.get_query_argument("id")))
 
 
-@handles(r"/api/")
-@handles(r"/api/avatar/\d+\.[A-Za-z]+")
-class AvatarRequestHandler(APIRequestHandler):
+@handles(r"/api/conversation/names")
+class ConversationNames(APIRequestHandler):
     def get(self):
-        id = int(self.request.path.split("/")[-1].split(".")[0])
-        avatar = self.db.get_user_avatar(id)
-        self.set_header("Content-Type", "image/" + avatar[1].replace("jpg", "jpeg"))
+        conversation, order, page = self.arguments("conversation", "first", "page")
+        assert order in ("oldest", "newest"), "malformed 'first' query argument"
+        self.finish(
+            self.db.get_conversation_names(conversation, order == "oldest", page)
+        )
+
+
+@handles(r"/api/conversation/notes")
+class SetConversationNotes(APIRequestHandler):
+    def post(self):
+        id = self.get_query_argument("id")
+        new_notes = str(self.request.body, "utf-8")
+        self.db.set_conversation_notes(id, new_notes)
+        self.set_status(200)
+        self.finish(None)
+
+
+@handles(r"/api/messages")
+class Messages(APIRequestHandler):
+    def get(self):
+        conversation, user = self.arguments("conversation", "byuser")
+        after, before, at = self.arguments("after", "before", "at")
+        search = self.get_query_argument("search", None)
+        self.finish(
+            self.db.traverse_messages(conversation, user, after, before, at, search)
+        )
+
+
+@handles(r"/api/message")
+class SingleMessage(APIRequestHandler):
+    def get(self):
+        self.finish(self.db.get_message(int(self.get_query_argument("id"))))
+
+
+@handles(r"/api/users")
+class Users(APIRequestHandler):
+    def get(self):
+        conversation, page = self.arguments("conversation", "page")
+        self.finish(self.db.get_users_by_message_count(page, conversation))
+
+
+@handles(r"/api/user")
+class SingleUser(APIRequestHandler):
+    def get(self):
+        self.finish(
+            self.db.get_users_by_id([self.get_query_argument("id")], False)[0]
+        )
+
+
+@handles(r"/api/media/(group|individual)/(.+)")
+class Media(APIRequestHandler):
+    def get(self, type, filename):
+        file_location = (
+            self.group_media if type == "group" else self.individual_media
+        ) + filename
+        self.set_header("Content-Type", guess_type(self.request.path)[0])
+        if Path(file_location).exists():
+            with open(file_location, "rb") as media:
+                while True:
+                    data = media.read(5000000)
+                    if not data:
+                        break
+                    self.write(data)
+        else:
+            self.set_status(404)
+        self.finish()
+
+
+@handles(r"/api/avatar/(\d+)\.[A-Za-z]+")
+class AvatarRequestHandler(APIRequestHandler):
+    def get(self, id):
+        avatar = self.db.get_user_avatar(int(id))
+        self.set_header("Content-Type", guess_type("a." + avatar[1])[0])
         self.finish(avatar[0])
