@@ -1,0 +1,33 @@
+{
+  "name": "twitter-archive-browser",
+  "version": "0.0.5",
+  "description": "Frontend for an API for browsing Twitter archives.",
+  "main": "webpack.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "webpack": "^5.16.0",
+    "webpack-cli": "^4.4.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/preset-react": "^7.12.10",
+    "babel-loader": "^8.2.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toBeOfUse/twitter-archive-parser-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/toBeOfUse/twitter-archive-parser-server/issues"
+  },
+  "homepage": "https://github.com/toBeOfUse/twitter-archive-parser-server#readme"
+}

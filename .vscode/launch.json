@@ -9,7 +9,8 @@
             "request": "launch",
             "program": "main.py",
             "args": ["../data/"],
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "justMyCode": false
         },
         {
             "name": "Python: Current File",

@@ -1,4 +1,4 @@
-from tornado.web import RequestHandler, Application
+from tornado.web import RequestHandler, Application, StaticFileHandler
 from tornado.ioloop import IOLoop
 from ArchiveAccess.DBRead import TwitterDataReader, DBRow
 from typing import Union, Iterable
@@ -6,6 +6,13 @@ from mimetypes import guess_type
 from pathlib import Path
 
 query_string = r"\?.+"
+
+
+class DevStaticFileHandler(StaticFileHandler):
+    def set_extra_headers(self, path):
+        self.set_header(
+            "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
+        )
 
 
 class ArchiveAPIServer:
@@ -24,7 +31,14 @@ class ArchiveAPIServer:
             "group_media": group_media_path,
             "individual_media": individual_media_path,
         }
-        self.application = Application([x + (initializer,) for x in self.handlers])
+        statichandler = (
+            r"^(?!/api/)/(.*)$",
+            DevStaticFileHandler,
+            {"path": "./frontend/", "default_filename": "index.html"},
+        )
+        self.application = Application(
+            [statichandler] + [x + (initializer,) for x in self.handlers]
+        )
 
     def start(self):
         print("starting server on port 8008")
