@@ -364,19 +364,58 @@ class TwitterDataWriter(Connection):
                 (user_id, conversation_id),
             )
             self.added_participants_cache.add((user_id, conversation_id))
-        assert (start_time and added_by) or (not start_time and not added_by)
         if start_time:
-            self.execute(
-                """update participants 
-                    set start_time=? where participant=? and conversation=?;""",
-                (start_time, user_id, conversation_id),
-            )
+            existing_end_time, existing_start_time = self.execute(
+                """select end_time, start_time from participants
+                    where participant=? and conversation=?;""",
+                (int(user_id), conversation_id),
+            ).fetchone()
+            # only overwrite a start_time if you're replacing it with an earlier one
+            if existing_start_time is None or existing_start_time > start_time:
+                self.execute(
+                    """update participants 
+                        set start_time=? where participant=? and conversation=?;""",
+                    (
+                        start_time if start_time != "reset" else None,
+                        user_id,
+                        conversation_id,
+                    ),
+                )
+            if existing_end_time and existing_end_time < start_time:
+                # if there is an existing end_time and it's before this start time,
+                # wipe it out, because that means that the user came back after the
+                # existing end_time, rendering it irrelevant
+                self.execute(
+                    """update participants
+                        set end_time=? where participant=? and conversation=?;""",
+                    (None, user_id, conversation_id),
+                )
+
         if end_time:
-            self.execute(
-                """update participants 
-                    set end_time=? where participant=? and conversation=?;""",
-                (end_time, user_id, conversation_id),
-            )
+            existing_end_time, existing_start_time = self.execute(
+                """select end_time, start_time from participants
+                    where participant=? and conversation=?;""",
+                (int(user_id), conversation_id),
+            ).fetchone()
+            if existing_end_time is None or existing_end_time < end_time:
+                # only overwrite an existing end_time value if you're replacing it
+                # with a later one
+                self.execute(
+                    """update participants
+                        set end_time=? where participant=? and conversation=?;""",
+                    (end_time, user_id, conversation_id),
+                )
+            if existing_start_time and existing_start_time > end_time:
+                # if there is an existing start time and it's greater than this
+                # end_time, wipe it out, because this means that the user must have
+                # been in this conversation Before that start time, otherwise they
+                # could not possibly Leave before it
+                self.execute(
+                    """update participants
+                        set start_time=? where participant=? and conversation=?;""",
+                    (None, user_id, conversation_id),
+                )
+
         if added_by:
             self.execute(
                 """update participants 
@@ -545,31 +584,27 @@ class TwitterDataWriter(Connection):
                 ),
             )
 
-        elif (
-            message["type"] == "participantsJoin"
-            or message["type"] == "participantsLeave"
-        ):
-            if message["type"] == "participantsJoin":
+        elif message["type"] == "participantsJoin":
+            self.add_participant_if_necessary(
+                message["initiatingUserId"], message["conversationId"]
+            )
+            self.add_user_if_necessary(message["initiatingUserId"])
+            for user_id in message["userIds"]:
+                self.add_user_if_necessary(user_id)
                 self.add_participant_if_necessary(
-                    message["initiatingUserId"], message["conversationId"]
+                    user_id,
+                    message["conversationId"],
+                    start_time=message["createdAt"],
+                    added_by=message["initiatingUserId"],
                 )
-                self.add_user_if_necessary(message["initiatingUserId"])
-                for user_id in message["userIds"]:
-                    self.add_user_if_necessary(user_id)
-                    self.add_participant_if_necessary(
-                        user_id,
-                        message["conversationId"],
-                        start_time=message["createdAt"],
-                        added_by=message["initiatingUserId"],
-                    )
-            else:
-                for user_id in message["userIds"]:
-                    self.add_user_if_necessary(user_id)
-                    self.add_participant_if_necessary(
-                        user_id,
-                        message["conversationId"],
-                        end_time=message["createdAt"],
-                    )
+        elif message["type"] == "participantsLeave":
+            for user_id in message["userIds"]:
+                self.add_user_if_necessary(user_id)
+                self.add_participant_if_necessary(
+                    user_id,
+                    message["conversationId"],
+                    end_time=message["createdAt"],
+                )
 
         elif message["type"] == "joinConversation":
             self.add_user_if_necessary(message["initiatingUserId"])
@@ -591,7 +626,9 @@ class TwitterDataWriter(Connection):
             )
             for user_id in message["participantsSnapshot"]:
                 self.add_user_if_necessary(user_id)
-                self.add_participant_if_necessary(user_id, message["conversationId"])
+                self.add_participant_if_necessary(
+                    user_id, message["conversationId"], start_time="reset"
+                )
 
         self.added_messages += 1
 
