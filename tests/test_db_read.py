@@ -62,6 +62,7 @@ async def test_get_users_by_id(writer: TwitterDataWriter, reader: TwitterDataRea
             DBRead.DEFAULT_DISPLAY_NAME,
             DBRead.USER_AVATAR_DEFAULT_URL,
             False,
+            False,
         ),
         ArchivedUserSummary(
             str(AMAZINGPHIL),
@@ -69,6 +70,7 @@ async def test_get_users_by_id(writer: TwitterDataWriter, reader: TwitterDataRea
             str(AMAZINGPHIL),
             DBRead.DEFAULT_DISPLAY_NAME,
             DBRead.USER_AVATAR_DEFAULT_URL,
+            False,
             False,
         ),
     ]
@@ -81,9 +83,12 @@ async def test_get_users_by_id(writer: TwitterDataWriter, reader: TwitterDataRea
             "We Rate Dogs",
             f"{DBRead.AVATAR_API_URL}{DOG_RATES}.jpg",
             True,
+            False,
             1,
             "sample bio",
             "",
+            dog_rates_message["createdAt"],
+            dog_rates_message["createdAt"],
         )
     ]
 
@@ -398,6 +403,7 @@ async def test_conversation_by_id(
             str(AMAZINGPHIL),
             DBRead.DEFAULT_DISPLAY_NAME,
             DBRead.USER_AVATAR_DEFAULT_URL,
+            False,
             False,
         ),
         None,

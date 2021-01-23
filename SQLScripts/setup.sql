@@ -32,6 +32,8 @@ create table conversations (
 create table users (
     id integer primary key,
     number_of_messages integer,
+    first_appearance text,
+    last_appearance text,
     loaded_full_data integer check(loaded_full_data in (0, 1)),
     -- if false, the rest of these will be null except maybe nickname and notes,
     -- which are user-created

@@ -507,6 +507,8 @@ def check_user(writer: TwitterDataWriter, user_id: str):
     ).fetchone() == (
         int(user_id),
         None,
+        None,
+        None,
         0,
         None,
         None,

@@ -44,6 +44,42 @@ set last_time = (
     )
 where last_time is null;
 
+update users
+set first_appearance = (
+        select min(time)
+        from (
+                select sent_time as time
+                from messages
+                where sender = users.id
+                union
+                select update_time
+                from name_updates
+                where initiator = users.id
+                union
+                select start_time
+                from participants
+                where participant = users.id
+            ) as t1
+    );
+
+update users
+set last_appearance = (
+        select max(time)
+        from (
+                select sent_time as time
+                from messages
+                where sender = users.id
+                union
+                select update_time
+                from name_updates
+                where initiator = users.id
+                union
+                select end_time
+                from participants
+                where participant = users.id
+            ) as t1
+    );
+
 update conversations
 set created_by_me = 0
 where type = "individual"

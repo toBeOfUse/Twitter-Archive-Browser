@@ -92,6 +92,7 @@ class ArchivedUserSummary(DBRow):
         "display_name",
         "avatar_extension",
         "loaded_full_data",
+        "id=(select id from me)",
     )
 
     db_select: ClassVar = f"select {', '.join(_source_fields)} from users"
@@ -102,6 +103,7 @@ class ArchivedUserSummary(DBRow):
     display_name: str
     avatar_url: str
     loaded_full_data: bool
+    isMainUser: bool
 
     @staticmethod
     def _get_formatted_tuple(row: tuple):
@@ -114,6 +116,7 @@ class ArchivedUserSummary(DBRow):
             if row[5]
             else USER_AVATAR_DEFAULT_URL,
             bool(row[5]),
+            bool(row[6]),
         )
 
     @classmethod
@@ -140,6 +143,8 @@ class ArchivedUser(ArchivedUserSummary):
         "number_of_messages",
         "bio",
         "notes",
+        "first_appearance",
+        "last_appearance",
     )
     # todo: figure out whether this actually needs to be re-declared in this subclass
     db_select: ClassVar = f"select {', '.join(_source_fields)} from users"
@@ -147,25 +152,32 @@ class ArchivedUser(ArchivedUserSummary):
     number_of_messages: int
     bio: str
     notes: str
+    first_appearance: str
+    last_appearance: str
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> ArchivedUser:
-        assert tuple(x[0] for x in cursor.description) == cls._source_fields
+        row_start = len(super()._source_fields)
         return cls(
             *(
                 ArchivedUserSummary._get_formatted_tuple(row)
-                + (row[6], row[7] or "", row[8] or "")
+                + (
+                    row[row_start],
+                    row[row_start + 1] or "",
+                    row[row_start + 2] or "",
+                    *row[row_start + 3 :],
+                )
             )
         )
 
 
 @dataclass(frozen=True)
-class ArchivedParticipant(ArchivedUser):
+class ArchivedParticipant(ArchivedUserSummary):
     """Extends ArchivedUser to include information about the user's presence in a
     specific conversation. Note: the conversation's id must be specified as a
     SQL placeholder value when using the `db_select` field."""
 
-    _source_fields: ClassVar = ArchivedUser._source_fields + (
+    _source_fields: ClassVar = ArchivedUserSummary._source_fields + (
         "participants.conversation",
         "participants.messages_sent",
         "participants.start_time",
@@ -183,12 +195,9 @@ class ArchivedParticipant(ArchivedUser):
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> ArchivedParticipant:
+        row_start = len(super()._source_fields)
         return cls(
-            *(
-                ArchivedUserSummary._get_formatted_tuple(row)
-                + (row[6], row[7] or "", row[8] or "")
-                + row[9:]
-            )
+            *(ArchivedUserSummary._get_formatted_tuple(row) + row[row_start:])
         )
 
 
