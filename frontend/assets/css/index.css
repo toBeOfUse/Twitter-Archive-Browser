@@ -24,6 +24,13 @@ label {
     margin: 0 auto;
 }
 
+a,
+a:visited,
+a:hover,
+a:active {
+    color: inherit;
+}
+
 .leftPane {
     height: 25%;
     display: flex;
@@ -64,6 +71,7 @@ label {
         width: 100%;
         font-size: 0.7em;
     }
+
     .contentPane {
         width: 95%;
         margin: 0 auto;
@@ -119,7 +127,7 @@ label {
     margin-right: 8px;
 }
 
-.conversationInfoImage {
+.infoPageImage {
     height: 60px;
     border-radius: 50%;
 }
@@ -130,30 +138,30 @@ label {
     margin-left: 10px;
 }
 
-.conversationInfoHeading {
+.infoPageHeading {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
-.conversationInfoHeading>* {
+.infoPageHeading>* {
     margin-right: 20px;
 }
 
-.conversationInfoLinks {
+.infoPageLinks {
     display: inline;
     line-height: 20px;
     text-decoration: underline;
 }
 
-.conversationStatsRow {
+.statsRow {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-evenly;
 }
 
-.conversationStatsContainer {
+.statsContainer {
     width: 20%;
     text-align: center;
 }
@@ -164,7 +172,7 @@ label {
     height: 100px;
 }
 
-.conversationMetaContainer {
+.metaInfoContainer {
     width: 90%;
     min-height: 100px;
     overflow-y: scroll;
@@ -184,4 +192,26 @@ label {
 .smallButton {
     text-decoration: underline;
     cursor: pointer;
+}
+
+.rowToColumn {
+    flex-direction: row;
+}
+
+@media (max-width: 500px) {
+    .rowToColumn {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 500px) {
+    .noMobile {
+        display: none;
+    }
+}
+
+@media (min-width: 500px) {
+    .onlyMobile {
+        display: none;
+    }
 }

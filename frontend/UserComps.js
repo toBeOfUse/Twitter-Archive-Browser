@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { NavLink, useParams } from "react-router-dom";
+import { zStringToDateTime } from "./DateHandling";
 
 function NicknameSetter(userInfo) {
     const [nickname, setNickname] = useState(userInfo.nickname);
@@ -32,7 +34,7 @@ function NicknameSetter(userInfo) {
                     type="text" />
                 <button onClick={saveNickname}>Save</button>
             </label> :
-            <p>@{userInfo.handle}'s nickname on this site is "{userInfo.nickname}".
+            <p>Nickname: "{userInfo.nickname}".
             <span
                     className="smallButton"
                     onClick={startEditing}
@@ -41,6 +43,93 @@ function NicknameSetter(userInfo) {
             </span>
             </p>}
     </>
+}
+
+function UserInfo() {
+    const { id } = useParams();
+    const [info, setInfo] = useState(null);
+
+    const [conversations, setConversations] = useState([]);
+    const [page, setPage] = useState(1);
+    const [loadingConvos, setLoadingConvos] = useState(false);
+    const listPane = useRef(null);
+
+    if (!info) {
+        fetch("/api/user?id=" + id).then(
+            r => r.json().then(result => setInfo(result))
+        );
+    }
+
+    const checkUpdates = () => {
+        const el = listPane.current;
+        if (info && (el.scrollHeight < el.parentElement.scrollHeight
+            || el.scrollTop + el.offsetHeight > el.scrollHeight - 30)
+            && page != -1
+            && !loadingConvos) {
+            setLoadingConvos(true);
+            const url = `/api/conversations/withuser?id=${id}&page=${page}`
+            fetch(url).then(r => r.json()
+                .then(j => {
+                    if (j.results.length) {
+                        setConversations(
+                            (prevConvs) => prevConvs.concat(j.results)
+                        );
+                    } else {
+                        setPage(-1);
+                    }
+                    setLoadingConvos(false);
+                })
+            );
+            setPage(prevPage => prevPage == -1 ? prevPage : prevPage + 1);
+        }
+    }
+
+    useEffect(checkUpdates);
+
+    const acceptChange = () => {
+        setInfo(null);
+    }
+
+    return info ? <>
+        <div className="infoPageHeading">
+            <img className="infoPageImage" src={info.avatar_url} />
+            <h3>
+                {info.display_name + ` (@${info.handle})`}
+            </h3>
+            <h1>User Info</h1>
+            <span className="infoPageLinks">
+                <span>View Messages</span>
+                {info.loaded_full_data ? <><br /><span>See them on Twitter</span></> : null}
+            </span>
+        </div>
+        <NicknameSetter changed={acceptChange} {...info} />
+        <div className="statsRow">
+            <div className="statsContainer">
+                <p>Messages Sent</p>
+                <h3>{info.number_of_messages.toLocaleString()}</h3>
+            </div>
+            {info.number_of_messages > 0 ? <>
+                <div className="verticalLine" />
+                <div className="statsContainer">
+                    <p>First Seen</p>
+                    <h3>{zStringToDateTime(info.first_appearance)}</h3>
+                </div>
+                <div className="verticalLine" />
+                <div className="statsContainer">
+                    <p>Last Seen</p>
+                    <h3>{zStringToDateTime(info.last_appearance)}</h3>
+                </div></> : null}
+        </div>
+        <h3>In conversations:</h3>
+        <div style={{ height: 250 }} className="metaInfoContainer" ref={listPane} onScroll={checkUpdates}>
+            {conversations.map(v => (
+                <NavLink style={{ display: "flex", alignItems: "center" }} key={v.id} to={"/conversation/info/" + v.id}>
+                    <img style={{ height: 30, borderRadius: "50%", marginRight: 10 }} src={v.image_url} />
+                    {v.name}
+                </NavLink>
+            ))}
+        </div>
+    </> : <p>loading...</p>;
 }
 
 function addToUserStore(oldStore, newUsers) {
@@ -53,5 +142,6 @@ function addToUserStore(oldStore, newUsers) {
 
 export {
     NicknameSetter,
-    addToUserStore
+    addToUserStore,
+    UserInfo
 }

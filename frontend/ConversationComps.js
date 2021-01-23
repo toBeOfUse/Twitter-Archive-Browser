@@ -68,7 +68,7 @@ function ConversationMetaList(props) {
 
     const checkUpdates = () => {
         const el = listPane.current;
-        if ((el.scrollHeight < el.parentElement.scrollHeight
+        if (el && (el.scrollHeight < el.parentElement.scrollHeight
             || el.scrollTop + el.offsetHeight > el.scrollHeight - 30)
             && page != -1
             && !loading) {
@@ -140,14 +140,16 @@ function ConversationMetaList(props) {
     } else if (!renderingNames && participants.length) {
         renderedList = participants.map(participant => (
             <p key={participant.handle}>
-                {(participant.nickname ? participant.nickname + " - " : "") +
-                    participant.display_name + " (@" + participant.handle + ")"
-                    + " | sent " +
+                <NavLink to={"/user/info/" + participant.id}>
+                    {(participant.nickname ? participant.nickname + " - " : "") +
+                        participant.display_name + " (@" + participant.handle + ")"}
+                </NavLink>
+                {" | sent " +
                     participant.messages_in_conversation.toLocaleString() +
-                    " messages | in conversation from " +
-                    (zStringToDate(participant.join_time) || "before you") +
-                    " to " + (zStringToDate(participant.leave_time) || "now") +
-                    " | View User"
+                    " messages | " + (participant.isMainUser ? "is You" :
+                        "in conversation from " +
+                        (zStringToDate(participant.join_time) || "before you") +
+                        " to " + (zStringToDate(participant.leave_time) || "now"))
                 }
             </p>
         ));
@@ -173,7 +175,7 @@ function ConversationMetaList(props) {
                 {!renderingNames ? "Currently Viewing Participants" : "Switch to Participants"}
             </span>
         </span>
-        <div onScroll={checkUpdates} ref={listPane} className="conversationMetaContainer">
+        <div onScroll={checkUpdates} ref={listPane} className="metaInfoContainer">
             {renderingNames ? <>
                 <span className="smallButton"
                     style={{ color: (oldestFirst ? "blue" : "black") }}
@@ -204,50 +206,52 @@ function ConversationInfo() {
         fetch("/api/conversation?id=" + id).then(
             r => r.json().then(result => setInfo(result))
         );
-        return <p>loading...</p>
     }
-
-    const name = (
-        (info.type == "group" ? '"' + info.name + '"' :
-            "Conversation with " + info.name) +
-        ` | ${zStringToDate(info.first_time)} - `
-        + `${zStringToDate(info.last_time)}`
-    );
 
     const acceptChange = () => {
         setInfo(null);
     }
 
-    return <>
-        <div className="conversationInfoHeading">
-            <img className="conversationInfoImage" src={info.image_url} />
-            <h1>Conversation Info</h1>
-            <span className="conversationInfoLinks">
-                <span>View Messages</span><br /><span>Share Conversation</span>
+    return !info ? <p>loading...</p> : <>
+        <div className="infoPageHeading rowToColumn">
+            <div className="infoPageHeading">
+                <img className="infoPageImage" src={info.image_url} />
+                <h1>Conversation Info</h1>
+            </div>
+            <span className="infoPageLinks">
+                <span>View Messages</span><br class="noMobile" /><span className="onlyMobile"> | </span><span>Share Conversation</span>
             </span>
         </div>
-        <h3>{name}</h3>
-        <div className="conversationStatsRow">
-            <div className="conversationStatsContainer">
+        <h3>{(info.type == "group" ? '"' + info.name + '"' :
+            "Conversation with " + info.name) +
+            ` | ${zStringToDate(info.first_time)} - `
+            + `${zStringToDate(info.last_time)}`}
+        </h3>
+        <div className="statsRow">
+            <div className="statsContainer">
                 <p>Number of Messages</p>
                 <h3>{info.number_of_messages.toLocaleString()}</h3>
             </div>
             <div className="verticalLine" />
-            <div className="conversationStatsContainer">
+            <div className="statsContainer">
                 <p>Messages from you</p>
                 <h3>{info.messages_from_you.toLocaleString()}</h3>
             </div>
             {info.type == "group" ? <>
                 <div className="verticalLine" />
-                <div className="conversationStatsContainer">
+                <div className="statsContainer">
                     <p>Number of name changes</p>
                     <h3>{info.num_name_updates.toLocaleString()}</h3>
                 </div>
                 <div className="verticalLine" />
-                <div className="conversationStatsContainer">
+                <div className="statsContainer">
                     <p>Number of participants</p>
                     <h3>{info.num_participants.toLocaleString()}</h3>
-                </div></> : null}
+                </div></> :
+                <>
+                    <div className="verticalLine" />
+                    <NavLink to={"/user/info/" + info.other_person.id}>View User</NavLink>
+                </>}
         </div>
         {info.type == "group" ? null :
             <NicknameSetter changed={acceptChange} {...info.other_person} />
@@ -355,6 +359,11 @@ function ConversationList() {
                 <ConversationListing key={v.id} {...v}></ConversationListing>
             ))
             }
+        </div>
+        <div style={{ width: "100%", height: 30, display: "flex" }}>
+            <button style={{ whiteSpace: "nowrap" }}>Go to date...</button>
+            <input style={{ width: "100%" }} type="text" placeholder="Search all messages..." />
+            <button>Search</button>
         </div>
     </>;
 }
