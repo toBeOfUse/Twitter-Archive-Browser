@@ -58,7 +58,7 @@ Search clause (optional): `search=[query]`
 
 The main endpoint for obtaining messages from the API. This endpoint's payload includes all messagelike objects; in other words, any that inherit from `ArchiveAccess.DBRead.MessageLike`. You can tell which type each object has by looking at the "schema" field in the serialized result, which contains the name of the original object's class. This endpoint returns 40 normal messages at a time; the name update and joining and leaving events are additional to that. Message/event objects are always sorted oldest to newest (ascending.)
 
-Note that the html_contents field in normal messages contains links presented as HTML \<a> tags.
+Note that the html_contents field in normal messages contains links presented as HTML `<a>` tags.
 
 The filter clause is fairly self explanatory; pick either a conversation= or a byuser= parameter to send in. If it is omitted, any and all messages can come through, and if displayed to an end user, conversation events will need to be presented with their conversation name to make things clear.
 

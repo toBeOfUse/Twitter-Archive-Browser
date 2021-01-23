@@ -19,8 +19,8 @@ AVATAR_API_URL: Final = "/api/avatar/"
 MEDIA_API_URL: Final = "/api/media/"
 
 # todo: create these assets
-GROUP_DM_DEFAULT_URL: Final = "/api/assets/group.svg"
-USER_AVATAR_DEFAULT_URL: Final = "/api/assets/mysteryuser.svg"
+GROUP_DM_DEFAULT_URL: Final = "/assets/svg/group.svg"
+USER_AVATAR_DEFAULT_URL: Final = "/assets/svg/mysteryuser.svg"
 
 DEFAULT_DISPLAY_NAME: Final = "Mystery User"
 

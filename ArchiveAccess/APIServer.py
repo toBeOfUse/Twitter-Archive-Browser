@@ -4,11 +4,23 @@ from ArchiveAccess.DBRead import TwitterDataReader, DBRow
 from typing import Union, Iterable
 from mimetypes import guess_type
 from pathlib import Path
+import subprocess
 
 query_string = r"\?.+"
 
 
 class DevStaticFileHandler(StaticFileHandler):
+    def set_extra_headers(self, path):
+        self.set_header(
+            "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
+        )
+
+
+class ServeFrontend(RequestHandler):
+    def get(self, path):
+        with open("./frontend/index.html") as page:
+            self.finish(page.read())
+
     def set_extra_headers(self, path):
         self.set_header(
             "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
@@ -31,16 +43,29 @@ class ArchiveAPIServer:
             "group_media": group_media_path,
             "individual_media": individual_media_path,
         }
-        statichandler = (
-            r"^(?!/api/)/(.*)$",
+        assets_handler = (
+            r"/(assets/.*)",
             DevStaticFileHandler,
-            {"path": "./frontend/", "default_filename": "index.html"},
+            {"path": "./frontend/"},
         )
+        source_handler = (
+            r"/(frontend/.*)",
+            DevStaticFileHandler,
+            {"path": "./"},
+        )
+        frontend_handler = (r"^(?!/assets/|/api/|/frontend/)/(.*)$", ServeFrontend)
         self.application = Application(
-            [statichandler] + [x + (initializer,) for x in self.handlers]
+            [assets_handler, source_handler, frontend_handler]
+            + [x + (initializer,) for x in self.handlers]
         )
 
     def start(self):
+        subprocess.Popen(
+            ["npx", "webpack", "--watch", "--stats", "minimal"],
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.PIPE,
+            shell=True,
+        )
         print("starting server on port 8008")
         self.application.listen(8008)
         IOLoop.current().start()
@@ -195,7 +220,7 @@ class SingleUser(APIRequestHandler):
 
 @handles(r"/api/user/nickname")
 class UserNickname(APIRequestHandler):
-    def get(self):
+    def post(self):
         id = self.get_query_argument("id")
         self.db.set_user_nickname(id, str(self.request.body, "utf-8"))
         self.set_status(200)
@@ -203,8 +228,8 @@ class UserNickname(APIRequestHandler):
 
 
 @handles(r"/api/user/notes")
-class UserNickname(APIRequestHandler):
-    def get(self):
+class UserNotes(APIRequestHandler):
+    def post(self):
         id = self.get_query_argument("id")
         self.db.set_user_notes(id, str(self.request.body, "utf-8"))
         self.set_status(200)
