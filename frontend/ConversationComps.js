@@ -174,20 +174,22 @@ function ConversationMetaList(props) {
             </span>
         </span>
         <div onScroll={checkUpdates} ref={listPane} className="conversationMetaContainer">
-            <span className="smallButton"
-                style={{ color: (oldestFirst ? "blue" : "black") }}
-                onClick={() => changeOldestFirst(false)}
-            >
-                {oldestFirst ? "View Newest" : "Currently Viewing Newest"}
-            </span>
-            {` | `}
-            <span
-                className="smallButton"
-                style={{ color: (!oldestFirst ? "blue" : "black") }}
-                onClick={() => changeOldestFirst(true)}
-            >
-                {!oldestFirst ? "View Oldest" : "Currently Viewing Oldest"}
-            </span>
+            {renderingNames ? <>
+                <span className="smallButton"
+                    style={{ color: (oldestFirst ? "blue" : "black") }}
+                    onClick={() => changeOldestFirst(false)}
+                >
+                    {oldestFirst ? "View Newest" : "Currently Viewing Newest"}
+                </span>
+                {` | `}
+                <span
+                    className="smallButton"
+                    style={{ color: (!oldestFirst ? "blue" : "black") }}
+                    onClick={() => changeOldestFirst(true)}
+                >
+                    {!oldestFirst ? "View Oldest" : "Currently Viewing Oldest"}
+                </span></>
+                : null}
             {renderedList}
         </div>
     </>
@@ -251,7 +253,7 @@ function ConversationInfo() {
             <NicknameSetter changed={acceptChange} {...info.other_person} />
         }
         <NotesSetter changed={acceptChange} notes={info.notes} />
-        <ConversationMetaList id={info.id} />
+        {info.type == "group" ? <ConversationMetaList id={info.id} /> : null}
     </>
 }
 
