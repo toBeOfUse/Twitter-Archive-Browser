@@ -1,0 +1,150 @@
+* {
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    padding: 4px;
+}
+
+label {
+    margin: 1em 0;
+}
+
+#root {
+    min-height: 100%;
+    display: flex;
+    width: 60%;
+    margin: 0 auto;
+}
+
+.leftPane {
+    height: 25%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 20%;
+}
+
+.bigLink {
+    color: blue;
+    font-size: 20px;
+}
+
+.activeBigLink {
+    color: black;
+}
+
+.contentPane {
+    font-family: sans-serif;
+    min-height: 100%;
+    width: 75%;
+    border: 2px black solid;
+    display:flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+/* conversations */
+
+#conversationOrderSelect {
+    margin: 0 5px 0 5px;
+}
+
+#conversationList {
+    margin-top: 10px;
+    margin-left: -12px;
+    margin-right: -10px;
+    overflow-y: scroll;
+    border-top: 1px solid black;
+}
+
+.conversationListing {
+    padding: 10px;
+    border-width: 0 0 1px 0;
+    border-style: solid;
+    border-color: black;
+    display: flex;
+    align-items: center;
+}
+
+.conversationName {
+    font-size: 16px;
+    margin-right: 10px;
+    text-decoration: underline;
+}
+
+.conversationDate {
+    font-size: 12px;
+}
+
+.conversationImage {
+    height: 35px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.conversationInfoImage {
+    height: 60px;
+    border-radius: 50%;
+    margin-left: 20px;
+}
+
+.conversationInfoIcon {
+    height: 20px;
+    width: 20px;
+    margin-left: 10px;
+}
+
+.conversationInfoHeading {
+    display: flex;
+    align-items: center;
+}
+
+.conversationInfoLinks {
+    display: inline;
+    margin-left: 25px;
+    line-height: 25px;
+}
+
+.conversationStatsRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+.conversationStatsContainer {
+    width: 20%;
+    text-align: center;    
+}
+
+.notesEntry {
+    display: block;
+    width: 90%;
+    height: 100px;
+}
+
+.namesContainer {
+    width: 90%;
+    height: 200px;
+    overflow-y: scroll;
+}
+
+/* general */
+
+.verticalLine {
+    width: 1px;
+    height: 85%;
+    background-color: black;
+}
+
+.smallEditButton {
+    text-decoration: underline;
+    cursor: pointer;
+}
