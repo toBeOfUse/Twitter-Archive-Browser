@@ -10,7 +10,7 @@
             "program": "main.py",
             "args": ["../data/"],
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": true
         },
         {
             "name": "Python: Current File",
