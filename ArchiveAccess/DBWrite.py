@@ -270,6 +270,12 @@ class TwitterDataWriter(Connection):
 
         self.added_messages = 0
 
+        # maps participant tuples (user_id, conversation_id) to a list of all of the
+        # joining/leaving events that happened with them (event_type, datestring). in
+        # the finalize method, this is used to find the first join and last leave for
+        # them.
+        self.participant_events = {}
+
     @property
     def added_conversations(self):
         """returns number of conversations that have been stored in the database;
@@ -351,6 +357,7 @@ class TwitterDataWriter(Connection):
                 conversation. we know this if we're processing a participantsJoin event.
         """
         user_id = str(user_id)
+        participant_tuple = (user_id, conversation_id)
         if added_by:
             added_by = str(added_by)
         if (
@@ -363,60 +370,17 @@ class TwitterDataWriter(Connection):
                             values (?, ?);""",
                 (user_id, conversation_id),
             )
-            self.added_participants_cache.add((user_id, conversation_id))
+            self.added_participants_cache.add(participant_tuple)
+            self.participant_events[participant_tuple] = []
         if start_time:
-            existing_end_time, existing_start_time = self.execute(
-                """select end_time, start_time from participants
-                    where participant=? and conversation=?;""",
-                (int(user_id), conversation_id),
-            ).fetchone()
-            # only overwrite a start_time if you're replacing it with an earlier one
-            if existing_start_time is None or existing_start_time > start_time:
-                self.execute(
-                    """update participants 
-                        set start_time=? where participant=? and conversation=?;""",
-                    (
-                        start_time if start_time != "reset" else None,
-                        user_id,
-                        conversation_id,
-                    ),
-                )
-            if existing_end_time and existing_end_time < start_time:
-                # if there is an existing end_time and it's before this start time,
-                # wipe it out, because that means that the user came back after the
-                # existing end_time, rendering it irrelevant
-                self.execute(
-                    """update participants
-                        set end_time=? where participant=? and conversation=?;""",
-                    (None, user_id, conversation_id),
-                )
-
+            self.participant_events[participant_tuple].append(
+                ("start_time", start_time)
+            )
         if end_time:
-            existing_end_time, existing_start_time = self.execute(
-                """select end_time, start_time from participants
-                    where participant=? and conversation=?;""",
-                (int(user_id), conversation_id),
-            ).fetchone()
-            if existing_end_time is None or existing_end_time < end_time:
-                # only overwrite an existing end_time value if you're replacing it
-                # with a later one
-                self.execute(
-                    """update participants
-                        set end_time=? where participant=? and conversation=?;""",
-                    (end_time, user_id, conversation_id),
-                )
-            if existing_start_time and existing_start_time > end_time:
-                # if there is an existing start time and it's greater than this
-                # end_time, wipe it out, because this means that the user must have
-                # been in this conversation Before that start time, otherwise they
-                # could not possibly Leave before it
-                self.execute(
-                    """update participants
-                        set start_time=? where participant=? and conversation=?;""",
-                    (None, user_id, conversation_id),
-                )
-
+            self.participant_events[participant_tuple].append(("end_time", end_time))
         if added_by:
+            # TODO: if there are multiple added_by values, this becomes kind of an
+            # arbitrary one
             self.execute(
                 """update participants 
                     set added_by=? where participant=? and conversation=?;""",
@@ -455,6 +419,9 @@ class TwitterDataWriter(Connection):
         # either both should be present or neither
         assert (first_time and added_by) or (not first_time and not added_by)
         if first_time and added_by:
+            # TODO: worry about the possibility of multiple joinConversation events
+            # that will result in this code running multiple times and saving an
+            # arbitrary selection of values
             self.execute(
                 """update conversations 
                     set first_time=?, added_by=?, created_by_me=? where id=?;""",
@@ -627,7 +594,9 @@ class TwitterDataWriter(Connection):
             for user_id in message["participantsSnapshot"]:
                 self.add_user_if_necessary(user_id)
                 self.add_participant_if_necessary(
-                    user_id, message["conversationId"], start_time="reset"
+                    user_id,
+                    message["conversationId"],
+                    start_time="0000-00-00T00:00:00.000Z",
                 )
 
         self.added_messages += 1
@@ -637,9 +606,46 @@ class TwitterDataWriter(Connection):
         to put into the gaps in the participants and conversations tables; waits for
         the fetching of user data from the twitter api to be done; optimizes,
         shrinks, and closes the database."""
-        self.commit()
 
         print("indexing data...")
+
+        # TODO: refactor this loop into a separate function and test it
+
+        for participant_tuple, events in self.participant_events.items():
+            if events:
+                events_in_order = sorted(events, key=lambda x: x[1])
+                # the actual start_time is the first join event not preceded by a
+                # leave, so, it has to be at the front of the event list, since joins
+                # and leaves have to happen in pairs in that order; vice versa for
+                # the actual end_time, which has to be a leave event that is the last
+                # element in the list in order to not be cancelled out by a later join
+                actual_start = (
+                    events_in_order[0][1]
+                    if events_in_order[0][0] == "start_time"
+                    else None
+                )
+                # caused by an conversationJoin where the participant snapshot
+                # reveals that the user was definitely there starting before you
+                if actual_start == "0000-00-00T00:00:00.000Z":
+                    actual_start = None
+                actual_end = (
+                    events_in_order[-1][1]
+                    if events_in_order[-1][0] == "end_time"
+                    else None
+                )
+            else:
+                actual_start = None
+                actual_end = None
+            self.execute(
+                """update participants
+                            set start_time=?, end_time=?
+                            where participant=? and conversation=?;""",
+                (actual_start, actual_end)
+                + (int(participant_tuple[0]), participant_tuple[1]),
+            )
+
+        self.commit()
+
         with open(SQL_SCRIPTS_PATH / "indexes.sql") as index_script:
             self.executescript(index_script.read())
         with open(

@@ -635,9 +635,11 @@ async def test_traverse_messages(
         key=lambda x: x["createdAt"],
     )
 
-    for message in main_conversation + decoy_conversation:
+    chrono_sort = lambda x: sorted(x, key=lambda y: y["createdAt"], reverse=True)
+
+    for message in chrono_sort(main_conversation) + chrono_sort(decoy_conversation):
         writer.add_message(message, True)
-    for message in user_conversation:
+    for message in chrono_sort(user_conversation):
         writer.add_message(message)
     await writer.finalize()
 

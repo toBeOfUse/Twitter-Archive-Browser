@@ -6,7 +6,7 @@ participants calculated in cache_conversation_stats.sql are assumed to be absent
 here"""
 
 from ArchiveAccess.DBWrite import TwitterDataWriter
-from pytest import fixture
+from pytest import fixture, mark
 from collections import deque
 from typing import Final
 import re
@@ -322,6 +322,9 @@ def test_known_participant_join(writer: TwitterDataWriter, messages: deque[dict]
         writer, join_event["initiatingUserId"], join_event["conversationId"]
     )
     for user in join_event["userIds"]:
+        assert ("start_time", join_event["createdAt"]) in writer.participant_events[
+            (user, join_event["conversationId"])
+        ]
         check_user(writer, user)
         assert writer.execute(
             "select * from participants where participant=? and conversation=?;",
@@ -330,7 +333,8 @@ def test_known_participant_join(writer: TwitterDataWriter, messages: deque[dict]
             int(user),
             join_event["conversationId"],
             None,
-            join_event["createdAt"],
+            # join_event["createdAt"],
+            None,
             None,
             int(join_event["initiatingUserId"]),
         )
@@ -342,17 +346,9 @@ def test_join_after_leave(writer: TwitterDataWriter, messages: deque[dict]):
     check_conversation(writer, leave_event, True)
     for user in leave_event["userIds"]:
         check_user(writer, user)
-        assert writer.execute(
-            "select * from participants where participant=? and conversation=?;",
-            (int(user), leave_event["conversationId"]),
-        ).fetchone() == (
-            int(user),
-            leave_event["conversationId"],
-            None,
-            None,
-            leave_event["createdAt"],
-            None,
-        )
+        assert ("end_time", leave_event["createdAt"]) in writer.participant_events[
+            (user, leave_event["conversationId"])
+        ]
 
     join_event = messages.popleft()
     writer.add_message(join_event, True)
@@ -362,6 +358,14 @@ def test_join_after_leave(writer: TwitterDataWriter, messages: deque[dict]):
     )
     user = join_event["userIds"][0]
     check_user(writer, user)
+    # todo: with separate fixtures for each test's data this wouldn't have to be
+    # hard-coded; it can be taken from the data for the above tests
+    assert ("end_time", "2016-02-19T01:38:06.141Z") in writer.participant_events[
+        (user, join_event["conversationId"])
+    ]
+    assert ("start_time", join_event["createdAt"]) in writer.participant_events[
+        (user, join_event["conversationId"])
+    ]
     assert writer.execute(
         "select * from participants where participant=? and conversation=?;",
         (int(user), join_event["conversationId"]),
@@ -369,10 +373,8 @@ def test_join_after_leave(writer: TwitterDataWriter, messages: deque[dict]):
         int(user),
         join_event["conversationId"],
         None,
-        join_event["createdAt"],
-        # todo: with separate fixtures for each test's data this wouldn't have to be
-        # hard-coded; it can be taken from the data for the above tests
-        "2016-02-19T01:38:06.141Z",
+        None,
+        None,
         16573941,
     )
 
@@ -385,6 +387,9 @@ def test_new_participants_join(writer: TwitterDataWriter, messages: deque[dict])
         writer, join_event["initiatingUserId"], join_event["conversationId"]
     )
     for user in join_event["userIds"]:
+        assert ("start_time", join_event["createdAt"]) in writer.participant_events[
+            (user, join_event["conversationId"])
+        ]
         check_user(writer, user)
         assert writer.execute(
             "select * from participants where participant=? and conversation=?;",
@@ -393,7 +398,7 @@ def test_new_participants_join(writer: TwitterDataWriter, messages: deque[dict])
             int(user),
             join_event["conversationId"],
             None,
-            join_event["createdAt"],
+            None,
             None,
             int(join_event["initiatingUserId"]),
         )
@@ -420,6 +425,9 @@ def test_self_being_added(writer: TwitterDataWriter, messages: deque[dict]):
     )
     check_user(writer, message["initiatingUserId"])
     check_participant(writer, message["initiatingUserId"], message["conversationId"])
+    assert ("start_time", message["createdAt"]) in writer.participant_events[
+        (str(MAIN_USER_ID), message["conversationId"])
+    ]
     assert writer.execute(
         "select * from participants where participant=? and conversation=?;",
         (MAIN_USER_ID, message["conversationId"]),
@@ -427,12 +435,16 @@ def test_self_being_added(writer: TwitterDataWriter, messages: deque[dict]):
         MAIN_USER_ID,
         message["conversationId"],
         None,
-        message["createdAt"],
+        None,
         None,
         int(message["initiatingUserId"]),
     )
     for user in message["participantsSnapshot"]:
         check_user(writer, user)
+        assert (
+            "start_time",
+            "0000-00-00T00:00:00.000Z",
+        ) in writer.participant_events[(user, message["conversationId"])]
         assert (
             writer.execute(
                 """select start_time
