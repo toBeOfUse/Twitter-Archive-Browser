@@ -34,7 +34,7 @@ function NicknameSetter(userInfo) {
             </label> :
             <p>@{userInfo.handle}'s nickname on this site is "{userInfo.nickname}".
             <span
-                    className="smallEditButton"
+                    className="smallButton"
                     onClick={startEditing}
                 >
                     (edit)

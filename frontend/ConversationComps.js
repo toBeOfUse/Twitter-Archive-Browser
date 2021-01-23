@@ -9,7 +9,9 @@ function ConversationListing(props) {
         <img className="conversationImage" src={props.image_url} />
         <span className="conversationName">{props.name}</span>
         <span className="conversationDate">
-            {`${zStringToDate(props.first_time)} - ${zStringToDate(props.last_time)}`}
+            {`${zStringToDate(props.first_time)}`}
+            <br />
+            {`${zStringToDate(props.last_time)}`}
         </span>
         <NavLink to={"/conversation/info/" + props.id}>
             <img className="conversationInfoIcon" src="/assets/svg/info.svg" />
@@ -42,20 +44,24 @@ function NotesSetter(props) {
     }
 
     return (editing ?
-        <p>Set conversation notes:
+        <label style={{ width: "90%" }}>Set conversation notes:
             <textarea className="notesEntry" onChange={editNotes} value={notes} />
             <button onClick={saveNotes}>Save</button>
-        </p> :
+        </label> :
         <p>Notes for this conversation: {props.notes}
-            <span className="smallEditButton" onClick={startEditing}>(edit)</span>
+            <span className="smallButton" onClick={startEditing}>(edit)</span>
         </p>
     );
 }
 
-function NameUpdateList(props) {
+function ConversationMetaList(props) {
+    const [renderingNames, setRenderingNames] = useState(true);
+    const [participants, setParticipants] = useState([]);
     const [updates, setUpdates] = useState([]);
     const [users, setUsers] = useState({});
-    const [order, setOrder] = useState("oldest");
+
+    const [oldestFirst, setOldestFirst] = useState(true);
+
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const listPane = useRef(null);
@@ -67,17 +73,31 @@ function NameUpdateList(props) {
             && page != -1
             && !loading) {
             setLoading(true);
-            const url = "/api/conversation/names?" +
-                `conversation=${props.id}&first=${order}&page=${page}`;
+            let url;
+            if (renderingNames) {
+                url = "/api/conversation/names?" +
+                    `conversation=${props.id}` +
+                    `&first=${oldestFirst ? "oldest" : "newest"}&page=${page}`;
+            } else {
+                url = `/api/users?conversation=${props.id}&page=${page}`
+            }
             fetch(url).then(r => r.json()
                 .then(j => {
-                    if (j.results.length) {
-                        setUpdates(
-                            (prevUpdates) => prevUpdates.concat(j.results)
-                        );
-                        setUsers(addToUserStore(users, j.users));
+                    if (renderingNames) {
+                        if (j.results.length) {
+                            setUpdates(
+                                (prevUpdates) => prevUpdates.concat(j.results)
+                            );
+                            setUsers(addToUserStore(users, j.users));
+                        } else {
+                            setPage(-1);
+                        }
                     } else {
-                        setPage(-1);
+                        if (j.results.length) {
+                            setParticipants(prevPart => prevPart.concat(j.results));
+                        } else {
+                            setPage(-1);
+                        }
                     }
                     setLoading(false);
                 })
@@ -88,18 +108,89 @@ function NameUpdateList(props) {
 
     useEffect(checkUpdates);
 
-    return <div onScroll={checkUpdates} ref={listPane} className="namesContainer">
-        {updates.length ?
-            updates.map(update => (
-                <p key={update.update_time}>
-                    {update.new_name +
-                        ` (set by @${users[update.initiator]?.handle} ` +
-                        `on ${zStringToDateTime(update.update_time)})`}
-                </p>
-            )) :
-            <p>loading...</p>
+    const reset = () => {
+        setUpdates([]);
+        setParticipants([]);
+        setPage(0);
+    }
+
+    const changeOldestFirst = (newValue) => {
+        if (oldestFirst != newValue) {
+            setOldestFirst(newValue);
+            reset();
         }
-    </div>
+    }
+
+    const changeRenderingNames = (newValue) => {
+        if (renderingNames != newValue) {
+            setRenderingNames(newValue);
+            reset();
+        }
+    }
+
+    let renderedList;
+    if (renderingNames && updates.length) {
+        renderedList = updates.map(update => (
+            <p key={update.update_time}>
+                {update.new_name +
+                    ` (set by @${users[update.initiator]?.handle} ` +
+                    `on ${zStringToDateTime(update.update_time)})`}
+            </p>
+        ));
+    } else if (!renderingNames && participants.length) {
+        renderedList = participants.map(participant => (
+            <p key={participant.handle}>
+                {(participant.nickname ? participant.nickname + " - " : "") +
+                    participant.display_name + " (@" + participant.handle + ")"
+                    + " | sent " +
+                    participant.messages_in_conversation.toLocaleString() +
+                    " messages | in conversation from " +
+                    (zStringToDate(participant.join_time) || "before you") +
+                    " to " + (zStringToDate(participant.leave_time) || "now") +
+                    " | View User"
+                }
+            </p>
+        ));
+    } else {
+        renderedList = <p>loading...</p>;
+    }
+
+    return <>
+        <span>
+            <span
+                onClick={() => changeRenderingNames(true)}
+                className="smallButton"
+                style={{ color: (!renderingNames ? "blue" : "black") }}
+            >
+                {renderingNames ? "Currently Viewing Name Updates" : "Switch to Name Updates"}
+            </span>
+            {" | "}
+            <span
+                onClick={() => changeRenderingNames(false)}
+                className="smallButton"
+                style={{ color: (renderingNames ? "blue" : "black") }}
+            >
+                {!renderingNames ? "Currently Viewing Participants" : "Switch to Participants"}
+            </span>
+        </span>
+        <div onScroll={checkUpdates} ref={listPane} className="conversationMetaContainer">
+            <span className="smallButton"
+                style={{ color: (oldestFirst ? "blue" : "black") }}
+                onClick={() => changeOldestFirst(false)}
+            >
+                {oldestFirst ? "View Newest" : "Currently Viewing Newest"}
+            </span>
+            {` | `}
+            <span
+                className="smallButton"
+                style={{ color: (!oldestFirst ? "blue" : "black") }}
+                onClick={() => changeOldestFirst(true)}
+            >
+                {!oldestFirst ? "View Oldest" : "Currently Viewing Oldest"}
+            </span>
+            {renderedList}
+        </div>
+    </>
 }
 
 
@@ -127,11 +218,11 @@ function ConversationInfo() {
 
     return <>
         <div className="conversationInfoHeading">
+            <img className="conversationInfoImage" src={info.image_url} />
             <h1>Conversation Info</h1>
             <span className="conversationInfoLinks">
                 <span>View Messages</span><br /><span>Share Conversation</span>
             </span>
-            <img className="conversationInfoImage" src={info.image_url} />
         </div>
         <h3>{name}</h3>
         <div className="conversationStatsRow">
@@ -160,7 +251,7 @@ function ConversationInfo() {
             <NicknameSetter changed={acceptChange} {...info.other_person} />
         }
         <NotesSetter changed={acceptChange} notes={info.notes} />
-        <NameUpdateList id={info.id} />
+        <ConversationMetaList id={info.id} />
     </>
 }
 
@@ -245,16 +336,16 @@ function ConversationList() {
                         name="group"
                         checked={types.group}
                         onChange={changeTypes} />
-            Group
-    </label>
+                        Group
+                </label>
                 <label>
                     <input
                         type="checkbox"
                         name="individual"
                         checked={types.individual}
                         onChange={changeTypes} />
-            Individual
-    </label>
+                        Individual
+                </label>
             </div>
         </div>
         <div id="conversationList" onScroll={checkConversations} ref={listPane}>

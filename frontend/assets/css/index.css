@@ -14,10 +14,11 @@ body {
 
 label {
     margin: 1em 0;
+    white-space: nowrap;
 }
 
 #root {
-    min-height: 100%;
+    height: 100%;
     display: flex;
     width: 60%;
     margin: 0 auto;
@@ -31,6 +32,12 @@ label {
     width: 20%;
 }
 
+@media (max-width: 500px) {
+    .leftPane {
+        display: none;
+    }
+}
+
 .bigLink {
     color: blue;
     font-size: 20px;
@@ -42,12 +49,25 @@ label {
 
 .contentPane {
     font-family: sans-serif;
-    min-height: 100%;
+    overflow-y: auto;
+    max-height: 95vh;
     width: 75%;
     border: 2px black solid;
-    display:flex;
+    display: flex;
     flex-direction: column;
     padding: 10px;
+    align-items: center;
+}
+
+@media (max-width: 500px) {
+    #root {
+        width: 100%;
+        font-size: 0.7em;
+    }
+    .contentPane {
+        width: 95%;
+        margin: 0 auto;
+    }
 }
 
 /* conversations */
@@ -56,12 +76,19 @@ label {
     margin: 0 5px 0 5px;
 }
 
+#conversationHeader {
+    width: 100%;
+    /*height: 100px;*/
+}
+
 #conversationList {
     margin-top: 10px;
     margin-left: -12px;
     margin-right: -10px;
     overflow-y: scroll;
     border-top: 1px solid black;
+    width: 100%;
+    /*height: calc(100% - 100px);*/
 }
 
 .conversationListing {
@@ -81,6 +108,9 @@ label {
 
 .conversationDate {
     font-size: 12px;
+    text-align: center;
+    margin-left: auto;
+    width: 70px;
 }
 
 .conversationImage {
@@ -92,7 +122,6 @@ label {
 .conversationInfoImage {
     height: 60px;
     border-radius: 50%;
-    margin-left: 20px;
 }
 
 .conversationInfoIcon {
@@ -104,12 +133,17 @@ label {
 .conversationInfoHeading {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+}
+
+.conversationInfoHeading>* {
+    margin-right: 20px;
 }
 
 .conversationInfoLinks {
     display: inline;
-    margin-left: 25px;
-    line-height: 25px;
+    line-height: 20px;
+    text-decoration: underline;
 }
 
 .conversationStatsRow {
@@ -121,19 +155,22 @@ label {
 
 .conversationStatsContainer {
     width: 20%;
-    text-align: center;    
+    text-align: center;
 }
 
 .notesEntry {
     display: block;
-    width: 90%;
+    width: 100%;
     height: 100px;
 }
 
-.namesContainer {
+.conversationMetaContainer {
     width: 90%;
-    height: 200px;
+    min-height: 100px;
     overflow-y: scroll;
+    line-height: 1.3em;
+    border: 1px solid black;
+    border-radius: 5px;
 }
 
 /* general */
@@ -144,7 +181,7 @@ label {
     background-color: black;
 }
 
-.smallEditButton {
+.smallButton {
     text-decoration: underline;
     cursor: pointer;
 }

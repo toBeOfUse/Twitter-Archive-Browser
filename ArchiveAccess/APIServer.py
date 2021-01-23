@@ -61,7 +61,7 @@ class ArchiveAPIServer:
 
     def start(self):
         subprocess.Popen(
-            ["npx", "webpack", "--watch", "--stats", "minimal"],
+            "npx webpack --watch --stats minimal",
             # stdout=subprocess.PIPE,
             # stderr=subprocess.PIPE,
             shell=True,
