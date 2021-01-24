@@ -494,6 +494,7 @@ class TwitterDataReader(sqlite3.Connection):
             db_path, uri=("mode=memory" in str(db_path))
         )
         self.row_factory = sqlite3.Row
+        self.users_cache = {}
 
     def get_users_by_id(
         self, user_ids: Iterable[int], sidecar: bool = True
@@ -509,12 +510,28 @@ class TwitterDataReader(sqlite3.Connection):
         # to make sure that it isn't an unordered type like a set, for the below
         user_ids = list(user_ids)
 
+        users = []
+        uncached_ids = []
+
+        if sidecar:
+            for user_id in user_ids:
+                if user_id in self.users_cache:
+                    users.append(self.users_cache[user_id])
+                else:
+                    uncached_ids.append(user_id)
+        else:
+            uncached_ids = user_ids
+
         with set_row_mode(self, user_class.from_row):
-            return self.execute(
+            uncached_users = self.execute(
                 user_class.db_select
-                + f" where id in ({', '.join(['?' for _ in range(len(user_ids))])});",
+                + f" where id in ({', '.join(['?' for _ in range(len(uncached_ids))])});",
                 user_ids,
             ).fetchall()
+            if sidecar:
+                for user in uncached_users:
+                    self.users_cache[user.id] = user
+            return users + uncached_users
 
     def get_users_by_message_count(
         self, page_number: int, conversation_id: str = None
@@ -543,6 +560,7 @@ class TwitterDataReader(sqlite3.Connection):
             "update users set nickname=? where id=?;",
             (new_nickname[0:50], int(user_id)),
         )
+        self.users_cache.pop(int(user_id), None)
         self.commit()
 
     def set_user_notes(self, user_id: Union[str, int], new_notes: str) -> None:
@@ -550,6 +568,7 @@ class TwitterDataReader(sqlite3.Connection):
             "update users set notes=? where id=?;",
             (new_notes, int(user_id)),
         )
+        self.users_cache.pop(int(user_id), None)
         self.commit()
 
     def get_user_avatar(self, id: Union[int, str]) -> bytes:
@@ -878,6 +897,37 @@ class TwitterDataReader(sqlite3.Connection):
             ).fetchone()
             users = self.get_users_by_id(set(message.user_ids))
             return {"results": [message], "users": users}
+
+    def get_random_messages(self) -> dict[str, list]:
+        with set_row_mode(self, Message.from_row):
+            messages = self.execute(
+                Message.db_select
+                + " where id IN (SELECT id FROM messages ORDER BY RANDOM() LIMIT ?);",
+                (MESSAGES_PER_PAGE,),
+            ).fetchall()
+            # TODO: it doesn't actually make sense to sum all those little lists
+            # instead of just walking through the values in them; this applies in
+            # other similar methods as well
+            users = self.get_users_by_id(
+                [int(x) for x in set(sum((x.user_ids for x in messages), []))]
+            )
+            return {"results": messages, "users": users}
+
+    def get_global_stats(self) -> dict:
+        if not hasattr(self, "global_stats_cache"):
+            with set_row_mode(self, sqlite3.Row):
+                self.global_stats_cache = dict(
+                    self.execute(
+                        """select 
+                        (select count() from conversations) as number_of_conversations,
+                        (select count() from users) as number_of_users,
+                        (select count() from messages) as number_of_messages,
+                        (select min(first_time) from conversations) as earliest_message,
+                        (select max(last_time) from conversations) as latest_message;
+                    """
+                    ).fetchone()
+                )
+        return self.global_stats_cache
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -186,6 +186,12 @@ class SetConversationNotes(APIRequestHandler):
         self.finish(None)
 
 
+@handles(r"/api/messages/random")
+class RandomMessages(APIRequestHandler):
+    def get(self):
+        self.finish(self.db.get_random_messages())
+
+
 @handles(r"/api/messages")
 class Messages(APIRequestHandler):
     def get(self):
@@ -216,6 +222,12 @@ class SingleUser(APIRequestHandler):
         self.finish(
             self.db.get_users_by_id([self.get_query_argument("id")], False)[0]
         )
+
+
+@handles(r"/api/globalstats")
+class SingleUser(APIRequestHandler):
+    def get(self):
+        self.finish(self.db.get_global_stats())
 
 
 @handles(r"/api/user/nickname")

@@ -70,6 +70,10 @@ The search clause allows you to further filter message results by their contents
 
 Gets the database record for a specific message; the message will still be contained in a "results" array alongside a "users" array.
 
+### `GET /api/messages/random`
+
+Gets 40 random messages (no conversation events) from the database. Follows the same {results: [], user: []} schema as the above.
+
 ### `GET /api/media/[group|individual]/[filename]`
 
 Retrieves media from the folder in the Twitter archive where it is stored. Media objects returned with messages already include the /group/ or /individual/ components in their "file_path" fields, so to get a url to retrieve media based on those, just append their file_path to "/api/media".
@@ -102,5 +106,12 @@ Sets the nickname field in the database for a user to the plain text in the body
 ### `POST /api/user/notes?id=[user_id]`
 
 Sets the notes field for this user to the plain text in the body of this request. This endpoint can only be used by clients who were authenticated via the master password.
+
+Misc
+----
+
+### `GET /api/globalstats`
+
+Returns a JSON object with fields number_of_conversations, number_of_users, number_of_messages, (numbers) and earliest_message and latest_message (datestrings).
 
 """
