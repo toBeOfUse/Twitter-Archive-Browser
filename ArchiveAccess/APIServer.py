@@ -18,13 +18,8 @@ class DevStaticFileHandler(StaticFileHandler):
 
 class ServeFrontend(RequestHandler):
     def get(self, path):
-        with open("./frontend/index.html") as page:
+        with open("./frontend/assets/html/index.html") as page:
             self.finish(page.read())
-
-    def set_extra_headers(self, path):
-        self.set_header(
-            "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
-        )
 
 
 class ArchiveAPIServer:
@@ -62,8 +57,6 @@ class ArchiveAPIServer:
     def start(self):
         subprocess.Popen(
             "npx webpack --watch --stats minimal",
-            # stdout=subprocess.PIPE,
-            # stderr=subprocess.PIPE,
             shell=True,
         )
         print("starting server on port 8008")

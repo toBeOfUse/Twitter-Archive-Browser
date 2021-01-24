@@ -301,7 +301,7 @@ function ConversationList() {
 
     const checkConversations = () => {
         const el = listPane.current;
-        if ((el.scrollHeight < el.parentElement.scrollHeight
+        if (el && (el.scrollHeight < el.parentElement.scrollHeight
             || el.scrollTop + el.offsetHeight > el.scrollHeight - 30)
             && page != -1
             && !loading) {

@@ -33,23 +33,45 @@ function MessagePage() {
 
     if (messagesPane.current) {
 
+        // this logic sets the correct scroll position if the scrollHeight of the
+        // messages pane has changed since the last render i. e. if messages have
+        // been aded to it.
+
         const currentScrollHeight = messagesPane.current.scrollHeight;
         const currentScrollTop = messagesPane.current.scrollTop;
 
         if (prevScrollHeight != currentScrollHeight) {
             if (lastLoadDirection == "up") {
-                messagesPane.current.scrollTop = prevScrollTop + (currentScrollHeight - prevScrollHeight);
+                // if messages were loaded above the current ones than the scroll
+                // position needs to be moved downward by the height of the new
+                // messages, to keep it the same relative to the messages the user
+                // was already looking at.
+                messagesPane.current.scrollTop = (
+                    prevScrollTop + (currentScrollHeight - prevScrollHeight)
+                );
             } else if (lastLoadDirection == "down") {
+                // this makes sure the scroll position stays the same if more
+                // messages are added below the current one, which is probably
+                // unnecessary but can't hurt.
                 messagesPane.current.scrollTop = prevScrollTop;
             } else if (lastLoadDirection == "start") {
+                // if this is the first load, we have to make sure that the messages
+                // are scrolled to that are indicated by the startingPlace parameter.
                 if (!startingPlace || startingPlace == "end") {
-                    messagesPane.current.scrollTop = currentScrollHeight - messagesPane.current.offsetHeight;
+                    messagesPane.current.scrollTop = (
+                        currentScrollHeight - messagesPane.current.offsetHeight
+                    );
                 } else if (startingPlace == "beginning") {
                     messagesPane.current.scrollTop = 0;
+                } else {
+                    // this sets the scrolling position to the middle; TODO: come up
+                    // with a way to center the message closest to the startingPlace
+                    // timestamp
+                    messagesPane.current.scrollTop = (
+                        (currentScrollHeight / 2) -
+                        messagesPane.current.offsetHeight / 2
+                    );
                 }
-                // this needs to be different if start is at a specific timestamp;
-                // then, we need to find that message and scroll to it and highlight
-                // it? maybe? 
             }
         }
 

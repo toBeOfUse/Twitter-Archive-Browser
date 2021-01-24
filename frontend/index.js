@@ -5,6 +5,8 @@ import { ConversationList, ConversationInfo } from "./ConversationComps";
 import { UserInfo } from "./UserComps";
 import { GlobalStats } from "./GlobalStats";
 import { MessagePage } from "./MessageComps"
+import "normalize.css";
+import "./assets/css/index.css";
 
 console.log("hello world")
 ReactDOM.render(<App></App>, document.getElementById("root"));
