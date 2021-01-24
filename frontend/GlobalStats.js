@@ -5,31 +5,39 @@ import { addToUserStore } from "./UserComps"
 function GlobalStats() {
     const [stats, setStats] = useState(null);
     const [messages, setMessages] = useState(null);
+    const [loadingMessages, setLoadingMessages] = useState(false);
+    const [loadingStats, setLoadingStats] = useState(false);
     const [users, setUsers] = useState({});
 
-    if (!stats) {
+    if (!stats && !loadingStats) {
+        setLoadingStats(true);
         fetch("/api/globalstats").then(
-            r => r.json().then(result => setStats(result))
+            r => r.json().then(result => {
+                setStats(result);
+                setLoadingStats(false);
+            })
         );
     }
 
-    if (!messages) {
+    if (!messages && !loadingMessages) {
+        setLoadingMessages(true);
         fetch("/api/messages/random").then(
             r => r.json().then(result => {
                 setMessages(result.results);
                 setUsers(oldUsers => addToUserStore(oldUsers, result.users));
+                setLoadingMessages(false);
             })
         );
     }
 
     const renderedStats = stats ? <>
-        <div className="statsRow">
-            <div className="statsContainer">
+        <div className="statsRow" style={{ width: "100%" }}>
+            <div className="statsContainer" style={{ width: "100%" }}>
                 <p>First message</p>
                 <h3>{zStringToDateTime(stats.earliest_message)}</h3>
             </div>
             <div className="verticalLine" />
-            <div className="statsContainer">
+            <div className="statsContainer" style={{ width: "100%" }}>
                 <p>Last message</p>
                 <h3>{zStringToDateTime(stats.latest_message)}</h3>
             </div>
@@ -58,7 +66,11 @@ function GlobalStats() {
             const innerHtml = v.html_content +
                 " - @" + users[v.sender]?.handle + ", " +
                 zStringToDate(v.sent_time);
-            return <p key={v.id} dangerouslySetInnerHTML={{ __html: innerHtml }}></p>
+            return <p
+                style={{ textAlign: "center" }}
+                key={v.id}
+                dangerouslySetInnerHTML={{ __html: innerHtml }}
+            ></p>
         })}
     </> : <p>loading...</p>
 

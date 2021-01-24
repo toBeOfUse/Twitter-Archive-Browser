@@ -4,6 +4,7 @@ import { BrowserRouter as Router, NavLink, Switch, Route, Redirect } from "react
 import { ConversationList, ConversationInfo } from "./ConversationComps";
 import { UserInfo } from "./UserComps";
 import { GlobalStats } from "./GlobalStats";
+import { MessagePage } from "./MessageComps"
 
 console.log("hello world")
 ReactDOM.render(<App></App>, document.getElementById("root"));
@@ -24,9 +25,10 @@ function App() {
                 <div className="contentPane">
                     <Switch>
                         <Route exact path="/">
+                            <Redirect to="/conversations" />
                         </Route>
                         <Route path="/conversations">
-                            <ConversationList></ConversationList>
+                            <ConversationList />
                         </Route>
                         <Route path="/conversation/info/:id">
                             <ConversationInfo />
@@ -34,11 +36,14 @@ function App() {
                         <Route path="/user/info/:id">
                             <UserInfo />
                         </Route>
+                        <Route path={["/:type/messages/:id", "/messages"]}>
+                            <MessagePage />
+                        </Route>
                         <Route path="/stats">
                             <GlobalStats />
                         </Route>
                         <Route path="*">
-                            <Redirect to="/404"></Redirect>
+                            <Redirect to="/404" />
                         </Route>
                     </Switch>
                 </div>

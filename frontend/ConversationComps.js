@@ -48,7 +48,7 @@ function NotesSetter(props) {
             <textarea className="notesEntry" onChange={editNotes} value={notes} />
             <button onClick={saveNotes}>Save</button>
         </label> :
-        <p>Notes for this conversation: {props.notes}
+        <p>Notes for this conversation: {props.notes + " "}
             <span className="smallButton" onClick={startEditing}>(edit)</span>
         </p>
     );
@@ -256,7 +256,7 @@ function ConversationInfo() {
         {info.type == "group" ? null :
             <NicknameSetter changed={acceptChange} {...info.other_person} />
         }
-        <NotesSetter changed={acceptChange} notes={info.notes} />
+        <NotesSetter changed={acceptChange} notes={info.notes} id={info.id} />
         {info.type == "group" ? <ConversationMetaList id={info.id} /> : null}
     </>
 }
@@ -327,7 +327,10 @@ function ConversationList() {
 
     return <>
         <div id="conversationHeader">
-            <h1>Conversations</h1>
+            <div style={{ display: "flex", alignItems: "center" }}>
+                <h1 style={{ marginRight: 10 }}>Conversations</h1>
+                <NavLink to="/stats">(stats)</NavLink>
+            </div>
             <div>
                 <span>Sort by:</span>
                 <select id="conversationOrderSelect" value={order} onChange={changeOrder}>

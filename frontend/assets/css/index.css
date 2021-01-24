@@ -150,6 +150,7 @@ a:active {
     display: inline;
     line-height: 20px;
     text-decoration: underline;
+    white-space: nowrap;
 }
 
 .statsRow {
@@ -177,6 +178,13 @@ a:active {
     line-height: 1.3em;
     border: 1px solid black;
     border-radius: 5px;
+}
+
+/* messages */
+
+#messagesPane {
+    width: 100%;
+    overflow-y: scroll;
 }
 
 /* general */

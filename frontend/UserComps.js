@@ -36,7 +36,7 @@ function NicknameSetter(userInfo) {
                 <button onClick={saveNickname}>Save</button>
             </div>
         </div> :
-            <p>Nickname: "{userInfo.nickname}".
+            <p>User's nickname: "{userInfo.nickname}".
             <span
                     className="smallButton"
                     onClick={startEditing}
@@ -103,7 +103,15 @@ function UserInfo() {
             </div>
             <span className="infoPageLinks">
                 <span>View Messages</span>
-                {info.loaded_full_data ? <><br className="noMobile" /><span className="onlyMobile"> | </span><span>See them on Twitter</span></> : null}
+                {info.loaded_full_data ? <>
+                    <br className="noMobile" />
+                    <span className="onlyMobile"> | </span>
+                    <a
+                        href={"http://twitter.com/" + info.handle}
+                        target="_blank">
+                        See them on Twitter
+                    </a>
+                </> : null}
             </span>
         </div>
         <NicknameSetter changed={acceptChange} {...info} />
