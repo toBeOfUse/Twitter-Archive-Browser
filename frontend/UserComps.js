@@ -25,15 +25,17 @@ function NicknameSetter(userInfo) {
     const startEditing = () => setEditing(true);
 
     return <>
-        {editing ?
-            <label>Set @{userInfo.handle}'s nickname:
+        {editing ? <div className="rowToColumn infoPageHeading">
+            <label>Set @{userInfo.handle}'s nickname:</label>
+            <div>
                 <input
                     style={{ marginLeft: 5 }}
                     value={nickname}
                     onChange={changeNickname}
                     type="text" />
                 <button onClick={saveNickname}>Save</button>
-            </label> :
+            </div>
+        </div> :
             <p>Nickname: "{userInfo.nickname}".
             <span
                     className="smallButton"
@@ -91,15 +93,17 @@ function UserInfo() {
     }
 
     return info ? <>
-        <div className="infoPageHeading">
-            <img className="infoPageImage" src={info.avatar_url} />
-            <h3>
-                {info.display_name + ` (@${info.handle})`}
-            </h3>
-            <h1>User Info</h1>
+        <div className="infoPageHeading rowToColumn">
+            <div className="infoPageHeading">
+                <img className="infoPageImage" src={info.avatar_url} />
+                <h3>
+                    {info.display_name + ` (@${info.handle})`}
+                </h3>
+                <h1>User Info</h1>
+            </div>
             <span className="infoPageLinks">
                 <span>View Messages</span>
-                {info.loaded_full_data ? <><br /><span>See them on Twitter</span></> : null}
+                {info.loaded_full_data ? <><br className="noMobile" /><span className="onlyMobile"> | </span><span>See them on Twitter</span></> : null}
             </span>
         </div>
         <NicknameSetter changed={acceptChange} {...info} />

@@ -142,10 +142,8 @@ a:active {
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-}
-
-.infoPageHeading>* {
-    margin-right: 20px;
+    justify-content: space-evenly;
+    width: 100%;
 }
 
 .infoPageLinks {

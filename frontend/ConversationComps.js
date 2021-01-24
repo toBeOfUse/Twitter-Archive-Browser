@@ -32,7 +32,7 @@ function NotesSetter(props) {
     }
 
     const saveNotes = () => {
-        fetch("/api/conversation/notes?id=" + userInfo.id, {
+        fetch("/api/conversation/notes?id=" + props.id, {
             method: "POST",
             headers: {
                 "Content-Type": "text/plain"
@@ -219,7 +219,7 @@ function ConversationInfo() {
                 <h1>Conversation Info</h1>
             </div>
             <span className="infoPageLinks">
-                <span>View Messages</span><br class="noMobile" /><span className="onlyMobile"> | </span><span>Share Conversation</span>
+                <span>View Messages</span><br className="noMobile" /><span className="onlyMobile"> | </span><span>Share Conversation</span>
             </span>
         </div>
         <h3>{(info.type == "group" ? '"' + info.name + '"' :
