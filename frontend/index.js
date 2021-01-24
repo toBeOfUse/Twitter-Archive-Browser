@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { BrowserRouter as Router, NavLink, Switch, Route, Redirect } from "react-router-dom";
 import { ConversationList, ConversationInfo } from "./ConversationComps";
 import { UserInfo } from "./UserComps";
+import { GlobalStats } from "./GlobalStats";
 
 console.log("hello world")
 ReactDOM.render(<App></App>, document.getElementById("root"));
@@ -32,6 +33,9 @@ function App() {
                         </Route>
                         <Route path="/user/info/:id">
                             <UserInfo />
+                        </Route>
+                        <Route path="/stats">
+                            <GlobalStats />
                         </Route>
                         <Route path="*">
                             <Redirect to="/404"></Redirect>
