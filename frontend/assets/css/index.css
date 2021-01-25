@@ -130,6 +130,7 @@ a:active {
 .infoPageImage {
     height: 60px;
     border-radius: 50%;
+    margin-right: 10px;
 }
 
 .conversationInfoIcon {
@@ -138,12 +139,22 @@ a:active {
     margin-left: 10px;
 }
 
-.infoPageHeading {
+.centeredFlexHeading {
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
     justify-content: space-evenly;
     width: 100%;
+}
+
+.threeItemHeading {
+    width: 100%;
+}
+
+.userModule {
+    display: flex;
+    margin-bottom: 10px;
+    align-items: center;
 }
 
 .infoPageLinks {
