@@ -189,11 +189,11 @@ function MessagePage() {
         loadMore("down");
       }
     } else if (
-      el.scrollTop + el.offsetHeight > el.scrollHeight - 100 &&
+      el.scrollTop + el.offsetHeight > el.scrollHeight - 200 &&
       !hitBottom
     ) {
       loadMore("down");
-    } else if (el.scrollTop < 100 && !hitTop) {
+    } else if (el.scrollTop < 200 && !hitTop) {
       loadMore("up");
     }
   };

@@ -8,7 +8,12 @@ function ConversationListing(props) {
   return (
     <div className="conversationListing">
       <img className="conversationImage" src={props.image_url} />
-      <span className="conversationName">{props.name}</span>
+      <NavLink
+        to={"/conversation/messages/" + props.id}
+        className="conversationName"
+      >
+        {props.name}
+      </NavLink>
       <span className="conversationDate">
         {`${zStringToDate(props.first_time)}`}
         <br />
