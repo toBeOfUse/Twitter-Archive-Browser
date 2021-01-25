@@ -103,7 +103,7 @@ class ArchivedUserSummary(DBRow):
     display_name: str
     avatar_url: str
     loaded_full_data: bool
-    isMainUser: bool
+    is_main_user: bool
 
     @staticmethod
     def _get_formatted_tuple(row: tuple):
@@ -313,10 +313,11 @@ class MessageLike(DBRow):
 
 @dataclass(frozen=True)
 class NameUpdate(MessageLike):
-    db_select: ClassVar = """select update_time, initiator, new_name, conversation
+    db_select: ClassVar = """select rowid, update_time, initiator, new_name, conversation
         from name_updates"""
     timestamp_field: ClassVar = "update_time"
 
+    id: int
     update_time: str
     initiator: str
     new_name: str
@@ -332,15 +333,16 @@ class NameUpdate(MessageLike):
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> NameUpdate:
-        return cls(*(str(x) for x in row))
+        return cls(row[0], *(str(x) for x in row[1:]))
 
 
 @dataclass(frozen=True)
 class ParticipantJoin(MessageLike):
-    db_select: ClassVar = """select participant, added_by, conversation, start_time from
+    db_select: ClassVar = """select rowid, participant, added_by, conversation, start_time from
         participants"""
     timestamp_field: ClassVar = "start_time"
 
+    id: str
     participant: str
     added_by: str
     conversation: str
@@ -356,15 +358,16 @@ class ParticipantJoin(MessageLike):
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> ParticipantJoin:
-        return cls(*(str(x) for x in row))
+        return cls(str(row[0]) + "join", *(str(x) for x in row[1:]))
 
 
 @dataclass(frozen=True)
 class ParticipantLeave(MessageLike):
-    db_select: ClassVar = """select participant, conversation, end_time from
+    db_select: ClassVar = """select rowid, participant, conversation, end_time from
         participants"""
     timestamp_field: ClassVar = "end_time"
 
+    id: str
     participant: str
     conversation: str
     time: str
@@ -379,7 +382,7 @@ class ParticipantLeave(MessageLike):
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> ParticipantJoin:
-        return cls(*(str(x) for x in row))
+        return cls(str(row[0]) + "leave", *(str(x) for x in row[1:]))
 
 
 @dataclass(frozen=True)

@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect, forwardRef } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { addToUserStore } from "./UserComps";
-import { zStringToDateTime, zStringToDate } from "./DateHandling";
+import {
+  zStringToDateTime,
+  zStringToDate,
+  zStringDiffMinutes,
+} from "./DateHandling";
 import { NavLink } from "react-router-dom";
 
 function getTime(message) {
@@ -19,7 +23,7 @@ function MessagePage() {
   const { type, id } = useParams();
   const queries = new URLSearchParams(useLocation().search);
   const search = queries.get("search");
-  const startingPlace = queries.get("start") || "end";
+  const startingPlace = queries.get("start") || "beginning";
 
   const messagesPane = useRef(null);
   const topMessage = useRef(null);
@@ -100,7 +104,7 @@ function MessagePage() {
     }
   };
 
-  useEffect(restoreScroll);
+  useEffect(restoreScroll, [messages]);
 
   const loadMore = (direction) => {
     if (loading) {
@@ -164,8 +168,6 @@ function MessagePage() {
           } else if (direction == "down") {
             prevSignpost.current = bottomMessage.current;
           }
-          // TODO: obviously change when the message component does
-          newMessages = newMessages.filter((v) => v.schema == "Message");
           setMessages(newMessages);
         }
         setLoading(false);
@@ -200,42 +202,75 @@ function MessagePage() {
 
   useEffect(scrollChecks);
 
+  const getUser = (message) =>
+    users[message.sender || message.initiator || message.participant];
+
   let renderedMessages = null;
   if (messages?.length) {
-    const signpost1 = (
+    let nextUser = getUser(messages[1]);
+    renderedMessages = [
       <ComplexMessage
         {...messages[0]}
-        sender={users[messages[0].sender]}
+        user={getUser(messages[0])}
+        sameUserAsNext={
+          getUser(messages[0]).id == nextUser.id &&
+          zStringDiffMinutes(getTime(messages[0]), getTime(messages[1])) < 2
+        }
         key={messages[0].id}
         ref={topMessage}
-      />
-    );
-    const signpost2 = (
+      />,
+    ];
+    for (let i = 1; i < messages.length - 2; i++) {
+      const v = messages[i];
+      const user = nextUser;
+      nextUser = getUser(messages[i + 1]);
+      renderedMessages.push(
+        <ComplexMessage
+          {...v}
+          user={user}
+          sameUserAsNext={
+            user.id == nextUser.id &&
+            zStringDiffMinutes(getTime(v), getTime(messages[i + 1])) < 2
+          }
+          key={v.id ? v.id : v.time}
+        />
+      );
+    }
+    renderedMessages.push(
       <ComplexMessage
         {...messages[messages.length - 1]}
-        sender={users[messages[messages.length - 1].sender]}
+        user={getUser(messages[messages.length - 1])}
         key={messages[messages.length - 1].id}
+        sameUserAsNext={false}
         ref={bottomMessage}
       />
     );
-    renderedMessages = [
-      signpost1,
-      ...messages
-        .slice(1, messages.length - 1)
-        .map((v) => (
-          <ComplexMessage
-            {...v}
-            sender={users[v.sender]}
-            key={v.id ? v.id : v.time}
-          />
-        )),
-      signpost2,
-    ];
   }
 
   return (
     <>
-      <h1>Messages</h1>
+      <div
+        style={{
+          margin: "20px 0",
+          width: "100%",
+          borderBottom: "1px solid black",
+        }}
+      >
+        <h1 style={{ display: "inline" }}>Messages</h1>{" "}
+        <Link
+          to={{
+            pathname: useLocation().pathname,
+            search: "start=beginning",
+            key: +new Date(),
+          }}
+        >
+          Zoom to top
+        </Link>
+        /
+        <Link replace to={useLocation().pathname + "?start=end"}>
+          Sink to bottom
+        </Link>
+      </div>
       <div ref={messagesPane} onScroll={scrollChecks} id="messagesPane">
         {renderedMessages}
       </div>
@@ -296,32 +331,79 @@ function SimpleMessage(message) {
 }
 
 const ComplexMessage = forwardRef(function FullMessage(message, ref) {
-  if (message.schema !== "Message") {
-    return null;
-  }
-  const el = document.createElement("p");
-  el.innerHTML = message.html_content;
-  for (const a of el.querySelectorAll("a")) {
-    a.target = "_blank";
-  }
-  const user = message.sender;
-  const mediaItems = message.media.map((i) => (
-    <MediaItem media={i} key={i.id} className="smallMedia" />
-  ));
-  return (
-    <div
-      ref={ref}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-    >
-      {mediaItems}
-      <p style={{ textAlign: "center" }}>
-        <span dangerouslySetInnerHTML={{ __html: el.innerHTML }}></span>
-        {" - "}
-        <NavLink to={"/user/info/" + user.id}>
-          {(user.nickname || user.display_name) + ` (@${user.handle})`}
-        </NavLink>
-        {", " + zStringToDate(message.sent_time)}
+  let content;
+  let alignment;
+  const user = message.user;
+  if (message.schema == "Message") {
+    alignment = user.is_main_user ? "end" : "start";
+    let textSection = null;
+    if (message.html_content) {
+      const el = document.createElement("p");
+      el.innerHTML = message.html_content;
+      for (const a of el.querySelectorAll("a")) {
+        a.target = "_blank";
+      }
+      textSection = (
+        <p
+          className="messageText"
+          style={{
+            backgroundColor: "#96d3ff",
+            marginLeft: alignment == "end" ? "auto" : 0,
+          }}
+          dangerouslySetInnerHTML={{ __html: el.innerHTML }}
+        />
+      );
+    }
+    const mediaItems = message.media.map((i) => (
+      <MediaItem media={i} key={i.id} className="smallMedia" />
+    ));
+    content = (
+      <>
+        {mediaItems}
+        <div>
+          {textSection}
+          {!message.sameUserAsNext ? (
+            <span className="messageAttribution">
+              <NavLink to={"/user/info/" + user.id}>
+                {(user.nickname || user.display_name) + ` (@${user.handle})`}
+              </NavLink>
+              {", " + zStringToDateTime(message.sent_time)}
+            </span>
+          ) : null}
+        </div>
+      </>
+    );
+  } else if (message.schema == "NameUpdate") {
+    alignment = "center";
+    content = (
+      <p>
+        {user.nickname || `@${user.handle}`} changed the conversation's name to{" "}
+        {message.new_name} ({zStringToDateTime(message.update_time)})
       </p>
+    );
+  } else if (message.schema == "ParticipantLeave") {
+    alignment = "center";
+    content = (
+      <p>{user.nickname || `@${user.handle}`} left the conversation.</p>
+    );
+  } else if (message.schema == "ParticipantJoin") {
+    alignment = "center";
+    content = (
+      <p>{user.nickname || `@${user.handle}`} joined the conversation.</p>
+    );
+  }
+  let containerClass = "messageContainer";
+  if (alignment == "end") {
+    containerClass += " pushRight";
+  } else if (alignment == "center") {
+    containerClass += " pushCenter";
+  }
+  if (message.schema == "Message" && !message.sameUserAsNext) {
+    containerClass += " marginedMessage";
+  }
+  return (
+    <div ref={ref} className={containerClass}>
+      {content}
     </div>
   );
 });

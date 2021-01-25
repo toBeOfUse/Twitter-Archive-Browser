@@ -164,7 +164,7 @@ function ConversationMetaList(props) {
         {" | sent " +
           participant.messages_in_conversation.toLocaleString() +
           " messages | " +
-          (participant.isMainUser
+          (participant.is_main_user
             ? "is You"
             : "in conversation from " +
               (zStringToDate(participant.join_time) || "before you") +

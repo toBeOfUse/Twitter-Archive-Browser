@@ -72,6 +72,9 @@ a:active {
 @media (max-width: 500px) {
     #root {
         width: 100%;
+    }
+
+    html {
         font-size: 0.7em;
     }
 
@@ -215,6 +218,50 @@ a:active {
     position: relative;
 }
 
+.messageContainer {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    max-width: 70%;
+    align-items: center;
+}
+
+.pushRight {
+    margin-left: auto;
+}
+
+.pushCenter {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.marginedMessage {
+    margin-bottom: 15px;
+}
+
+.messageContainer:not(.marginedMessage) {
+    margin-bottom: 2px;
+}
+
+.messageText {
+    width: fit-content;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 0;
+}
+
+@media (min-width: 500px) {
+    .messageAttribution {
+        font-size: small;
+    }
+}
+
+@media (max-width: 500px) {
+    .messageText {
+        font-size: 1.2rem;
+    }
+}
+
 /* general */
 
 .verticalLine {
@@ -234,7 +281,6 @@ a:active {
 
 .smallMedia {
     height: 200px;
-    max-width: 95%;
     display: block;
 }
 
