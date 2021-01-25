@@ -384,15 +384,18 @@ class ParticipantLeave(MessageLike):
 
 @dataclass(frozen=True)
 class Reaction(DBRow):
-    db_select: ClassVar = "select emotion, creation_time, creator from reactions"
+    db_select: ClassVar = (
+        "select rowid, emotion, creation_time, creator from reactions"
+    )
 
+    id: int
     emotion: str
     creation_time: str
     creator: str
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
-        return cls(row[0], row[1], str(row[2]))
+        return cls(row[0], row[1], row[2], str(row[3]))
 
 
 @dataclass(frozen=True)
@@ -403,14 +406,14 @@ class Media(DBRow):
 
     id: str
     type: str
-    file_path: str
+    src: str
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
         return cls(
-            row[0],
+            str(row[0]),
             row[1],
-            f"{'/group/' if row[4] else '/individual/'}{row[2]}-{row[3]}",
+            f"{MEDIA_API_URL}{'group/' if row[4] else 'individual/'}{row[2]}-{row[3]}",
         )
 
 

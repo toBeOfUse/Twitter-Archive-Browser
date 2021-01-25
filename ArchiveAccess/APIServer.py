@@ -114,7 +114,10 @@ class APIRequestHandler(RequestHandler):
 
     def get_query_argument(self, name, *args):
         if name == "page":
-            return int(super().get_query_argument(name, *args))
+            page = int(super().get_query_argument(name, *args))
+            if page == 0:
+                self.set_status(404, "page numbers start from 1")
+            return page
         else:
             return super().get_query_argument(name, *args)
 

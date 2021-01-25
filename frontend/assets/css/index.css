@@ -194,6 +194,7 @@ a:active {
     display: block;
     width: 100%;
     height: 100px;
+    margin: 10px 0;
 }
 
 .metaInfoContainer {
@@ -203,6 +204,7 @@ a:active {
     line-height: 1.3em;
     border: 1px solid black;
     border-radius: 5px;
+    margin-top: 5px;
 }
 
 /* messages */
@@ -210,6 +212,7 @@ a:active {
 #messagesPane {
     width: 100%;
     overflow-y: scroll;
+    position: relative;
 }
 
 /* general */
@@ -227,6 +230,12 @@ a:active {
 
 .rowToColumn {
     flex-direction: row;
+}
+
+.smallMedia {
+    height: 200px;
+    max-width: 95%;
+    display: block;
 }
 
 @media (max-width: 500px) {

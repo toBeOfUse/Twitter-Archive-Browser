@@ -46,11 +46,11 @@ function NotesSetter(props) {
   };
 
   return editing ? (
-    <label style={{ width: "90%" }}>
+    <div style={{ width: "90%", textAlign: "center", margin: "10px 0 15px 0" }}>
       Set conversation notes:
       <textarea className="notesEntry" onChange={editNotes} value={notes} />
       <button onClick={saveNotes}>Save</button>
-    </label>
+    </div>
   ) : (
     <p>
       Notes for this conversation: {props.notes + " "}
@@ -120,7 +120,7 @@ function ConversationMetaList(props) {
   const reset = () => {
     setUpdates([]);
     setParticipants([]);
-    setPage(0);
+    setPage(1);
   };
 
   const changeOldestFirst = (newValue) => {
@@ -244,7 +244,9 @@ function ConversationInfo() {
           <h1>Conversation Info</h1>
         </div>
         <span className="infoPageLinks">
-          <span>View Messages</span>
+          <NavLink to={"/conversation/messages/" + info.id}>
+            View Messages
+          </NavLink>
           <br className="noMobile" />
           <span className="onlyMobile"> | </span>
           <span>Share Conversation</span>

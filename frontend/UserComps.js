@@ -27,9 +27,9 @@ function NicknameSetter(userInfo) {
   return (
     <>
       {editing ? (
-        <div className="rowToColumn centeredFlexHeading">
+        <div className="rowToColumn" style={{ margin: "1em 0" }}>
           <label>Set @{userInfo.handle}'s nickname:</label>
-          <div>
+          <div style={{ display: "inline" }}>
             <input
               style={{ marginLeft: 5 }}
               value={nickname}
