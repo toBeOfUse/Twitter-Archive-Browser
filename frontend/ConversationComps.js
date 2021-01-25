@@ -388,24 +388,26 @@ function ConversationList() {
             <option value="mostused">Most messages first</option>
             <option value="mostusedbyme">Most messages from me first</option>
           </select>
-          <label>
-            <input
-              type="checkbox"
-              name="group"
-              checked={types.group}
-              onChange={changeTypes}
-            />
-            Group
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              name="individual"
-              checked={types.individual}
-              onChange={changeTypes}
-            />
-            Individual
-          </label>
+          <div className="checkboxGroup">
+            <label>
+              <input
+                type="checkbox"
+                name="group"
+                checked={types.group}
+                onChange={changeTypes}
+              />
+              Group
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                name="individual"
+                checked={types.individual}
+                onChange={changeTypes}
+              />
+              Individual
+            </label>
+          </div>
         </div>
       </div>
       <div id="conversationList" onScroll={checkConversations} ref={listPane}>

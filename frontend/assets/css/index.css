@@ -13,8 +13,11 @@ body {
 }
 
 label {
-    margin: 1em 0;
     white-space: nowrap;
+    flex-wrap: nowrap;
+    display: inline-flex;
+    align-items: center;
+    flex-direction: row;
 }
 
 #root {
@@ -155,6 +158,17 @@ a:active {
     display: flex;
     margin-bottom: 10px;
     align-items: center;
+}
+
+.checkboxGroup {
+    white-space: nowrap;
+    display: inline-block;
+    margin-top: 10px;
+    align-items: center;
+}
+
+[type="checkbox"] {
+    margin: 0 5px;
 }
 
 .infoPageLinks {
