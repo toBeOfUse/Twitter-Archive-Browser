@@ -19,9 +19,12 @@ function getTime(message) {
 }
 
 function MessagePage() {
+  const location = useLocation();
+  const history = useHistory();
+  console.log("location", location);
   // TODO: convert to class; 8 refs is ridiculous
   const { type, id } = useParams();
-  const queries = new URLSearchParams(useLocation().search);
+  const queries = new URLSearchParams(location.search);
   const search = queries.get("search");
   const startingPlace = queries.get("start") || "beginning";
 
@@ -34,7 +37,7 @@ function MessagePage() {
   const [users, setUsers] = useState({});
   const [hitTop, setHitTop] = useState(startingPlace == "beginning");
   const [hitBottom, setHitBottom] = useState(startingPlace == "end");
-  // loading could currently be converted to a ref/instance variables but it could
+  // loading could currently be converted to a ref/instance variable but it could
   // also be used in rendering to display a spinner in the future so idk
   let [loading, setLoading] = useState(false);
 
@@ -211,12 +214,13 @@ function MessagePage() {
 
   let renderedMessages = null;
   if (messages?.length) {
-    let nextUser = getUser(messages[1]);
+    let nextUser = messages.length > 1 ? getUser(messages[1]) : null;
     renderedMessages = [
       <ComplexMessage
         {...messages[0]}
         user={getUser(messages[0])}
         sameUserAsNext={
+          nextUser &&
           getUser(messages[0]).id == nextUser.id &&
           zStringDiffMinutes(getTime(messages[0]), getTime(messages[1])) < 2
         }
@@ -240,15 +244,17 @@ function MessagePage() {
         />
       );
     }
-    renderedMessages.push(
-      <ComplexMessage
-        {...messages[messages.length - 1]}
-        user={getUser(messages[messages.length - 1])}
-        key={messages[messages.length - 1].id}
-        sameUserAsNext={false}
-        ref={bottomMessage}
-      />
-    );
+    if (renderedMessages.length > 1) {
+      renderedMessages.push(
+        <ComplexMessage
+          {...messages[messages.length - 1]}
+          user={getUser(messages[messages.length - 1])}
+          key={messages[messages.length - 1].id}
+          sameUserAsNext={false}
+          ref={bottomMessage}
+        />
+      );
+    }
   }
 
   return (
@@ -261,11 +267,11 @@ function MessagePage() {
         }}
       >
         <h1 style={{ display: "inline" }}>Messages</h1>{" "}
-        <Link replace to={useLocation().pathname + "?start=beginning"}>
+        <Link replace to={location.pathname + "?start=beginning"}>
           Zoom to top
         </Link>
         {" | "}
-        <Link replace to={useLocation().pathname + "?start=end"}>
+        <Link replace to={location.pathname + "?start=end"}>
           Sink to bottom
         </Link>
       </div>
