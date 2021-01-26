@@ -51,9 +51,7 @@ function App() {
               <Route
                 path={["/:type/messages/:id", "/messages"]}
                 render={() => <MessagePage key={Date.now()} />}
-              >
-                <MessagePage />
-              </Route>
+              ></Route>
               <Route path="/stats">
                 <GlobalStats />
               </Route>

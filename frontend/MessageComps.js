@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef } from "react";
-import { useParams, useLocation, Link } from "react-router-dom";
+import { useParams, useLocation, useHistory, Link } from "react-router-dom";
 import { addToUserStore } from "./UserComps";
 import {
   zStringToDateTime,
@@ -36,10 +36,9 @@ function MessagePage() {
   const [hitBottom, setHitBottom] = useState(startingPlace == "end");
   let [loading, setLoading] = useState(false);
 
-  const prevScrollHeight = useRef(0);
   const prevScrollTop = useRef(0);
   const lastLoadDirection = useRef("start");
-  const signpostPositions = useRef([-1, -1]);
+  const prevSignpostPosition = useRef(-1);
 
   const url = "/api/messages?";
 
@@ -66,41 +65,36 @@ function MessagePage() {
     // messages' dom elements to see how much they've moved. that relative change is
     // then applied to the previous scrollPos of the messages pane, and the current
     // scrollPos is set to the result.
+    console.log("restoring scroll position");
+    console.log("it is currently", messagesPane.current.scrollTop);
+    console.log("it used to be", prevScrollTop.current);
     const currentPane = messagesPane.current;
     if (currentPane && topMessage.current && bottomMessage.current) {
-      const currentScrollHeight = currentPane.scrollHeight;
-
-      if (prevScrollHeight.current != currentScrollHeight) {
-        if (lastLoadDirection.current == "up") {
-          const delta =
-            prevSignpost.current.offsetTop - signpostPositions.current[0];
-          currentPane.scrollTop = prevScrollTop.current + delta;
-        } else if (lastLoadDirection.current == "down") {
-          const delta =
-            prevSignpost.current.offsetTop - signpostPositions.current[1];
-          currentPane.scrollTop = prevScrollTop.current + delta;
-        } else if (lastLoadDirection.current == "start") {
-          // if this is the first load, we have to make sure that the messages
-          // are scrolled to that are indicated by the startingPlace parameter.
-          if (startingPlace == "end") {
-            currentPane.scrollTop = currentScrollHeight;
-          } else if (startingPlace == "beginning") {
-            currentPane.scrollTop = 0;
-          } else {
-            // this sets the scrolling position to the middle; TODO: come up
-            // with a way to center the message closest to the startingPlace
-            // timestamp
-            currentPane.scrollTop =
-              currentScrollHeight / 2 - messagesPane.current.clientHeight / 2;
-          }
+      if (lastLoadDirection.current == "up") {
+        const delta =
+          prevSignpost.current.offsetTop - prevSignpostPosition.current;
+        currentPane.scrollTop = prevScrollTop.current + delta;
+      } else if (lastLoadDirection.current == "down") {
+        console.log("signpost used to be at", prevSignpostPosition.current);
+        console.log("signpost is now at", prevSignpost.current.offsetTop);
+        const delta =
+          prevSignpost.current.offsetTop - prevSignpostPosition.current;
+        currentPane.scrollTop = prevScrollTop.current + delta;
+      } else if (lastLoadDirection.current == "start") {
+        // if this is the first load, we have to make sure that the messages
+        // are scrolled to that are indicated by the startingPlace parameter.
+        if (startingPlace == "end") {
+          currentPane.scrollTop = currentScrollHeight;
+        } else if (startingPlace == "beginning") {
+          currentPane.scrollTop = 0;
+        } else {
+          // this sets the scrolling position to the middle; TODO: come up
+          // with a way to center the message closest to the startingPlace
+          // timestamp
+          currentPane.scrollTop =
+            currentScrollHeight / 2 - messagesPane.current.clientHeight / 2;
         }
-        prevScrollHeight.current = currentScrollHeight;
       }
-
-      signpostPositions.current = [
-        topMessage.current.offsetTop,
-        bottomMessage.current.offsetTop,
-      ];
     }
   };
 
@@ -163,10 +157,17 @@ function MessagePage() {
               }
             }
           }
+          console.log(
+            "going " +
+              direction +
+              "; setting relevant signpost; then setting messages"
+          );
           if (direction == "up") {
             prevSignpost.current = topMessage.current;
+            prevSignpostPosition.current = topMessage.current.offsetTop;
           } else if (direction == "down") {
             prevSignpost.current = bottomMessage.current;
+            prevSignpostPosition.current = bottomMessage.current.offsetTop;
           }
           setMessages(newMessages);
         }
@@ -220,7 +221,7 @@ function MessagePage() {
         ref={topMessage}
       />,
     ];
-    for (let i = 1; i < messages.length - 2; i++) {
+    for (let i = 1; i < messages.length - 1; i++) {
       const v = messages[i];
       const user = nextUser;
       nextUser = getUser(messages[i + 1]);
@@ -257,13 +258,7 @@ function MessagePage() {
         }}
       >
         <h1 style={{ display: "inline" }}>Messages</h1>{" "}
-        <Link
-          to={{
-            pathname: useLocation().pathname,
-            search: "start=beginning",
-            key: +new Date(),
-          }}
-        >
+        <Link replace to={useLocation().pathname + "?start=beginning"}>
           Zoom to top
         </Link>
         /
@@ -376,7 +371,7 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
   } else if (message.schema == "NameUpdate") {
     alignment = "center";
     content = (
-      <p>
+      <p style={{ textAlign: "center" }}>
         {user.nickname || `@${user.handle}`} changed the conversation's name to{" "}
         {message.new_name} ({zStringToDateTime(message.update_time)})
       </p>
@@ -384,12 +379,16 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
   } else if (message.schema == "ParticipantLeave") {
     alignment = "center";
     content = (
-      <p>{user.nickname || `@${user.handle}`} left the conversation.</p>
+      <p style={{ textAlign: "center" }}>
+        {user.nickname || `@${user.handle}`} left the conversation.
+      </p>
     );
   } else if (message.schema == "ParticipantJoin") {
     alignment = "center";
     content = (
-      <p>{user.nickname || `@${user.handle}`} joined the conversation.</p>
+      <p style={{ textAlign: "center" }}>
+        {user.nickname || `@${user.handle}`} joined the conversation.
+      </p>
     );
   }
   let containerClass = "messageContainer";
