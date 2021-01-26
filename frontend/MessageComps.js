@@ -34,6 +34,8 @@ function MessagePage() {
   const [users, setUsers] = useState({});
   const [hitTop, setHitTop] = useState(startingPlace == "beginning");
   const [hitBottom, setHitBottom] = useState(startingPlace == "end");
+  // loading could currently be converted to a ref/instance variables but it could
+  // also be used in rendering to display a spinner in the future so idk
   let [loading, setLoading] = useState(false);
 
   const prevScrollTop = useRef(0);
@@ -81,6 +83,7 @@ function MessagePage() {
           prevSignpost.current.offsetTop - prevSignpostPosition.current;
         currentPane.scrollTop = prevScrollTop.current + delta;
       } else if (lastLoadDirection.current == "start") {
+        const currentScrollHeight = messagesPane.current.scrollHeight;
         // if this is the first load, we have to make sure that the messages
         // are scrolled to that are indicated by the startingPlace parameter.
         if (startingPlace == "end") {
@@ -261,7 +264,7 @@ function MessagePage() {
         <Link replace to={useLocation().pathname + "?start=beginning"}>
           Zoom to top
         </Link>
-        /
+        {" | "}
         <Link replace to={useLocation().pathname + "?start=end"}>
           Sink to bottom
         </Link>
@@ -275,9 +278,22 @@ function MessagePage() {
 
 function MediaItem(props) {
   if (props.media.type == "image") {
-    return <img className={props.className} src={props.media.src} />;
+    return (
+      <img
+        className={props.className}
+        style={props.style}
+        src={props.media.src}
+      />
+    );
   } else if (props.media.type == "video") {
-    return <video controls className={props.className} src={props.media.src} />;
+    return (
+      <video
+        controls
+        className={props.className}
+        style={props.style}
+        src={props.media.src}
+      />
+    );
   } else if (props.media.type == "gif") {
     return (
       <video
@@ -286,6 +302,7 @@ function MediaItem(props) {
         loop
         className={props.className}
         src={props.media.src}
+        style={props.style}
       />
     );
   } else {
@@ -344,28 +361,35 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
           style={{
             backgroundColor: "#96d3ff",
             marginLeft: alignment == "end" ? "auto" : 0,
+            maxWidth: "70%",
           }}
           dangerouslySetInnerHTML={{ __html: el.innerHTML }}
         />
       );
     }
     const mediaItems = message.media.map((i) => (
-      <MediaItem media={i} key={i.id} className="smallMedia" />
+      <MediaItem
+        media={i}
+        key={i.id}
+        className="smallMedia"
+        style={alignment == "end" ? { marginLeft: "auto" } : null}
+      />
     ));
     content = (
       <>
         {mediaItems}
-        <div>
-          {textSection}
-          {!message.sameUserAsNext ? (
-            <span className="messageAttribution">
-              <NavLink to={"/user/info/" + user.id}>
-                {(user.nickname || user.display_name) + ` (@${user.handle})`}
-              </NavLink>
-              {", " + zStringToDateTime(message.sent_time)}
-            </span>
-          ) : null}
-        </div>
+        {textSection}
+        {!message.sameUserAsNext ? (
+          <span
+            className="messageAttribution"
+            style={alignment == "end" ? { marginLeft: "auto" } : null}
+          >
+            <NavLink to={"/user/info/" + user.id}>
+              {(user.nickname || user.display_name) + ` (@${user.handle})`}
+            </NavLink>
+            {", " + zStringToDateTime(message.sent_time)}
+          </span>
+        ) : null}
       </>
     );
   } else if (message.schema == "NameUpdate") {
@@ -392,16 +416,11 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
     );
   }
   let containerClass = "messageContainer";
-  if (alignment == "end") {
-    containerClass += " pushRight";
-  } else if (alignment == "center") {
-    containerClass += " pushCenter";
-  }
   if (message.schema == "Message" && !message.sameUserAsNext) {
     containerClass += " marginedMessage";
   }
   return (
-    <div ref={ref} className={containerClass}>
+    <div ref={ref} className={containerClass} style={{ alignItems: alignment }}>
       {content}
     </div>
   );

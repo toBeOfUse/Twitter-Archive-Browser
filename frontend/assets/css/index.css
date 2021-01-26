@@ -221,18 +221,7 @@ a:active {
 .messageContainer {
     display: flex;
     flex-direction: column;
-    width: fit-content;
-    max-width: 70%;
-    align-items: center;
-}
-
-.pushRight {
-    margin-left: auto;
-}
-
-.pushCenter {
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
 }
 
 .marginedMessage {
