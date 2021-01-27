@@ -18,20 +18,22 @@ function getTime(message) {
   }
 }
 
-function MessagePage() {
+function MessagePage(props) {
   const location = useLocation();
   const history = useHistory();
-  console.log("location", location);
-  // TODO: convert to class; 8 refs is ridiculous
-  const { type, id } = useParams();
-  const queries = new URLSearchParams(location.search);
-  const search = queries.get("search");
-  const startingPlace = queries.get("start") || "beginning";
 
-  const messagesPane = useRef(null);
-  const topMessage = useRef(null);
-  const bottomMessage = useRef(null);
-  const prevSignpost = useRef(null);
+  const { type, id, search, startingPlace } = props;
+
+  const DOMState = useRef({
+    // dom elements to be observed
+    messagesPane: null,
+    topMessage: null,
+    bottomMessage: null,
+    signpostElement: null,
+    // measurements that assist with scroll position preservation in restoreScroll
+    prevSignpostPosition: -1,
+    prevScrollTop: 0,
+  }).current;
 
   const [messages, setMessages] = useState(null);
   const [users, setUsers] = useState({});
@@ -40,10 +42,6 @@ function MessagePage() {
   // loading could currently be converted to a ref/instance variable but it could
   // also be used in rendering to display a spinner in the future so idk
   let [loading, setLoading] = useState(false);
-
-  const prevScrollTop = useRef(0);
-  const lastLoadDirection = useRef("start");
-  const prevSignpostPosition = useRef(-1);
 
   const url = "/api/messages?";
 
@@ -61,32 +59,29 @@ function MessagePage() {
 
   const restoreScroll = () => {
     // the strategy for maintaining the scroll position in the messages pane even as
-    // its contents change wildly is as follows: when the array of JSX objects for
-    // the messages are created way down below, the first and last are designated
-    // signposts and are given refs (topMessage and bottomMessages). whenever the
-    // messages inside messagePane change (detected by seeing its scrollHeight
-    // changing), we look at the previous bottom (if we've been loading messages
-    // below our current ones) or top (if we've been loading messages above)
-    // messages' dom elements to see how much they've moved. that relative change is
-    // then applied to the previous scrollPos of the messages pane, and the current
-    // scrollPos is set to the result.
+    // its contents change wildly is as follows:  right before the messages inside
+    // messagePane are updated via a call to setMessages, DOMState.signpostElement is
+    // set to the DOM node of a message that is going to continue to exist after the
+    // update and DOMState.prevSignpostPosition is set to its pre-update offsetTop
+    // position. then, when the messages change, this effect is called, and we obtain
+    // the element's updated position; the change in the signpost element's position
+    // is then applied to the message pane's pre-update scroll position; therefore,
+    // the scroll position remains the same relative to the messages that were
+    // previously on the page and visible to the user.
+    const currentPane = DOMState.messagesPane;
     console.log("restoring scroll position");
-    console.log("it is currently", messagesPane.current.scrollTop);
-    console.log("it used to be", prevScrollTop.current);
-    const currentPane = messagesPane.current;
-    if (currentPane && topMessage.current && bottomMessage.current) {
-      if (lastLoadDirection.current == "up") {
+    console.log("it is currently", currentPane?.scrollTop);
+    console.log("it used to be", currentPane?.current);
+    if (currentPane) {
+      if (DOMState.signpostElement) {
+        console.log("signpost used to be at", DOMState.prevSignpostPosition);
+        console.log("signpost is now at", DOMState.signpostElement.offsetTop);
         const delta =
-          prevSignpost.current.offsetTop - prevSignpostPosition.current;
-        currentPane.scrollTop = prevScrollTop.current + delta;
-      } else if (lastLoadDirection.current == "down") {
-        console.log("signpost used to be at", prevSignpostPosition.current);
-        console.log("signpost is now at", prevSignpost.current.offsetTop);
-        const delta =
-          prevSignpost.current.offsetTop - prevSignpostPosition.current;
-        currentPane.scrollTop = prevScrollTop.current + delta;
-      } else if (lastLoadDirection.current == "start") {
-        const currentScrollHeight = messagesPane.current.scrollHeight;
+          DOMState.signpostElement.offsetTop - DOMState.prevSignpostPosition;
+        currentPane.scrollTop = DOMState.prevScrollTop + delta;
+      } else {
+        // if the signpost value is null, this is the first render
+        const currentScrollHeight = currentPane.scrollHeight;
         // if this is the first load, we have to make sure that the messages
         // are scrolled to that are indicated by the startingPlace parameter.
         if (startingPlace == "end") {
@@ -98,7 +93,7 @@ function MessagePage() {
           // with a way to center the message closest to the startingPlace
           // timestamp
           currentPane.scrollTop =
-            currentScrollHeight / 2 - messagesPane.current.clientHeight / 2;
+            currentScrollHeight / 2 - currentPane.clientHeight / 2;
         }
       }
     }
@@ -115,7 +110,6 @@ function MessagePage() {
     // single version of this function is called twice (once because it's passed to
     // useEffect and once because of it being used as a scroll event listener)
     loading = true;
-    lastLoadDirection.current = direction;
     if (direction == "start") {
       if (startingPlace == "beginning") {
         nextQueries.set("after", "beginning");
@@ -169,11 +163,11 @@ function MessagePage() {
               "; setting relevant signpost; then setting messages"
           );
           if (direction == "up") {
-            prevSignpost.current = topMessage.current;
-            prevSignpostPosition.current = topMessage.current.offsetTop;
+            DOMState.signpostElement = DOMState.topMessage;
+            DOMState.prevSignpostPosition = DOMState.topMessage.offsetTop;
           } else if (direction == "down") {
-            prevSignpost.current = bottomMessage.current;
-            prevSignpostPosition.current = bottomMessage.current.offsetTop;
+            DOMState.signpostElement = DOMState.bottomMessage;
+            DOMState.prevSignpostPosition = DOMState.bottomMessage.offsetTop;
           }
           setMessages(newMessages);
         }
@@ -183,9 +177,9 @@ function MessagePage() {
   };
 
   const scrollChecks = () => {
-    const el = messagesPane.current;
+    const el = DOMState.messagesPane;
     const currentScrollTop = el.scrollTop;
-    prevScrollTop.current = currentScrollTop;
+    DOMState.prevScrollTop = currentScrollTop;
     if (loading) {
       return;
     }
@@ -225,7 +219,7 @@ function MessagePage() {
           zStringDiffMinutes(getTime(messages[0]), getTime(messages[1])) < 2
         }
         key={messages[0].id}
-        ref={topMessage}
+        ref={(n) => (DOMState.topMessage = n)}
       />,
     ];
     for (let i = 1; i < messages.length - 1; i++) {
@@ -251,7 +245,7 @@ function MessagePage() {
           user={getUser(messages[messages.length - 1])}
           key={messages[messages.length - 1].id}
           sameUserAsNext={false}
-          ref={bottomMessage}
+          ref={(n) => (DOMState.bottomMessage = n)}
         />
       );
     }
@@ -275,7 +269,11 @@ function MessagePage() {
           Sink to bottom
         </Link>
       </div>
-      <div ref={messagesPane} onScroll={scrollChecks} id="messagesPane">
+      <div
+        ref={(n) => (DOMState.messagesPane = n)}
+        onScroll={scrollChecks}
+        id="messagesPane"
+      >
         {renderedMessages}
       </div>
     </>

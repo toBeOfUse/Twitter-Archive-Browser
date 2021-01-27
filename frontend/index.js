@@ -50,7 +50,18 @@ function App() {
               </Route>
               <Route
                 path={["/:type/messages/:id", "/messages"]}
-                render={() => <MessagePage key={Date.now()} />}
+                render={(routeProps) => {
+                  const queries = new URLSearchParams(
+                    routeProps.location.search
+                  );
+                  const props = {
+                    search: queries.get("search"),
+                    type: routeProps.match.type,
+                    id: routeProps.match.id,
+                    startingPlace: queries.get("start") || "beginning",
+                  };
+                  return <MessagePage {...props} />;
+                }}
               ></Route>
               <Route path="/stats">
                 <GlobalStats />
