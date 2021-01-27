@@ -15,9 +15,9 @@ import "normalize.css";
 import "./assets/css/index.css";
 
 console.log("hello world");
-ReactDOM.render(<App></App>, document.getElementById("root"));
+ReactDOM.render(<RoutingTable />, document.getElementById("root"));
 
-function App() {
+function RoutingTable() {
   return (
     <Router>
       <Switch>
@@ -56,11 +56,11 @@ function App() {
                   );
                   const props = {
                     search: queries.get("search"),
-                    type: routeProps.match.type,
-                    id: routeProps.match.id,
+                    type: routeProps.match.params.type,
+                    id: routeProps.match.params.id,
                     startingPlace: queries.get("start") || "beginning",
                   };
-                  return <MessagePage {...props} />;
+                  return <MessagePage key={Date.now()} {...props} />;
                 }}
               ></Route>
               <Route path="/stats">
