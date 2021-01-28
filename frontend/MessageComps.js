@@ -6,6 +6,7 @@ import {
   zStringToDate,
   zStringDiffMinutes,
 } from "./DateHandling";
+import { render } from "react-dom";
 
 function getTime(message) {
   if (message.schema == "Message") {
@@ -23,7 +24,10 @@ function MessagePage(props) {
 
   const { startingPlace } = props;
 
-  const savedState = JSON.parse(window.sessionStorage.getItem(location.key));
+  const locationKey =
+    location.key + (props.search ? "&search=" + props.search : "");
+
+  const savedState = JSON.parse(window.sessionStorage.getItem(locationKey));
 
   const DOMState = useRef({
     // dom elements to be observed
@@ -56,13 +60,10 @@ function MessagePage(props) {
   DOMState.prevSaveState &&
     window.removeEventListener("beforeunload", DOMState.prevSaveState);
   const saveState = (event, action) => {
-    if (
-      (action == "PUSH" || action == "POP" || event.type) &&
-      messages.length
-    ) {
-      console.log("saving current state under key " + location.key);
+    if ((action == "PUSH" || action == "POP" || event.type) && messages) {
+      console.log("saving current state under key " + locationKey);
       window.sessionStorage.setItem(
-        location.key,
+        locationKey,
         JSON.stringify({
           messages,
           users,
@@ -96,7 +97,7 @@ function MessagePage(props) {
     if (savedState?.scrollTop) {
       currentPane.scrollTop = savedState.scrollTop;
       delete savedState.scrollTop;
-      window.sessionStorage.setItem(location.key, JSON.stringify(savedState));
+      window.sessionStorage.setItem(locationKey, JSON.stringify(savedState));
     } else if (currentPane) {
       currentPane.focus();
       if (DOMState.signpostElement) {
@@ -167,7 +168,12 @@ function MessagePage(props) {
         setUsers((oldUsers) => addToUserStore(oldUsers, j.users));
         let newMessages = null;
         if (direction == "start") {
-          newMessages = j.results;
+          if (j.results.length) {
+            newMessages = j.results;
+          } else {
+            setHitBottom(true);
+            setHitTop(true);
+          }
         } else if (direction == "down") {
           if (j.results.length) {
             newMessages = messages.concat(j.results);
@@ -222,7 +228,7 @@ function MessagePage(props) {
     if (loading) {
       return;
     }
-    if (!messages) {
+    if (!messages && !(hitTop && hitBottom)) {
       loadMore("start");
     } else if (el.scrollHeight < el.parentElement.scrollHeight) {
       if (!hitTop) {
@@ -258,6 +264,7 @@ function MessagePage(props) {
           getUser(messages[0]).id == nextUser.id &&
           zStringDiffMinutes(getTime(messages[0]), getTime(messages[1])) < 2
         }
+        showContextLink={!!props.search}
         key={messages[0].id}
         ref={(n) => (DOMState.topMessage = n)}
       />,
@@ -271,6 +278,7 @@ function MessagePage(props) {
           {...v}
           user={user}
           users={users}
+          showContextLink={!!props.search}
           sameUserAsNext={
             user.id == nextUser.id &&
             zStringDiffMinutes(getTime(v), getTime(messages[i + 1])) < 2
@@ -283,6 +291,7 @@ function MessagePage(props) {
       renderedMessages.push(
         <ComplexMessage
           {...messages[messages.length - 1]}
+          showContextLink={!!props.search}
           user={getUser(messages[messages.length - 1])}
           users={users}
           key={messages[messages.length - 1].id}
@@ -291,6 +300,8 @@ function MessagePage(props) {
         />
       );
     }
+  } else if (hitTop && hitBottom) {
+    renderedMessages = <p>No messages found, sorry :(</p>;
   }
 
   return (
@@ -303,11 +314,25 @@ function MessagePage(props) {
         }}
       >
         <h1 style={{ display: "inline" }}>Messages</h1>{" "}
-        <Link replace to={location.pathname + "?start=beginning"}>
+        <Link
+          replace
+          to={
+            location.pathname +
+            "?start=beginning" +
+            (props.search ? "&search=" + props.search : "")
+          }
+        >
           Zoom to top
         </Link>
         {" | "}
-        <Link replace to={location.pathname + "?start=end"}>
+        <Link
+          replace
+          to={
+            location.pathname +
+            "?start=end" +
+            (props.search ? "&search=" + props.search : "")
+          }
+        >
           Sink to bottom
         </Link>
       </div>
@@ -434,6 +459,21 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
               {(user.nickname || user.display_name) + ` (@${user.handle})`}
             </Link>
             {", " + zStringToDateTime(message.sent_time)}
+            {message.showContextLink ? (
+              <>
+                <br />
+                <Link
+                  to={
+                    "/conversation/messages/" +
+                    message.conversation +
+                    "?start=" +
+                    message.sent_time
+                  }
+                >
+                  (see in context)
+                </Link>
+              </>
+            ) : null}
           </span>
         ) : null}
       </>
