@@ -22,7 +22,9 @@ function MessagePage(props) {
   const location = useLocation();
   const history = useHistory();
 
-  const { type, id, search, startingPlace } = props;
+  const { startingPlace } = props;
+
+  const savedState = JSON.parse(window.sessionStorage.getItem(location.key));
 
   const DOMState = useRef({
     // dom elements to be observed
@@ -32,30 +34,50 @@ function MessagePage(props) {
     signpostElement: null,
     // measurements that assist with scroll position preservation in restoreScroll
     prevSignpostPosition: -1,
-    prevScrollTop: 0,
+    prevScrollTop: savedState?.scrollTop || 0,
+    // used to store a history listener and a cleanup function for it that will be
+    // created in this render
+    prevSaveState: null,
+    prevSaveStateCleanup: null,
   }).current;
 
-  const [messages, setMessages] = useState(null);
-  const [users, setUsers] = useState({});
-  const [hitTop, setHitTop] = useState(startingPlace == "beginning");
-  const [hitBottom, setHitBottom] = useState(startingPlace == "end");
+  const [messages, setMessages] = useState(savedState?.messages);
+  const [users, setUsers] = useState(savedState?.users || {});
+  const [hitTop, setHitTop] = useState(
+    savedState?.hitTop ?? startingPlace == "beginning"
+  );
+  const [hitBottom, setHitBottom] = useState(
+    savedState?.hitBottom ?? startingPlace == "end"
+  );
   // loading could currently be converted to a ref/instance variable but it could
   // also be used in rendering to display a spinner in the future so idk
   let [loading, setLoading] = useState(false);
 
-  const url = "/api/messages?";
-
-  const nextQueries = new URLSearchParams();
-
-  if (type == "conversation") {
-    nextQueries.set("conversation", id);
-  } else if (type == "user") {
-    nextQueries.set("byuser", id);
-  }
-
-  if (search) {
-    nextQueries.set("search", search);
-  }
+  DOMState.prevSaveStateCleanup && DOMState.prevSaveStateCleanup();
+  DOMState.prevSaveState &&
+    window.removeEventListener("beforeunload", DOMState.prevSaveState);
+  const saveState = (event, action) => {
+    if (
+      (action == "PUSH" || action == "POP" || event.type) &&
+      messages.length
+    ) {
+      console.log("saving current state under key " + location.key);
+      window.sessionStorage.setItem(
+        location.key,
+        JSON.stringify({
+          messages,
+          users,
+          hitTop,
+          hitBottom,
+          scrollTop: messagesPane.scrollTop,
+        })
+      );
+    }
+    DOMState.prevSaveStateCleanup();
+  };
+  DOMState.prevSaveStateCleanup = history.listen(saveState);
+  window.addEventListener("beforeunload", saveState);
+  DOMState.prevSaveState = savedState;
 
   const restoreScroll = () => {
     // the strategy for maintaining the scroll position in the messages pane even as
@@ -71,8 +93,13 @@ function MessagePage(props) {
     const currentPane = DOMState.messagesPane;
     console.log("restoring scroll position");
     console.log("it is currently", currentPane?.scrollTop);
-    console.log("it used to be", currentPane?.current);
-    if (currentPane) {
+    console.log("it used to be", DOMState.prevScrollTop);
+    if (savedState?.scrollTop) {
+      currentPane.scrollTop = savedState.scrollTop;
+      delete savedState.scrollTop;
+      window.sessionStorage.setItem(location.key, JSON.stringify(savedState));
+    } else if (currentPane) {
+      currentPane.focus();
       if (DOMState.signpostElement) {
         console.log("signpost used to be at", DOMState.prevSignpostPosition);
         console.log("signpost is now at", DOMState.signpostElement.offsetTop);
@@ -110,6 +137,19 @@ function MessagePage(props) {
     // single version of this function is called twice (once because it's passed to
     // useEffect and once because of it being used as a scroll event listener)
     loading = true;
+
+    const url = "/api/messages?";
+    const nextQueries = new URLSearchParams();
+
+    if (props.type == "conversation") {
+      nextQueries.set("conversation", props.id);
+    } else if (props.type == "user") {
+      nextQueries.set("byuser", props.id);
+    }
+    if (props.search) {
+      nextQueries.set("search", props.search);
+    }
+
     if (direction == "start") {
       if (startingPlace == "beginning") {
         nextQueries.set("after", "beginning");
