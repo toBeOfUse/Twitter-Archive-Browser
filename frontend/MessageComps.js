@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect, forwardRef } from "react";
-import { useParams, useLocation, useHistory, Link } from "react-router-dom";
+import { useLocation, useHistory, Link } from "react-router-dom";
 import { addToUserStore } from "./UserComps";
 import {
   zStringToDateTime,
   zStringToDate,
   zStringDiffMinutes,
 } from "./DateHandling";
-import { NavLink } from "react-router-dom";
 
 function getTime(message) {
   if (message.schema == "Message") {
@@ -253,6 +252,7 @@ function MessagePage(props) {
       <ComplexMessage
         {...messages[0]}
         user={getUser(messages[0])}
+        users={users}
         sameUserAsNext={
           nextUser &&
           getUser(messages[0]).id == nextUser.id &&
@@ -270,11 +270,12 @@ function MessagePage(props) {
         <ComplexMessage
           {...v}
           user={user}
+          users={users}
           sameUserAsNext={
             user.id == nextUser.id &&
             zStringDiffMinutes(getTime(v), getTime(messages[i + 1])) < 2
           }
-          key={v.id ? v.id : v.time}
+          key={v.id}
         />
       );
     }
@@ -283,6 +284,7 @@ function MessagePage(props) {
         <ComplexMessage
           {...messages[messages.length - 1]}
           user={getUser(messages[messages.length - 1])}
+          users={users}
           key={messages[messages.length - 1].id}
           sameUserAsNext={false}
           ref={(n) => (DOMState.bottomMessage = n)}
@@ -377,9 +379,9 @@ function SimpleMessage(message) {
       <p style={{ textAlign: "center" }}>
         <span dangerouslySetInnerHTML={{ __html: el.innerHTML }}></span>
         {" - "}
-        <NavLink to={"/user/info/" + user.id}>
+        <Link to={"/user/info/" + user.id}>
           {(user.nickname || user.display_name) + ` (@${user.handle})`}
-        </NavLink>
+        </Link>
         {", " + zStringToDate(message.sent_time)}
       </p>
     </>
@@ -428,9 +430,9 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
             className="messageAttribution"
             style={alignment == "end" ? { marginLeft: "auto" } : null}
           >
-            <NavLink to={"/user/info/" + user.id}>
+            <Link to={"/user/info/" + user.id}>
               {(user.nickname || user.display_name) + ` (@${user.handle})`}
-            </NavLink>
+            </Link>
             {", " + zStringToDateTime(message.sent_time)}
           </span>
         ) : null}
@@ -440,22 +442,36 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
     alignment = "center";
     content = (
       <p style={{ textAlign: "center" }}>
-        {user.nickname || `@${user.handle}`} changed the conversation's name to{" "}
-        {message.new_name} ({zStringToDateTime(message.update_time)})
+        <Link to={"/user/info/" + user.id}>
+          {user.nickname || `@${user.handle}`}
+        </Link>{" "}
+        changed the conversation's name to {message.new_name} (
+        {zStringToDateTime(message.update_time)})
       </p>
     );
   } else if (message.schema == "ParticipantLeave") {
     alignment = "center";
     content = (
       <p style={{ textAlign: "center" }}>
-        {user.nickname || `@${user.handle}`} left the conversation.
+        <Link to={"/user/info/" + user.id}>
+          {user.nickname || `@${user.handle}`}
+        </Link>{" "}
+        left the conversation. ({zStringToDateTime(message.time)})
       </p>
     );
   } else if (message.schema == "ParticipantJoin") {
     alignment = "center";
+    const added_by = message.users[message.added_by];
     content = (
       <p style={{ textAlign: "center" }}>
-        {user.nickname || `@${user.handle}`} joined the conversation.
+        <Link to={"/user/info/" + user.id}>
+          {user.nickname || `@${user.handle}`}
+        </Link>{" "}
+        was added to the conversation by{" "}
+        <Link to={"/user/info/" + message.added_by}>
+          {added_by.nickname || `@${added_by.handle}`}
+        </Link>
+        . ({zStringToDateTime(message.time)})
       </p>
     );
   }
