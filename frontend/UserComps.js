@@ -110,7 +110,7 @@ function UserInfo() {
           </h3>
         </div>
         <span className="infoPageLinks">
-          <Link to={"/user/messages/" + info.id}>View Messages</Link>
+          <Link to={"/user/messages/" + info.id}>View their sent messages</Link>
           {info.loaded_full_data ? (
             <>
               <br className="noMobile" />

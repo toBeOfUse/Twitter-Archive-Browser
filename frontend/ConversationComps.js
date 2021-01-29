@@ -257,13 +257,19 @@ function ConversationInfo() {
           <span>Share Conversation</span>
         </span>
       </div>
-      <h3>
-        {(info.type == "group"
-          ? '"' + info.name + '"'
-          : "Conversation with " + info.name) +
-          ` | ${zStringToDate(info.first_time)} - ` +
-          `${zStringToDate(info.last_time)}`}
-      </h3>
+
+      {info.type == "group" ? (
+        <h3>{'"' + info.name + '"'}</h3>
+      ) : (
+        <h3>
+          Conversation with{" "}
+          <NavLink to={"/user/info/" + info.other_person.id}>
+            {info.name}
+          </NavLink>
+          {" | "}
+          {zStringToDate(info.first_time)} - {zStringToDate(info.last_time)}
+        </h3>
+      )}
       <div className="statsRow">
         <div className="statsContainer">
           <p>Number of Messages</p>
@@ -287,14 +293,7 @@ function ConversationInfo() {
               <h3>{info.num_participants.toLocaleString()}</h3>
             </div>
           </>
-        ) : (
-          <>
-            <div className="verticalLine" />
-            <NavLink to={"/user/info/" + info.other_person.id}>
-              View User
-            </NavLink>
-          </>
-        )}
+        ) : null}
       </div>
       {info.type == "group" ? null : (
         <NicknameSetter changed={acceptChange} {...info.other_person} />

@@ -433,7 +433,17 @@ function SimpleMessage(message) {
         <Link to={"/user/info/" + user.id}>
           {(user.nickname || user.display_name) + ` (@${user.handle})`}
         </Link>
-        {", " + zStringToDate(message.sent_time)}
+        {", " + zStringToDate(message.sent_time) + " "}
+        <Link
+          to={
+            "/conversation/messages/" +
+            message.conversation +
+            "?start=" +
+            message.sent_time
+          }
+        >
+          (context)
+        </Link>
       </p>
     </>
   );
