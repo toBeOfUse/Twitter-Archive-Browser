@@ -592,12 +592,13 @@ class TwitterDataWriter(Connection):
                 added_by=message["initiatingUserId"],
             )
             for user_id in message["participantsSnapshot"]:
-                self.add_user_if_necessary(user_id)
-                self.add_participant_if_necessary(
-                    user_id,
-                    message["conversationId"],
-                    start_time="0000-00-00T00:00:00.000Z",
-                )
+                if user_id != str(self.account_id):
+                    self.add_user_if_necessary(user_id)
+                    self.add_participant_if_necessary(
+                        user_id,
+                        message["conversationId"],
+                        start_time="0000-00-00T00:00:00.000Z",
+                    )
 
         self.added_messages += 1
 
