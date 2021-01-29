@@ -94,7 +94,7 @@ function MessagePage(props) {
           users,
           hitTop,
           hitBottom,
-          scrollTop: messagesPane.scrollTop,
+          scrollTop: DOMState.messagesPane.scrollTop,
         })
       );
     }
