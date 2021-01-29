@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, Link, useParams } from "react-router-dom";
 import { zStringToDateTime } from "./DateHandling";
 
 function NicknameSetter(userInfo) {
@@ -110,7 +110,7 @@ function UserInfo() {
           </h3>
         </div>
         <span className="infoPageLinks">
-          <span>View Messages</span>
+          <Link to={"/user/messages/" + info.id}>View Messages</Link>
           {info.loaded_full_data ? (
             <>
               <br className="noMobile" />

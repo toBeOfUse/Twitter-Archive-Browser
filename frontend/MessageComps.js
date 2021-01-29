@@ -6,7 +6,8 @@ import {
   zStringToDate,
   zStringDiffMinutes,
 } from "./DateHandling";
-import { render } from "react-dom";
+import { SearchBar } from "./ConversationComps";
+import LoadingSpinner from "./LoadingSpinner";
 
 function getTime(message) {
   if (message.schema == "Message") {
@@ -20,12 +21,12 @@ function getTime(message) {
 
 function MessagePage(props) {
   const location = useLocation();
+  console.log(location);
   const history = useHistory();
 
   const { startingPlace } = props;
 
-  const locationKey =
-    location.key + (props.search ? "&search=" + props.search : "");
+  const locationKey = location.key + location.search;
 
   const savedState = JSON.parse(window.sessionStorage.getItem(locationKey));
 
@@ -35,6 +36,7 @@ function MessagePage(props) {
     topMessage: null,
     bottomMessage: null,
     signpostElement: null,
+    highlightElement: null,
     // measurements that assist with scroll position preservation in restoreScroll
     prevSignpostPosition: -1,
     prevScrollTop: savedState?.scrollTop || 0,
@@ -52,9 +54,32 @@ function MessagePage(props) {
   const [hitBottom, setHitBottom] = useState(
     savedState?.hitBottom ?? startingPlace == "end"
   );
+  const [conversationName, setConversationName] = useState("");
   // loading could currently be converted to a ref/instance variable but it could
   // also be used in rendering to display a spinner in the future so idk
   let [loading, setLoading] = useState(false);
+
+  const getName = () => {
+    if (props.type == "conversation") {
+      fetch("/api/conversation?id=" + props.id).then((r) =>
+        r.json().then((j) => {
+          setConversationName(j.name);
+        })
+      );
+    } else if (props.type == "user") {
+      fetch("/api/user?id=" + props.id).then((r) =>
+        r.json().then((j) => {
+          setConversationName(
+            "from " + (j.nickname || j.display_name + " (@" + j.handle + ")")
+          );
+        })
+      );
+    } else {
+      setConversationName("all messages");
+    }
+  };
+
+  useEffect(getName, []);
 
   DOMState.prevSaveStateCleanup && DOMState.prevSaveStateCleanup();
   DOMState.prevSaveState &&
@@ -116,11 +141,13 @@ function MessagePage(props) {
         } else if (startingPlace == "beginning") {
           currentPane.scrollTop = 0;
         } else {
-          // this sets the scrolling position to the middle; TODO: come up
-          // with a way to center the message closest to the startingPlace
-          // timestamp
-          currentPane.scrollTop =
-            currentScrollHeight / 2 - currentPane.clientHeight / 2;
+          if (DOMState.highlightElement) {
+            const el = DOMState.highlightElement;
+            currentPane.scrollTop = el.offsetTop + el.offsetHeight / 2;
+          } else {
+            currentPane.scrollTop =
+              currentScrollHeight / 2 - currentPane.clientHeight / 2;
+          }
         }
       }
     }
@@ -249,59 +276,52 @@ function MessagePage(props) {
   useEffect(scrollChecks);
 
   const getUser = (message) =>
+    message &&
     users[message.sender || message.initiator || message.participant];
+
+  const distributeRefs = (message) => {
+    return (node) => {
+      if (message.sent_time == startingPlace) {
+        DOMState.highlightElement = node;
+      }
+      if (message.id == messages[0].id) {
+        DOMState.topMessage = node;
+      }
+      if (message.id == messages[messages.length - 1].id) {
+        DOMState.bottomMessage = node;
+      }
+    };
+  };
 
   let renderedMessages = null;
   if (messages?.length) {
-    let nextUser = messages.length > 1 ? getUser(messages[1]) : null;
-    renderedMessages = [
-      <ComplexMessage
-        {...messages[0]}
-        user={getUser(messages[0])}
-        users={users}
-        sameUserAsNext={
-          nextUser &&
-          getUser(messages[0]).id == nextUser.id &&
-          zStringDiffMinutes(getTime(messages[0]), getTime(messages[1])) < 2
-        }
-        showContextLink={!!props.search}
-        key={messages[0].id}
-        ref={(n) => (DOMState.topMessage = n)}
-      />,
-    ];
-    for (let i = 1; i < messages.length - 1; i++) {
-      const v = messages[i];
+    let nextUser = getUser(messages[0]);
+    renderedMessages = [];
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
       const user = nextUser;
       nextUser = getUser(messages[i + 1]);
       renderedMessages.push(
         <ComplexMessage
-          {...v}
+          {...message}
           user={user}
           users={users}
           showContextLink={!!props.search}
           sameUserAsNext={
+            nextUser &&
             user.id == nextUser.id &&
-            zStringDiffMinutes(getTime(v), getTime(messages[i + 1])) < 2
+            zStringDiffMinutes(getTime(message), getTime(messages[i + 1])) < 2
           }
-          key={v.id}
-        />
-      );
-    }
-    if (renderedMessages.length > 1) {
-      renderedMessages.push(
-        <ComplexMessage
-          {...messages[messages.length - 1]}
-          showContextLink={!!props.search}
-          user={getUser(messages[messages.length - 1])}
-          users={users}
-          key={messages[messages.length - 1].id}
-          sameUserAsNext={false}
-          ref={(n) => (DOMState.bottomMessage = n)}
+          highlight={message.sent_time == startingPlace}
+          ref={distributeRefs(message)}
+          key={message.id}
         />
       );
     }
   } else if (hitTop && hitBottom) {
     renderedMessages = <p>No messages found, sorry :(</p>;
+  } else {
+    renderedMessages = <LoadingSpinner />;
   }
 
   return (
@@ -313,7 +333,10 @@ function MessagePage(props) {
           borderBottom: "1px solid black",
         }}
       >
-        <h1 style={{ display: "inline" }}>Messages</h1>{" "}
+        <h1 style={{ display: "inline", marginRight: 5 }}>
+          Messages - {conversationName}
+        </h1>
+        <br />
         <Link
           replace
           to={
@@ -343,6 +366,7 @@ function MessagePage(props) {
       >
         {renderedMessages}
       </div>
+      <SearchBar baseURL={location.pathname} />
     </>
   );
 }
@@ -430,7 +454,7 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
         <p
           className="messageText"
           style={{
-            backgroundColor: "#96d3ff",
+            backgroundColor: message.highlight ? "#ff7878" : "#96d3ff",
             marginLeft: alignment == "end" ? "auto" : 0,
             maxWidth: "70%",
           }}

@@ -1,27 +1,27 @@
 import React, { useEffect, useState, useRef } from "react";
 import { zStringToDate, zStringToDateTime } from "./DateHandling";
 import { NicknameSetter, addToUserStore } from "./UserComps";
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, Link, useHistory, useParams } from "react-router-dom";
 
 function ConversationListing(props) {
   console.assert(props.schema == "Conversation");
   return (
     <div className="conversationListing">
       <img className="conversationImage" src={props.image_url} />
-      <NavLink
+      <Link
         to={"/conversation/messages/" + props.id}
         className="conversationName"
       >
         {props.name}
-      </NavLink>
+      </Link>
       <span className="conversationDate">
         {`${zStringToDate(props.first_time)}`}
         <br />
         {`${zStringToDate(props.last_time)}`}
       </span>
-      <NavLink to={"/conversation/info/" + props.id}>
+      <Link to={"/conversation/info/" + props.id}>
         <img className="conversationInfoIcon" src="/assets/svg/info.svg" />
-      </NavLink>
+      </Link>
     </div>
   );
 }
@@ -381,7 +381,10 @@ function ConversationList() {
       <div id="conversationHeader">
         <div style={{ display: "flex", alignItems: "center" }}>
           <h1 style={{ marginRight: 10 }}>Conversations</h1>
-          <NavLink to="/stats">(stats)</NavLink>
+          <NavLink to="/stats" style={{ marginRight: 5 }}>
+            (stats)
+          </NavLink>
+          <NavLink to="/messages">(view all messages)</NavLink>
         </div>
         <div>
           <span>Sort by:</span>
@@ -422,17 +425,34 @@ function ConversationList() {
           <ConversationListing key={v.id} {...v}></ConversationListing>
         ))}
       </div>
-      <div style={{ width: "100%", height: 30, display: "flex" }}>
-        <button style={{ whiteSpace: "nowrap" }}>Go to date...</button>
-        <input
-          style={{ width: "100%" }}
-          type="text"
-          placeholder="Search all messages..."
-        />
-        <button>Search</button>
-      </div>
+      <SearchBar baseURL="/messages" />
     </>
   );
 }
 
-export { ConversationList, ConversationInfo };
+function SearchBar(props) {
+  const history = useHistory();
+  const [text, setText] = useState("");
+  const receiveText = (event) => setText(event.target.value);
+  const actOnSearch = (event) => {
+    if (event.type == "click" || event.key == "Enter") {
+      history.push(props.baseURL + "?search=" + text);
+    }
+  };
+  return (
+    <div style={{ width: "100%", height: 30, display: "flex" }}>
+      <button style={{ whiteSpace: "nowrap" }}>Go to date...</button>
+      <input
+        value={text}
+        onInput={receiveText}
+        onKeyDown={actOnSearch}
+        style={{ width: "100%" }}
+        type="text"
+        placeholder="Search all messages..."
+      />
+      <button onClick={actOnSearch}>Search</button>
+    </div>
+  );
+}
+
+export { ConversationList, ConversationInfo, SearchBar };
