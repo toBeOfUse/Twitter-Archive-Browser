@@ -9,6 +9,7 @@ from dataclasses import dataclass, asdict
 from os import PathLike
 from contextlib import contextmanager
 from copy import deepcopy
+import string
 
 CONVERSATIONS_PER_PAGE: Final = 20
 CONVERSATION_NAMES_PER_PAGE: Final = 50
@@ -764,8 +765,10 @@ class TwitterDataReader(sqlite3.Connection):
             placeholders.append(user)
 
         if search:
-            where.add("messages_text_search MATCH ?")
-            placeholders.append(search)
+            search = search.translate(
+                str.maketrans({x: " " for x in string.punctuation})
+            )
+            where.add('messages_text_search MATCH "' + search + '"')
             select = Message.db_select_for_search
         else:
             select = Message.db_select
