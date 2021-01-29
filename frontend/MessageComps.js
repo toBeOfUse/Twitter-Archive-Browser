@@ -144,7 +144,8 @@ function MessagePage(props) {
         } else {
           if (DOMState.highlightElement) {
             const el = DOMState.highlightElement;
-            currentPane.scrollTop = el.offsetTop + el.offsetHeight / 2;
+            currentPane.scrollTop =
+              el.offsetTop - currentPane.offsetHeight / 2 + el.offsetHeight / 2;
           } else {
             currentPane.scrollTop =
               currentScrollHeight / 2 - currentPane.clientHeight / 2;
