@@ -87,6 +87,7 @@ function MessagePage(props) {
   const saveState = (event, action) => {
     if ((action == "PUSH" || action == "POP" || event.type) && messages) {
       console.log("saving current state under key " + locationKey);
+      console.log("event is ", action || event);
       window.sessionStorage.setItem(
         locationKey,
         JSON.stringify({
@@ -94,7 +95,7 @@ function MessagePage(props) {
           users,
           hitTop,
           hitBottom,
-          scrollTop: DOMState.messagesPane.scrollTop,
+          scrollTop: DOMState.prevScrollTop,
         })
       );
     }
