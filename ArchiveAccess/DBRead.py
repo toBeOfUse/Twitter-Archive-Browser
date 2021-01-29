@@ -762,7 +762,7 @@ class TwitterDataReader(sqlite3.Connection):
             placeholders.append(conversation)
         if user:
             where.add("sender=?")
-            placeholders.append(user)
+            placeholders.append(int(user))
 
         if search:
             search = search.translate(
