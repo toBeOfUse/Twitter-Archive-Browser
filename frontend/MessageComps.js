@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef } from "react";
 import { useLocation, useHistory, Link } from "react-router-dom";
-import { addToUserStore } from "./UserComps";
 import {
   zStringToDateTime,
   zStringToDate,
@@ -8,6 +7,7 @@ import {
 } from "./DateHandling";
 import { SearchBar } from "./ConversationComps";
 import LoadingSpinner from "./LoadingSpinner";
+import { useDispatch, useSelector } from "react-redux";
 
 function getTime(message) {
   if (message.schema == "Message") {
@@ -19,6 +19,10 @@ function getTime(message) {
   }
 }
 
+function getUserID(message) {
+  return message?.sender || message?.initiator || message?.participant;
+}
+
 function MessagePage(props) {
   const location = useLocation();
   console.log(location);
@@ -28,7 +32,7 @@ function MessagePage(props) {
 
   const locationKey = location.key + location.search;
 
-  const savedState = JSON.parse(window.sessionStorage.getItem(locationKey));
+  const savedState = useSelector((state) => state.pageState[locationKey]);
 
   const DOMState = useRef({
     // dom elements to be observed
@@ -40,14 +44,12 @@ function MessagePage(props) {
     // measurements that assist with scroll position preservation in restoreScroll
     prevSignpostPosition: -1,
     prevScrollTop: savedState?.scrollTop || 0,
-    // used to store a history listener and a cleanup function for it that will be
-    // created in this render
-    prevSaveState: null,
+    // used to store a cleanup function for the history listener that will be created
+    // in this render
     prevSaveStateCleanup: null,
   }).current;
 
   const [messages, setMessages] = useState(savedState?.messages);
-  const [users, setUsers] = useState(savedState?.users || {});
   const [hitTop, setHitTop] = useState(
     savedState?.hitTop ?? startingPlace == "beginning"
   );
@@ -59,16 +61,36 @@ function MessagePage(props) {
   // also be used in rendering to display a spinner in the future so idk
   let [loading, setLoading] = useState(false);
 
-  const getName = () => {
+  const dispatch = useDispatch();
+
+  const name = useSelector((state) => {
     if (props.type == "conversation") {
+      return state.conversations[props.id]?.name;
+    } else if (props.type == "user") {
+      return state.users[props.id]?.name;
+    }
+  });
+
+  const getName = () => {
+    if (name) {
+      setConversationName(name);
+    } else if (props.type == "conversation") {
       fetch("/api/conversation?id=" + props.id).then((r) =>
         r.json().then((j) => {
+          dispatch({
+            type: "conversations/addConversations",
+            payload: [j],
+          });
           setConversationName(j.name);
         })
       );
     } else if (props.type == "user") {
       fetch("/api/user?id=" + props.id).then((r) =>
         r.json().then((j) => {
+          dispatch({
+            type: "users/addUsers",
+            payload: [j],
+          });
           setConversationName(
             "from " + (j.nickname || j.display_name + " (@" + j.handle + ")")
           );
@@ -82,28 +104,25 @@ function MessagePage(props) {
   useEffect(getName, []);
 
   DOMState.prevSaveStateCleanup && DOMState.prevSaveStateCleanup();
-  DOMState.prevSaveState &&
-    window.removeEventListener("beforeunload", DOMState.prevSaveState);
   const saveState = (event, action) => {
     if ((action == "PUSH" || action == "POP" || event.type) && messages) {
       console.log("saving current state under key " + locationKey);
       console.log("event is ", action || event);
-      window.sessionStorage.setItem(
-        locationKey,
-        JSON.stringify({
-          messages,
-          users,
-          hitTop,
-          hitBottom,
-          scrollTop: DOMState.prevScrollTop,
-        })
-      );
+      dispatch({
+        type: "pageState/save",
+        payload: {
+          [locationKey]: {
+            messages,
+            hitTop,
+            hitBottom,
+            scrollTop: DOMState.prevScrollTop,
+          },
+        },
+      });
     }
     DOMState.prevSaveStateCleanup();
   };
   DOMState.prevSaveStateCleanup = history.listen(saveState);
-  window.addEventListener("beforeunload", saveState);
-  DOMState.prevSaveState = savedState;
 
   const restoreScroll = () => {
     // the strategy for maintaining the scroll position in the messages pane even as
@@ -122,8 +141,6 @@ function MessagePage(props) {
     console.log("it used to be", DOMState.prevScrollTop);
     if (savedState?.scrollTop) {
       currentPane.scrollTop = savedState.scrollTop;
-      delete savedState.scrollTop;
-      window.sessionStorage.setItem(locationKey, JSON.stringify(savedState));
     } else if (currentPane) {
       currentPane.focus();
       if (DOMState.signpostElement) {
@@ -194,7 +211,10 @@ function MessagePage(props) {
     }
     fetch(url + nextQueries.toString()).then((r) =>
       r.json().then((j) => {
-        setUsers((oldUsers) => addToUserStore(oldUsers, j.users));
+        dispatch({
+          type: "users/addUsers",
+          payload: j.users,
+        });
         let newMessages = null;
         if (direction == "start") {
           if (j.results.length) {
@@ -277,10 +297,6 @@ function MessagePage(props) {
 
   useEffect(scrollChecks);
 
-  const getUser = (message) =>
-    message &&
-    users[message.sender || message.initiator || message.participant];
-
   const distributeRefs = (message) => {
     return (node) => {
       if (message.sent_time == startingPlace) {
@@ -297,21 +313,19 @@ function MessagePage(props) {
 
   let renderedMessages = null;
   if (messages?.length) {
-    let nextUser = getUser(messages[0]);
+    let nextUser = getUserID(messages[0]);
     renderedMessages = [];
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i];
       const user = nextUser;
-      nextUser = getUser(messages[i + 1]);
+      nextUser = getUserID(messages[i + 1]);
       renderedMessages.push(
         <ComplexMessage
           {...message}
-          user={user}
-          users={users}
           showContextLink={!!props.search}
           sameUserAsNext={
             nextUser &&
-            user.id == nextUser.id &&
+            user == nextUser &&
             zStringDiffMinutes(getTime(message), getTime(messages[i + 1])) < 2
           }
           highlight={message.sent_time == startingPlace}
@@ -420,7 +434,7 @@ function SimpleMessage(message) {
   for (const a of el.querySelectorAll("a")) {
     a.target = "_blank";
   }
-  const user = message.sender;
+  const user = useSelector((state) => state.users[message.sender]);
   const mediaItems = message.media.map((i) => (
     <MediaItem media={i} key={i.id} className="smallMedia" />
   ));
@@ -452,7 +466,10 @@ function SimpleMessage(message) {
 const ComplexMessage = forwardRef(function FullMessage(message, ref) {
   let content;
   let alignment;
-  const user = message.user;
+  const user = useSelector((state) => state.users[getUserID(message)]);
+  const addedBy = useSelector((state) =>
+    message.added_by ? state.users[message.added_by] : null
+  );
   if (message.schema == "Message") {
     alignment = user.is_main_user ? "end" : "start";
     let textSection = null;
@@ -487,30 +504,31 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
         {mediaItems}
         {textSection}
         {!message.sameUserAsNext ? (
-          <span
-            className="messageAttribution"
-            style={alignment == "end" ? { marginLeft: "auto" } : null}
-          >
-            <Link to={"/user/info/" + user.id}>
-              {(user.nickname || user.display_name) + ` (@${user.handle})`}
-            </Link>
-            {", " + zStringToDateTime(message.sent_time)}
+          <>
+            <span
+              className="messageAttribution"
+              style={alignment == "end" ? { marginLeft: "auto" } : null}
+            >
+              <Link to={"/user/info/" + user.id}>
+                {(user.nickname || user.display_name) + ` (@${user.handle})`}
+              </Link>
+              {", " + zStringToDateTime(message.sent_time)}
+            </span>
             {message.showContextLink ? (
-              <>
-                <br />
-                <Link
-                  to={
-                    "/conversation/messages/" +
-                    message.conversation +
-                    "?start=" +
-                    message.sent_time
-                  }
-                >
-                  (see in context)
-                </Link>
-              </>
+              <Link
+                to={
+                  "/conversation/messages/" +
+                  message.conversation +
+                  "?start=" +
+                  message.sent_time
+                }
+                className="messageAttribution"
+                style={alignment == "end" ? { marginLeft: "auto" } : null}
+              >
+                (see in context)
+              </Link>
             ) : null}
-          </span>
+          </>
         ) : null}
       </>
     );
@@ -537,7 +555,6 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
     );
   } else if (message.schema == "ParticipantJoin") {
     alignment = "center";
-    const added_by = message.users[message.added_by];
     content = (
       <p style={{ textAlign: "center" }}>
         <Link to={"/user/info/" + user.id}>
@@ -545,7 +562,7 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
         </Link>{" "}
         was added to the conversation by{" "}
         <Link to={"/user/info/" + message.added_by}>
-          {added_by.nickname || `@${added_by.handle}`}
+          {addedBy.nickname || `@${addedBy.handle}`}
         </Link>
         . ({zStringToDateTime(message.time)})
       </p>

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { zStringToDate, zStringToDateTime } from "./DateHandling";
-import { NicknameSetter, addToUserStore } from "./UserComps";
+import { NicknameSetter } from "./UserComps";
 import { NavLink, Link, useHistory, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
 function ConversationListing(props) {
   console.assert(props.schema == "Conversation");
@@ -70,7 +71,8 @@ function ConversationMetaList(props) {
   const [renderingNames, setRenderingNames] = useState(true);
   const [participants, setParticipants] = useState([]);
   const [updates, setUpdates] = useState([]);
-  const [users, setUsers] = useState({});
+  const users = useSelector((state) => state.users);
+  const dispatch = useDispatch();
 
   const [oldestFirst, setOldestFirst] = useState(true);
 
@@ -101,8 +103,11 @@ function ConversationMetaList(props) {
         r.json().then((j) => {
           if (renderingNames) {
             if (j.results.length) {
+              dispatch({
+                type: "users/addUsers",
+                payload: j.users,
+              });
               setUpdates((prevUpdates) => prevUpdates.concat(j.results));
-              setUsers(addToUserStore(users, j.users));
             } else {
               setPage(-1);
             }
@@ -314,15 +319,14 @@ function ConversationList() {
       individual: true,
     }
   );
-  const typesString = Object.keys(types)
-    .filter((v) => types[v])
-    .join("-");
+
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-
   const [conversations, setConversations] = useState([]);
 
   const listPane = useRef(null);
+
+  const dispatch = useDispatch();
 
   const resetButton = () => {
     setPage(1);
@@ -334,6 +338,7 @@ function ConversationList() {
     localStorage.setItem("conversationOrder", event.target.value);
     resetButton();
   };
+
   const changeTypes = (event) => {
     setTypes((prevTypes) => {
       const newTypes = {
@@ -356,13 +361,22 @@ function ConversationList() {
       !loading
     ) {
       setLoading(true);
-      const url = `/api/conversations?first=${order}&types=${typesString}&page=${page}`;
+      const typesString = Object.keys(types)
+        .filter((v) => types[v])
+        .join("-");
+      const url =
+        `/api/conversations?` +
+        `first=${order}&types=${typesString}&page=${page}`;
       fetch(url).then((r) =>
         r.json().then((j) => {
           if (j.results.length) {
             setConversations((prevConversations) =>
               prevConversations.concat(j.results)
             );
+            dispatch({
+              type: "conversations/addConversations",
+              payload: j.results,
+            });
           } else {
             setPage(-1);
           }

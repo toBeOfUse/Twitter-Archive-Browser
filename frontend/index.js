@@ -1,3 +1,5 @@
+import "normalize.css";
+import "./assets/css/index.css";
 import React, { useState } from "react";
 import ReactDOM from "react-dom";
 import {
@@ -7,15 +9,51 @@ import {
   Route,
   Redirect,
 } from "react-router-dom";
+import { configureStore } from "@reduxjs/toolkit";
+import { Provider } from "react-redux";
 import { ConversationList, ConversationInfo } from "./ConversationComps";
 import { UserInfo } from "./UserComps";
 import { GlobalStats } from "./GlobalStats";
 import { MessagePage } from "./MessageComps";
-import "normalize.css";
-import "./assets/css/index.css";
 
-console.log("hello world");
-ReactDOM.render(<RoutingTable />, document.getElementById("root"));
+const addToIDMap = (IDMap, items) => {
+  return Object.assign({}, IDMap, ...items.map((i) => ({ [i.id]: i })));
+};
+
+const store = configureStore({
+  reducer: {
+    users: (state = {}, action) =>
+      action.type == "users/addUsers"
+        ? addToIDMap(state, action.payload)
+        : state,
+    conversations: (state = {}, action) =>
+      action.type == "conversations/addConversations"
+        ? addToIDMap(state, action.payload)
+        : state,
+    stats: (state = null, action) =>
+      action.type == "stats/setStats" ? action.payload : state,
+    pageState: (state = {}, action) =>
+      action.type == "pageState/save"
+        ? Object.assign({}, state, action.payload)
+        : state,
+  },
+});
+
+fetch("/api/globalstats").then((r) =>
+  r.json().then((result) => {
+    store.dispatch({
+      type: "stats/setStats",
+      payload: result,
+    });
+  })
+);
+
+ReactDOM.render(
+  <Provider store={store}>
+    <RoutingTable />
+  </Provider>,
+  document.getElementById("root")
+);
 
 function RoutingTable() {
   return (

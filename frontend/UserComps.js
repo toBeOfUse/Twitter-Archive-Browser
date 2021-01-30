@@ -170,12 +170,4 @@ function UserInfo() {
   );
 }
 
-function addToUserStore(oldStore, newUsers) {
-  const newStore = {};
-  for (const user of newUsers) {
-    newStore[user.id] = user;
-  }
-  return { ...oldStore, ...newStore };
-}
-
-export { NicknameSetter, addToUserStore, UserInfo };
+export { NicknameSetter, UserInfo };

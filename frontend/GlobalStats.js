@@ -1,31 +1,23 @@
-import React, { useEffect, useState, useRef } from "react";
-import { zStringToDate, zStringToDateTime } from "./DateHandling";
-import { addToUserStore } from "./UserComps";
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { zStringToDateTime } from "./DateHandling";
 import { SimpleMessage } from "./MessageComps";
 
 function GlobalStats() {
-  const [stats, setStats] = useState(null);
+  const stats = useSelector((state) => state.stats);
   const [messages, setMessages] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [users, setUsers] = useState({});
-
-  if (!stats && !loadingStats) {
-    setLoadingStats(true);
-    fetch("/api/globalstats").then((r) =>
-      r.json().then((result) => {
-        setStats(result);
-        setLoadingStats(false);
-      })
-    );
-  }
+  const dispatch = useDispatch();
 
   if (!messages && !loadingMessages) {
     setLoadingMessages(true);
     fetch("/api/messages/random").then((r) =>
-      r.json().then((result) => {
-        setUsers((oldUsers) => addToUserStore(oldUsers, result.users));
-        setMessages(result.results);
+      r.json().then((results) => {
+        dispatch({
+          type: "users/addUsers",
+          payload: results.users,
+        });
+        setMessages(results.results);
         setLoadingMessages(false);
       })
     );
@@ -69,7 +61,7 @@ function GlobalStats() {
     <>
       <h3>40 randomly selected messages:</h3>
       {messages.map((v) => (
-        <SimpleMessage key={v.id} {...v} sender={users[v.sender]} />
+        <SimpleMessage key={v.id} {...v} />
       ))}
     </>
   ) : (
