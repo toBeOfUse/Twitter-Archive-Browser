@@ -51,7 +51,8 @@ class ArchiveAPIServer:
         frontend_handler = (r"^(?!/assets/|/api/|/frontend/)/(.*)$", ServeFrontend)
         self.application = Application(
             [assets_handler, source_handler, frontend_handler]
-            + [x + (initializer,) for x in self.handlers]
+            + [x + (initializer,) for x in self.handlers],
+            compress_response=True,
         )
 
     def start(self):
