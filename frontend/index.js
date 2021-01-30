@@ -1,6 +1,6 @@
 import "normalize.css";
 import "./assets/css/index.css";
-import React, { useState } from "react";
+import React from "react";
 import ReactDOM from "react-dom";
 import {
   BrowserRouter as Router,
@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
+import produce from "immer";
 import { ConversationList, ConversationInfo } from "./ConversationComps";
 import { UserInfo } from "./UserComps";
 import { GlobalStats } from "./GlobalStats";
@@ -32,10 +33,16 @@ const store = configureStore({
         : state,
     stats: (state = null, action) =>
       action.type == "stats/setStats" ? action.payload : state,
-    pageState: (state = {}, action) =>
-      action.type == "pageState/save"
-        ? Object.assign({}, state, action.payload)
-        : state,
+    pageState: produce((draft, action) => {
+      switch (action.type) {
+        case "pageState/save":
+          Object.assign(draft, action.payload);
+          break;
+        case "pageState/markScrollPosUsed":
+          console.log("obviating scroll top for key", action.payload);
+          draft[action.payload].scrollTop = null;
+      }
+    }, {}),
   },
 });
 
@@ -69,7 +76,7 @@ function RoutingTable() {
               className="bigLink"
               activeClassName="activeBigLink"
             >
-              Correspondence
+              Home
             </NavLink>
           </div>
           <div className="contentPane">

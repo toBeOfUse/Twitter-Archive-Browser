@@ -141,6 +141,7 @@ function MessagePage(props) {
     console.log("it used to be", DOMState.prevScrollTop);
     if (savedState?.scrollTop) {
       currentPane.scrollTop = savedState.scrollTop;
+      dispatch({ type: "pageState/markScrollPosUsed", payload: locationKey });
     } else if (currentPane) {
       currentPane.focus();
       if (DOMState.signpostElement) {
