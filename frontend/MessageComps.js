@@ -23,9 +23,18 @@ function getUserID(message) {
   return message?.sender || message?.initiator || message?.participant;
 }
 
+const reactionEmojis = {
+  like: "❤️",
+  agree: "👍",
+  disagree: "👎",
+  funny: "😂",
+  excited: "🔥",
+  sad: "😢",
+  surprised: "😲",
+};
+
 function MessagePage(props) {
   const location = useLocation();
-  console.log(location);
   const history = useHistory();
 
   const { startingPlace } = props;
@@ -163,7 +172,10 @@ function MessagePage(props) {
           if (DOMState.highlightElement) {
             const el = DOMState.highlightElement;
             currentPane.scrollTop =
-              el.offsetTop - currentPane.offsetHeight / 2 + el.offsetHeight / 2;
+              el.offsetTop -
+              currentPane.offsetTop -
+              currentPane.offsetHeight / 2 +
+              el.offsetHeight / 2;
           } else {
             currentPane.scrollTop =
               currentScrollHeight / 2 - currentPane.clientHeight / 2;
@@ -330,6 +342,7 @@ function MessagePage(props) {
             zStringDiffMinutes(getTime(message), getTime(messages[i + 1])) < 2
           }
           highlight={message.sent_time == startingPlace}
+          context={props.type}
           ref={distributeRefs(message)}
           key={message.id}
         />
@@ -375,6 +388,8 @@ function MessagePage(props) {
         >
           Sink to bottom
         </Link>
+        {" | "}
+        Double-click or double-tap messages for More
       </div>
       <div
         ref={(n) => (DOMState.messagesPane = n)}
@@ -392,6 +407,7 @@ function MediaItem(props) {
   if (props.media.type == "image") {
     return (
       <img
+        onDoubleClick={props.onDoubleClick}
         className={props.className}
         style={props.style}
         src={props.media.src}
@@ -400,6 +416,7 @@ function MediaItem(props) {
   } else if (props.media.type == "video") {
     return (
       <video
+        onDoubleClick={props.onDoubleClick}
         controls
         className={props.className}
         style={props.style}
@@ -409,7 +426,9 @@ function MediaItem(props) {
   } else if (props.media.type == "gif") {
     return (
       <video
+        onDoubleClick={props.onDoubleClick}
         muted
+        onLoad={(e) => e.target.setAttribute("muted", "")}
         autoPlay
         loop
         className={props.className}
@@ -466,11 +485,11 @@ function SimpleMessage(message) {
 
 const ComplexMessage = forwardRef(function FullMessage(message, ref) {
   let content;
+  let modal;
   let alignment;
-  const user = useSelector((state) => state.users[getUserID(message)]);
-  const addedBy = useSelector((state) =>
-    message.added_by ? state.users[message.added_by] : null
-  );
+  const [modalOpen, setModalOpen] = useState(false);
+  const users = useSelector((state) => state.users);
+  const user = users[getUserID(message)];
   if (message.schema == "Message") {
     alignment = user.is_main_user ? "end" : "start";
     let textSection = null;
@@ -482,6 +501,13 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
       }
       textSection = (
         <p
+          onDoubleClick={() => setModalOpen(true)}
+          // prevents double clicks from causing selection
+          onMouseDown={(e) => {
+            if (e.detail > 1) {
+              e.preventDefault();
+            }
+          }}
           className="messageText"
           style={{
             backgroundColor: message.highlight ? "#ff7878" : "#96d3ff",
@@ -494,6 +520,7 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
     }
     const mediaItems = message.media.map((i) => (
       <MediaItem
+        onDoubleClick={() => setModalOpen(true)}
         media={i}
         key={i.id}
         className="smallMedia"
@@ -529,9 +556,85 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
                 (see in context)
               </Link>
             ) : null}
+            {message.reactions.length ? (
+              <span
+                style={{
+                  padding: 3,
+                  border: "1px solid black",
+                  backgroundColor: "#ccc",
+                  borderRadius: 4,
+                  marginTop: 2,
+                }}
+              >
+                {message.reactions
+                  .map((r) => reactionEmojis[r.emotion])
+                  .join(" ")}
+              </span>
+            ) : null}
           </>
         ) : null}
       </>
+    );
+    const conversationLink =
+      "/conversation/messages/" +
+      message.conversation +
+      "?start=" +
+      message.sent_time;
+    const userMessagesLink =
+      "/user/messages/" + message.sender + "?start=" + message.sent_time;
+    const copyLinkHref = (e) => {
+      e.preventDefault();
+      navigator.clipboard.writeText(e.target.href);
+    };
+    let contextLinks;
+    const makeContextLink = (to, copyMode) => {
+      return (
+        <Link
+          to={to}
+          style={{ display: "block" }}
+          onClick={copyMode ? copyLinkHref : null}
+          key={to}
+        >
+          {(copyMode ? "Copy link to " : "Go to ") +
+            (to == conversationLink ? "conversation" : "user's messages") +
+            " at this point"}
+        </Link>
+      );
+    };
+    if (message.context == "conversation") {
+      contextLinks = [
+        makeContextLink(conversationLink, true),
+        makeContextLink(userMessagesLink, false),
+      ];
+    } else if (message.context == "user") {
+      contextLinks = [
+        makeContextLink(userMessagesLink, true),
+        makeContextLink(conversationLink, false),
+      ];
+    } else {
+      contextLinks = [
+        makeContextLink(conversationLink, false),
+        makeContextLink(userMessagesLink, false),
+      ];
+    }
+    modal = (
+      <div className="modalBackdrop" onClick={() => setModalOpen(false)}>
+        <div className="centeredModal">
+          <h3>
+            Sent by{" "}
+            {(user.nickname || user.display_name) + ` (@${user.handle})`} at{" "}
+            {zStringToDateTime(message.sent_time)}
+          </h3>
+          {contextLinks}
+          {message.reactions.map((v) => (
+            <p key={v.id}>
+              {reactionEmojis[v.emotion]} left by{" "}
+              {users[v.creator].nickname || `@${users[v.creator].handle}`} at{" "}
+              {zStringToDateTime(v.creation_time)}
+            </p>
+          ))}
+        </div>
+      </div>
     );
   } else if (message.schema == "NameUpdate") {
     alignment = "center";
@@ -555,6 +658,7 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
       </p>
     );
   } else if (message.schema == "ParticipantJoin") {
+    const addedBy = users[message.added_by];
     alignment = "center";
     content = (
       <p style={{ textAlign: "center" }}>
@@ -576,6 +680,7 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
   return (
     <div ref={ref} className={containerClass} style={{ alignItems: alignment }}>
       {content}
+      {modalOpen && modal ? modal : null}
     </div>
   );
 });
