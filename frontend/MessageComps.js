@@ -429,14 +429,16 @@ function MediaItem(props) {
     return element || window;
   };
   const scrollPositionLog = (event) => {
-    console.log("MEDIA: fixing scroll parent scrollPos now");
-    console.log("MEDIA: this is for url", props.media.src);
+    console.log("MEDIA: loaded media from url", props.media.src);
     const scrollParent = findScrollParent(event.target);
     console.log(
-      "MEDIA: it currently has scroll height",
+      "MEDIA: parent currently has scroll height",
       scrollParent.scrollHeight
     );
-    console.log("MEDIA: it currently has scroll pos", scrollParent.scrollTop);
+    console.log(
+      "MEDIA: parent currently has scroll pos",
+      scrollParent.scrollTop
+    );
   };
   if (props.media.type == "image") {
     return (
@@ -452,9 +454,12 @@ function MediaItem(props) {
           console.log("MEDIA: created image node:", node);
           console.log("MEDIA: this is for url", props.media.src);
           const scrollParent = findScrollParent(node);
-          console.log("current parent scrollPos is", scrollParent.scrollTop);
           console.log(
-            "current parent scrollHeight is",
+            "MEDIA: current parent scrollPos is",
+            scrollParent.scrollTop
+          );
+          console.log(
+            "MEDIA: current parent scrollHeight is",
             scrollParent.scrollHeight
           );
         }}
