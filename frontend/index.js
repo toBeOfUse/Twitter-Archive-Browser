@@ -43,6 +43,12 @@ const store = configureStore({
           draft[action.payload].scrollTop = null;
       }
     }, {}),
+    autoplay: (state = true, action) => {
+      if (action.type == "autoplay/allowed") {
+        return action.payload;
+      }
+      return state;
+    },
   },
 });
 

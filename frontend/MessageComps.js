@@ -404,6 +404,25 @@ function MessagePage(props) {
 }
 
 function MediaItem(props) {
+  const el = useRef(null);
+  const autoplayAllowed = useSelector((state) => state.autoplay);
+  const dispatch = useDispatch();
+  const detectAutoplay = () => {
+    console.log("using gif element", el.current);
+    if (props.media.type == "gif" && el.current) {
+      el.current.setAttribute("muted", "");
+      el.current.play().catch((err) => {
+        console.log("detected autoplay not allowed :(");
+        console.log(err);
+        dispatch({
+          type: "autoplay/allowed",
+          payload: false,
+        });
+      });
+    }
+  };
+  const [haveStartedPlaying, setHaveStartedPlaying] = useState(false);
+  useEffect(detectAutoplay, []);
   if (props.media.type == "image") {
     return (
       <img
@@ -424,18 +443,44 @@ function MediaItem(props) {
       />
     );
   } else if (props.media.type == "gif") {
-    return (
+    const gif = (
       <video
-        onDoubleClick={props.onDoubleClick}
+        playsInline
         muted
-        onLoad={(e) => e.target.setAttribute("muted", "")}
         autoPlay
         loop
+        ref={el}
+        onDoubleClick={props.onDoubleClick}
         className={props.className}
         src={props.media.src}
         style={props.style}
       />
     );
+    if (!autoplayAllowed) {
+      return (
+        <div style={{ position: "relative" }}>
+          {gif}
+          <span
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              fontSize: 40,
+              cursor: "pointer",
+              display: haveStartedPlaying ? "none" : "",
+            }}
+            onClick={() => {
+              el.current && el.current.play();
+              setHaveStartedPlaying(true);
+            }}
+          >
+            ▶️
+          </span>
+        </div>
+      );
+    }
+    return gif;
   } else {
     console.error(
       "media item of type " + media.type + " received; type not recognized"
