@@ -19,7 +19,6 @@ USERS_PER_PAGE: Final = 20
 AVATAR_API_URL: Final = "/api/avatar/"
 MEDIA_API_URL: Final = "/api/media/"
 
-# todo: create these assets
 GROUP_DM_DEFAULT_URL: Final = "/assets/svg/group.svg"
 USER_AVATAR_DEFAULT_URL: Final = "/assets/svg/mysteryuser.svg"
 
@@ -310,6 +309,18 @@ class MessageLike(DBRow):
     def user_ids(self) -> Iterable[int]:  # pragma: no cover
         """returns a list of any user ids that are referenced in this object"""
         raise NotImplementedError
+
+    @staticmethod
+    def user_id_iterator(lists: Iterable[list[int]]) -> Iterable[int]:
+        """pass in an iterator that yields iterables obtained from calling user_ids()
+        on MessageLike objects, and receive a generator that will return all the
+        unique ids across each list."""
+        already_yielded = set()
+        for x in lists:
+            for y in x:
+                if y not in already_yielded:
+                    already_yielded.add(y)
+                    yield y
 
 
 @dataclass(frozen=True)
@@ -714,7 +725,7 @@ class TwitterDataReader(sqlite3.Connection):
                 ),
             ).fetchall()
         users = self.get_users_by_id(
-            [int(x) for x in set(sum((x.user_ids for x in names), []))]
+            MessageLike.user_id_iterator((x.user_ids for x in names))
         )
         return {"results": names, "users": users}
 
@@ -895,7 +906,7 @@ class TwitterDataReader(sqlite3.Connection):
         messages.sort(key=lambda x: x.sort_by_timestamp)
 
         users = self.get_users_by_id(
-            [int(x) for x in set(sum((x.user_ids for x in messages), []))]
+            MessageLike.user_id_iterator((x.user_ids for x in messages))
         )
         return {"results": messages, "users": users}
 
@@ -914,11 +925,8 @@ class TwitterDataReader(sqlite3.Connection):
                 + " where id IN (SELECT id FROM messages ORDER BY RANDOM() LIMIT ?);",
                 (MESSAGES_PER_PAGE,),
             ).fetchall()
-            # TODO: it doesn't actually make sense to sum all those little lists
-            # instead of just walking through the values in them; this applies in
-            # other similar methods as well
             users = self.get_users_by_id(
-                [int(x) for x in set(sum((x.user_ids for x in messages), []))]
+                MessageLike.user_id_iterator((x.user_ids for x in messages))
             )
             return {"results": messages, "users": users}
 
