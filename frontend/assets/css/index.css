@@ -292,7 +292,8 @@ a:active {
 }
 
 .smallMedia {
-    height: 200px;
+    max-height: 400px;
+    max-width: 90%;
     display: block;
 }
 

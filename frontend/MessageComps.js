@@ -404,14 +404,14 @@ function MessagePage(props) {
 }
 
 function MediaItem(props) {
-  const el = useRef(null);
   const autoplayAllowed = useSelector((state) => state.autoplay);
   const dispatch = useDispatch();
-  const detectAutoplay = () => {
-    console.log("using gif element", el.current);
-    if (props.media.type == "gif" && el.current) {
-      el.current.setAttribute("muted", "");
-      el.current.play().catch((err) => {
+  const detectAutoplay = (event) => {
+    if (props.media.type == "gif" && event.target) {
+      const el = event.target;
+      console.log("loaded gif element", el);
+      el.setAttribute("muted", "");
+      el.play().catch((err) => {
         console.log("detected autoplay not allowed :(");
         console.log(err);
         dispatch({
@@ -422,7 +422,22 @@ function MediaItem(props) {
     }
   };
   const [haveStartedPlaying, setHaveStartedPlaying] = useState(false);
-  useEffect(detectAutoplay, []);
+  const findScrollParent = (element) => {
+    while (element && element.clientHeight >= element.scrollHeight) {
+      element = element.parentElement;
+    }
+    return element || window;
+  };
+  const scrollPositionLog = (event) => {
+    console.log("MEDIA: fixing scroll parent scrollPos now");
+    console.log("MEDIA: this is for url", props.media.src);
+    const scrollParent = findScrollParent(event.target);
+    console.log(
+      "MEDIA: it currently has scroll height",
+      scrollParent.scrollHeight
+    );
+    console.log("MEDIA: it currently has scroll pos", scrollParent.scrollTop);
+  };
   if (props.media.type == "image") {
     return (
       <img
@@ -430,6 +445,20 @@ function MediaItem(props) {
         className={props.className}
         style={props.style}
         src={props.media.src}
+        ref={(node) => {
+          if (!node) {
+            return;
+          }
+          console.log("MEDIA: created image node:", node);
+          console.log("MEDIA: this is for url", props.media.src);
+          const scrollParent = findScrollParent(node);
+          console.log("current parent scrollPos is", scrollParent.scrollTop);
+          console.log(
+            "current parent scrollHeight is",
+            scrollParent.scrollHeight
+          );
+        }}
+        onLoad={scrollPositionLog}
       />
     );
   } else if (props.media.type == "video") {
@@ -449,8 +478,8 @@ function MediaItem(props) {
         muted
         autoPlay
         loop
-        ref={el}
         onDoubleClick={props.onDoubleClick}
+        onLoadedData={detectAutoplay}
         className={props.className}
         src={props.media.src}
         style={props.style}
@@ -527,6 +556,24 @@ function SimpleMessage(message) {
     </>
   );
 }
+
+const messageTypes = {};
+
+// todo: so that messages can set their own alignment, we need to render the message
+// container div in each component, which means making them all forwardrefs and
+// stuff.
+messageTypes["NameUpdate"] = function NameUpdateContent(update) {
+  const user = useSelector((state) => state.users[update.initiator]);
+  return (
+    <p style={{ textAlign: "center" }}>
+      <Link to={"/user/info/" + user.id}>
+        {user.nickname || `@${user.handle}`}
+      </Link>{" "}
+      changed the conversation's name to {update.new_name} (
+      {zStringToDateTime(update.update_time)})
+    </p>
+  );
+};
 
 const ComplexMessage = forwardRef(function FullMessage(message, ref) {
   let content;
@@ -683,15 +730,6 @@ const ComplexMessage = forwardRef(function FullMessage(message, ref) {
     );
   } else if (message.schema == "NameUpdate") {
     alignment = "center";
-    content = (
-      <p style={{ textAlign: "center" }}>
-        <Link to={"/user/info/" + user.id}>
-          {user.nickname || `@${user.handle}`}
-        </Link>{" "}
-        changed the conversation's name to {message.new_name} (
-        {zStringToDateTime(message.update_time)})
-      </p>
-    );
   } else if (message.schema == "ParticipantLeave") {
     alignment = "center";
     content = (
