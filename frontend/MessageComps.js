@@ -312,7 +312,7 @@ function MessagePage(props) {
 
   const distributeRefs = (message) => {
     return (node) => {
-      if (message.sent_time == startingPlace) {
+      if (getTime(message) == startingPlace) {
         DOMState.highlightElement = node;
       }
       if (message.id == messages[0].id) {
