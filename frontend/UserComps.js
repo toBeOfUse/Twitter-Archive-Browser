@@ -111,7 +111,7 @@ function UserInfo() {
         </div>
         <span className="infoPageLinks">
           <Link to={"/user/messages/" + info.id}>View their sent messages</Link>
-          {info.loaded_full_data ? (
+          {info.loaded_full_data && (
             <>
               <br className="noMobile" />
               <span className="onlyMobile"> | </span>
@@ -119,7 +119,7 @@ function UserInfo() {
                 See them on Twitter
               </a>
             </>
-          ) : null}
+          )}
         </span>
       </div>
       <NicknameSetter changed={acceptChange} {...info} />
@@ -128,7 +128,7 @@ function UserInfo() {
           <p>Messages Sent</p>
           <h3>{info.number_of_messages.toLocaleString()}</h3>
         </div>
-        {info.number_of_messages > 0 ? (
+        {info.number_of_messages > 0 && (
           <>
             <div className="verticalLine" />
             <div className="statsContainer">
@@ -141,7 +141,7 @@ function UserInfo() {
               <h3>{zStringToDateTime(info.last_appearance)}</h3>
             </div>
           </>
-        ) : null}
+        )}
       </div>
       <h3>In conversations:</h3>
       <div
