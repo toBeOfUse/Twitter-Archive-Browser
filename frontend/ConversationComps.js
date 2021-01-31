@@ -67,21 +67,74 @@ function NotesSetter(props) {
   );
 }
 
-function ConversationMetaList(props) {
-  const [renderingNames, setRenderingNames] = useState(true);
-  const [participants, setParticipants] = useState([]);
-  const [updates, setUpdates] = useState([]);
+function SimpleNameUpdate(update) {
   const users = useSelector((state) => state.users);
-  const dispatch = useDispatch();
+  return (
+    <p key={update.update_time}>
+      {update.new_name + " (set by "}
+      <Link to={"/user/info/" + update.initiator}>
+        @{users[update.initiator]?.handle}
+      </Link>
+      {") "}
+      on{" "}
+      <Link
+        to={
+          "/conversation/messages/" +
+          update.conversation +
+          "?start=" +
+          update.update_time
+        }
+      >
+        {zStringToDateTime(update.update_time)}
+      </Link>
+    </p>
+  );
+}
 
-  const [oldestFirst, setOldestFirst] = useState(true);
+function SimpleParticipantListing(participant) {
+  return (
+    <p key={participant.handle}>
+      <NavLink to={"/user/info/" + participant.id}>
+        {(participant.nickname ? participant.nickname + " - " : "") +
+          participant.display_name +
+          " (@" +
+          participant.handle +
+          ")"}
+      </NavLink>
+      {" | sent " +
+        participant.messages_in_conversation.toLocaleString() +
+        " messages | " +
+        (participant.is_main_user
+          ? "is You"
+          : "in conversation from " +
+            (zStringToDate(participant.join_time) || "before you") +
+            " to " +
+            (zStringToDate(participant.leave_time) || "now"))}
+    </p>
+  );
+}
 
+/* a unified one-way scrolly pane component would have: a url prop OR a function
+propr that created a url from a page number; an onMoreStuffLoaded prop that would
+take care of things like saving users and maybe return the actual items; a component
+to render each loaded item */
+
+function ScrollyPane(props) {
+  const contentPane = useRef(null);
   const [page, setPage] = useState(1);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const listPane = useRef(null);
 
-  const checkUpdates = () => {
-    const el = listPane.current;
+  const renderedItems = items.length ? (
+    items.map((item) => (
+      <props.ItemShape key={item.id} {...item}></props.ItemShape>
+    ))
+  ) : (
+    <p>loading...</p>
+  );
+
+  const scrollCheck = () => {
+    const el = contentPane.current;
     if (
       el &&
       (el.scrollHeight < el.parentElement.scrollHeight ||
@@ -90,149 +143,41 @@ function ConversationMetaList(props) {
       !loading
     ) {
       setLoading(true);
-      let url;
-      if (renderingNames) {
-        url =
-          "/api/conversation/names?" +
-          `conversation=${props.id}` +
-          `&first=${oldestFirst ? "oldest" : "newest"}&page=${page}`;
-      } else {
-        url = `/api/users?conversation=${props.id}&page=${page}`;
-      }
-      fetch(url).then((r) =>
+
+      fetch(props.url + page).then((r) =>
         r.json().then((j) => {
-          if (renderingNames) {
-            if (j.results.length) {
-              dispatch({
-                type: "users/addUsers",
-                payload: j.users,
-              });
-              setUpdates((prevUpdates) => prevUpdates.concat(j.results));
-            } else {
-              setPage(-1);
-            }
+          const processedItems = props.processItems(j);
+          setItems((oldItems) => oldItems.concat(processedItems));
+          if (!processedItems.length) {
+            setPage(-1);
           } else {
-            if (j.results.length) {
-              setParticipants((prevPart) => prevPart.concat(j.results));
-            } else {
-              setPage(-1);
-            }
+            setPage((prevPage) => (prevPage == -1 ? prevPage : prevPage + 1));
           }
           setLoading(false);
         })
       );
-      setPage((prevPage) => (prevPage == -1 ? prevPage : prevPage + 1));
     }
   };
 
-  useEffect(checkUpdates);
-
-  const reset = () => {
-    setUpdates([]);
-    setParticipants([]);
-    setPage(1);
-  };
-
-  const changeOldestFirst = (newValue) => {
-    if (oldestFirst != newValue) {
-      setOldestFirst(newValue);
-      reset();
-    }
-  };
-
-  const changeRenderingNames = (newValue) => {
-    if (renderingNames != newValue) {
-      setRenderingNames(newValue);
-      reset();
-    }
-  };
-
-  let renderedList;
-  if (renderingNames && updates.length) {
-    renderedList = updates.map((update) => (
-      <p key={update.update_time}>
-        {update.new_name +
-          ` (set by @${users[update.initiator]?.handle} ` +
-          `on ${zStringToDateTime(update.update_time)})`}
-      </p>
-    ));
-  } else if (!renderingNames && participants.length) {
-    renderedList = participants.map((participant) => (
-      <p key={participant.handle}>
-        <NavLink to={"/user/info/" + participant.id}>
-          {(participant.nickname ? participant.nickname + " - " : "") +
-            participant.display_name +
-            " (@" +
-            participant.handle +
-            ")"}
-        </NavLink>
-        {" | sent " +
-          participant.messages_in_conversation.toLocaleString() +
-          " messages | " +
-          (participant.is_main_user
-            ? "is You"
-            : "in conversation from " +
-              (zStringToDate(participant.join_time) || "before you") +
-              " to " +
-              (zStringToDate(participant.leave_time) || "now"))}
-      </p>
-    ));
-  } else {
-    renderedList = <p>loading...</p>;
-  }
+  useEffect(scrollCheck);
 
   return (
-    <>
-      <span>
-        <span
-          onClick={() => changeRenderingNames(true)}
-          className="smallButton"
-          style={{ color: !renderingNames ? "blue" : "black" }}
-        >
-          {renderingNames
-            ? "Currently Viewing Name Updates"
-            : "Switch to Name Updates"}
-        </span>
-        {" | "}
-        <span
-          onClick={() => changeRenderingNames(false)}
-          className="smallButton"
-          style={{ color: renderingNames ? "blue" : "black" }}
-        >
-          {!renderingNames
-            ? "Currently Viewing Participants"
-            : "Switch to Participants"}
-        </span>
-      </span>
-      <div onScroll={checkUpdates} ref={listPane} className="metaInfoContainer">
-        {renderingNames ? (
-          <>
-            <span
-              className="smallButton"
-              style={{ color: oldestFirst ? "blue" : "black" }}
-              onClick={() => changeOldestFirst(false)}
-            >
-              {oldestFirst ? "View Newest" : "Currently Viewing Newest"}
-            </span>
-            {` | `}
-            <span
-              className="smallButton"
-              style={{ color: !oldestFirst ? "blue" : "black" }}
-              onClick={() => changeOldestFirst(true)}
-            >
-              {!oldestFirst ? "View Oldest" : "Currently Viewing Oldest"}
-            </span>
-          </>
-        ) : null}
-        {renderedList}
-      </div>
-    </>
+    <div
+      className={props.className}
+      id={props.id}
+      onScroll={scrollCheck}
+      ref={contentPane}
+    >
+      {renderedItems}
+    </div>
   );
 }
 
 function ConversationInfo() {
   const { id } = useParams();
   const [info, setInfo] = useState(null);
+
+  const dispatch = useDispatch();
 
   if (!info) {
     fetch("/api/conversation?id=" + id).then((r) =>
@@ -242,6 +187,27 @@ function ConversationInfo() {
 
   const acceptChange = () => {
     setInfo(null);
+  };
+
+  const [metaInfoShown, setMetaInfoShown] = useState("names");
+  // only applies to name updates
+  const [metaInfoOrder, setMetaInfoOrder] = useState("oldest");
+  const showingNames = metaInfoShown == "names";
+  const showingParticipants = metaInfoShown == "participants";
+  console.assert(
+    showingNames || showingParticipants,
+    "invalid value for metaInfoShown in ConversationInfo"
+  );
+
+  const metaInfoURL = showingNames
+    ? `/api/conversation/names?conversation=${id}&first=${metaInfoOrder}&page=`
+    : `/api/users?conversation=${id}&page=`;
+
+  const processMetaInfo = (info) => {
+    if (info.users?.length) {
+      dispatch({ type: "users/addUsers", payload: info.users });
+    }
+    return info.results;
   };
 
   return !info ? (
@@ -285,7 +251,7 @@ function ConversationInfo() {
           <p>Messages from you</p>
           <h3>{info.messages_from_you.toLocaleString()}</h3>
         </div>
-        {info.type == "group" ? (
+        {info.type == "group" && (
           <>
             <div className="verticalLine" />
             <div className="statsContainer">
@@ -298,13 +264,72 @@ function ConversationInfo() {
               <h3>{info.num_participants.toLocaleString()}</h3>
             </div>
           </>
-        ) : null}
+        )}
       </div>
-      {info.type == "group" ? null : (
+      {info.type != "group" && (
         <NicknameSetter changed={acceptChange} {...info.other_person} />
       )}
       <NotesSetter changed={acceptChange} notes={info.notes} id={info.id} />
-      {info.type == "group" ? <ConversationMetaList id={info.id} /> : null}
+      {info.type == "group" && (
+        <>
+          <span>
+            <span
+              onClick={() => setMetaInfoShown("names")}
+              className="smallButton"
+              style={{ color: showingParticipants ? "blue" : "black" }}
+            >
+              {showingNames
+                ? "Currently Viewing Name Updates"
+                : "Switch to Name Updates"}
+            </span>
+            {" | "}
+            <span
+              onClick={() => setMetaInfoShown("participants")}
+              className="smallButton"
+              style={{ color: showingNames ? "blue" : "black" }}
+            >
+              {showingParticipants
+                ? "Currently Viewing Participants"
+                : "Switch to Participants"}
+            </span>
+          </span>
+          {showingNames && (
+            <>
+              <br />
+              <span>
+                <label
+                  style={{ marginRight: 10 }}
+                  onClick={() => setMetaInfoOrder("oldest")}
+                >
+                  <input
+                    type="radio"
+                    checked={metaInfoOrder == "oldest"}
+                    style={{ marginRight: 5 }}
+                  />
+                  Oldest first
+                </label>
+                <label onClick={() => setMetaInfoOrder("newest")}>
+                  <input
+                    type="radio"
+                    checked={metaInfoOrder == "newest"}
+                    style={{ marginRight: 5 }}
+                  />
+                  Newest first
+                </label>
+              </span>
+            </>
+          )}
+          <ScrollyPane
+            className="metaInfoContainer"
+            key={metaInfoURL}
+            url={metaInfoURL}
+            ItemShape={
+              showingNames ? SimpleNameUpdate : SimpleParticipantListing
+            }
+            processItems={processMetaInfo}
+          />
+        </>
+      )}
     </>
   );
 }
@@ -319,10 +344,6 @@ function ConversationList() {
       individual: true,
     }
   );
-
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [conversations, setConversations] = useState([]);
 
   const listPane = useRef(null);
 
@@ -351,43 +372,19 @@ function ConversationList() {
     resetButton();
   };
 
-  const checkConversations = () => {
-    const el = listPane.current;
-    if (
-      el &&
-      (el.scrollHeight < el.parentElement.scrollHeight ||
-        el.scrollTop + el.offsetHeight > el.scrollHeight - 30) &&
-      page != -1 &&
-      !loading
-    ) {
-      setLoading(true);
-      const typesString = Object.keys(types)
-        .filter((v) => types[v])
-        .join("-");
-      const url =
-        `/api/conversations?` +
-        `first=${order}&types=${typesString}&page=${page}`;
-      fetch(url).then((r) =>
-        r.json().then((j) => {
-          if (j.results.length) {
-            setConversations((prevConversations) =>
-              prevConversations.concat(j.results)
-            );
-            dispatch({
-              type: "conversations/addConversations",
-              payload: j.results,
-            });
-          } else {
-            setPage(-1);
-          }
-          setLoading(false);
-        })
-      );
-      setPage((prevPage) => (prevPage == -1 ? prevPage : prevPage + 1));
-    }
-  };
+  const typesString = Object.keys(types)
+    .filter((v) => types[v])
+    .join("-");
+  const url =
+    `/api/conversations?` + `first=${order}&types=${typesString}&page=`;
 
-  useEffect(checkConversations);
+  const processConversations = (j) => {
+    dispatch({
+      type: "conversations/addConversations",
+      payload: j.results,
+    });
+    return j.results;
+  };
 
   return (
     <>
@@ -433,11 +430,13 @@ function ConversationList() {
           </div>
         </div>
       </div>
-      <div id="conversationList" onScroll={checkConversations} ref={listPane}>
-        {conversations.map((v) => (
-          <ConversationListing key={v.id} {...v}></ConversationListing>
-        ))}
-      </div>
+      <ScrollyPane
+        key={url}
+        url={url}
+        id="conversationList"
+        ItemShape={ConversationListing}
+        processItems={processConversations}
+      />
       <SearchBar baseURL="/messages" />
     </>
   );
