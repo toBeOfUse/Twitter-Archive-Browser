@@ -350,7 +350,6 @@ function ConversationList() {
   const dispatch = useDispatch();
 
   const resetButton = () => {
-    setPage(1);
     setConversations([]);
   };
 
