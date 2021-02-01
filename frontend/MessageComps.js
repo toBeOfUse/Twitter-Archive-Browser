@@ -592,7 +592,7 @@ messageTypes["ParticipantJoin"] = function ParticipantJoinContent(event) {
   const adder = useSelector((state) => state.users[event.added_by]);
   return (
     <p style={{ textAlign: "center" }}>
-      <Link to={"/user/info/" + user.id}>
+      <Link to={"/user/info/" + added.id}>
         {added.nickname || `@${added.handle}`}
       </Link>{" "}
       was added to the conversation by{" "}
