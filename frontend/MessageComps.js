@@ -711,6 +711,7 @@ function MessageInfoModal(message) {
     message.sent_time;
   const userMessagesLink =
     "/user/messages/" + message.sender + "?start=" + message.sent_time;
+  const allMessagesLink = "/messages?start=" + message.sent_time;
   const copyLinkHref = (e) => {
     e.preventDefault();
     navigator.clipboard
@@ -733,8 +734,12 @@ function MessageInfoModal(message) {
         onClick={copyMode ? copyLinkHref : null}
         key={to}
       >
-        {(copyMode ? "Copy link to " : "Go to ") +
-          (to == conversationLink ? "conversation" : "user's messages") +
+        {(copyMode ? "Copy link to " : "View ") +
+          (to == conversationLink
+            ? "conversation"
+            : to == userMessagesLink
+            ? "user's messages"
+            : "all messages") +
           " at this point"}
       </Link>
     );
@@ -743,14 +748,17 @@ function MessageInfoModal(message) {
     contextLinks = [
       makeContextLink(conversationLink, true),
       makeContextLink(userMessagesLink, false),
+      makeContextLink(allMessagesLink, false),
     ];
   } else if (message.context == "user") {
     contextLinks = [
       makeContextLink(userMessagesLink, true),
       makeContextLink(conversationLink, false),
+      makeContextLink(allMessagesLink, false),
     ];
   } else {
     contextLinks = [
+      makeContextLink(allMessagesLink, true),
       makeContextLink(conversationLink, false),
       makeContextLink(userMessagesLink, false),
     ];
