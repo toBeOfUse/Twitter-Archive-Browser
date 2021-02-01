@@ -236,10 +236,10 @@ a:active {
 }
 
 .messageText {
-    width: fit-content;
     border-radius: 5px;
     padding: 5px;
     margin: 0;
+    max-width: 70%;
 }
 
 @media (min-width: 500px) {
@@ -266,6 +266,10 @@ a:active {
     border-radius: 3px;
     padding: 4px;
     width: 70%;
+}
+
+.centeredModal > * {
+    margin-bottom: 10px;
 }
 
 .modalBackdrop {

@@ -564,9 +564,6 @@ function SimpleMessage(message) {
 
 const messageTypes = {};
 
-// todo: so that messages can set their own alignment, we need to render the message
-// container div in each component, which means making them all forwardrefs and
-// stuff.
 messageTypes["NameUpdate"] = function NameUpdateContent(update) {
   const user = useSelector((state) => state.users[update.initiator]);
   return (
@@ -580,195 +577,208 @@ messageTypes["NameUpdate"] = function NameUpdateContent(update) {
   );
 };
 
-const ComplexMessage = forwardRef(function FullMessage(message, ref) {
-  let content;
-  let modal;
-  let alignment;
-  const [modalOpen, setModalOpen] = useState(false);
-  const users = useSelector((state) => state.users);
-  const user = users[getUserID(message)];
-  if (message.schema == "Message") {
-    alignment = user.is_main_user ? "end" : "start";
-    let textSection = null;
-    if (message.html_content) {
-      const el = document.createElement("p");
-      el.innerHTML = message.html_content;
-      for (const a of el.querySelectorAll("a")) {
-        a.target = "_blank";
-      }
-      textSection = (
-        <p
-          onDoubleClick={() => setModalOpen(true)}
-          // prevents double clicks from causing selection
-          onMouseDown={(e) => {
-            if (e.detail > 1) {
-              e.preventDefault();
-            }
-          }}
-          className="messageText"
-          style={{
-            backgroundColor: message.highlight ? "#ff7878" : "#96d3ff",
-            marginLeft: alignment == "end" ? "auto" : 0,
-            maxWidth: "70%",
-          }}
-          dangerouslySetInnerHTML={{ __html: el.innerHTML }}
-        />
-      );
+messageTypes["ParticipantJoin"] = function ParticipantJoinContent(event) {
+  const added = useSelector((state) => state.users[event.participant]);
+  const adder = useSelector((state) => state.users[event.added_by]);
+  return (
+    <p style={{ textAlign: "center" }}>
+      <Link to={"/user/info/" + user.id}>
+        {added.nickname || `@${added.handle}`}
+      </Link>{" "}
+      was added to the conversation by{" "}
+      <Link to={"/user/info/" + adder.id}>
+        {adder.nickname || `@${adder.handle}`}
+      </Link>
+      . ({zStringToDateTime(event.time)})
+    </p>
+  );
+};
+
+messageTypes["ParticipantLeave"] = function ParticipantLeaveContent(event) {
+  const user = useSelector((state) => state.users[event.participant]);
+  return (
+    <p style={{ textAlign: "center" }}>
+      <Link to={"/user/info/" + user.id}>
+        {user.nickname || `@${user.handle}`}
+      </Link>{" "}
+      left the conversation. ({zStringToDateTime(event.time)})
+    </p>
+  );
+};
+
+messageTypes["Message"] = function NormalMessage(message) {
+  const user = useSelector((state) => state.users[message.sender]);
+  const alignment = user.is_main_user
+    ? { marginLeft: "auto" }
+    : { marginRight: "auto" };
+  let textSection = null;
+  if (message.html_content) {
+    const el = document.createElement("p");
+    el.innerHTML = message.html_content;
+    for (const a of el.querySelectorAll("a")) {
+      a.target = "_blank";
     }
-    const mediaItems = message.media.map((i) => (
-      <MediaItem
-        onDoubleClick={() => setModalOpen(true)}
-        media={i}
-        key={i.id}
-        className="smallMedia"
-        style={alignment == "end" ? { marginLeft: "auto" } : null}
+    textSection = (
+      <p
+        style={{
+          ...alignment,
+          backgroundColor: message.highlight ? "#ff7878" : "#96d3ff",
+        }}
+        onDoubleClick={() => message.openModal()}
+        // prevents double clicks from causing selection
+        onMouseDown={(e) => {
+          if (e.detail > 1) {
+            e.preventDefault();
+          }
+        }}
+        className="messageText"
+        dangerouslySetInnerHTML={{ __html: el.innerHTML }}
       />
-    ));
-    content = (
-      <>
-        {mediaItems}
-        {textSection}
-        {!message.sameUserAsNext ? (
-          <>
-            <span
-              className="messageAttribution"
-              style={alignment == "end" ? { marginLeft: "auto" } : null}
-            >
-              <Link to={"/user/info/" + user.id}>
-                {(user.nickname || user.display_name) + ` (@${user.handle})`}
-              </Link>
-              {", " + zStringToDateTime(message.sent_time)}
-            </span>
-            {message.showContextLink ? (
-              <Link
-                to={
-                  "/conversation/messages/" +
-                  message.conversation +
-                  "?start=" +
-                  message.sent_time
-                }
-                className="messageAttribution"
-                style={alignment == "end" ? { marginLeft: "auto" } : null}
-              >
-                (see in context)
-              </Link>
-            ) : null}
-            {message.reactions.length ? (
-              <span
-                style={{
-                  padding: 3,
-                  border: "1px solid black",
-                  backgroundColor: "#ccc",
-                  borderRadius: 4,
-                  marginTop: 2,
-                }}
-              >
-                {message.reactions
-                  .map((r) => reactionEmojis[r.emotion])
-                  .join(" ")}
-              </span>
-            ) : null}
-          </>
-        ) : null}
-      </>
-    );
-    const conversationLink =
-      "/conversation/messages/" +
-      message.conversation +
-      "?start=" +
-      message.sent_time;
-    const userMessagesLink =
-      "/user/messages/" + message.sender + "?start=" + message.sent_time;
-    const copyLinkHref = (e) => {
-      e.preventDefault();
-      navigator.clipboard.writeText(e.target.href);
-    };
-    let contextLinks;
-    const makeContextLink = (to, copyMode) => {
-      return (
-        <Link
-          to={to}
-          style={{ display: "block" }}
-          onClick={copyMode ? copyLinkHref : null}
-          key={to}
-        >
-          {(copyMode ? "Copy link to " : "Go to ") +
-            (to == conversationLink ? "conversation" : "user's messages") +
-            " at this point"}
-        </Link>
-      );
-    };
-    if (message.context == "conversation") {
-      contextLinks = [
-        makeContextLink(conversationLink, true),
-        makeContextLink(userMessagesLink, false),
-      ];
-    } else if (message.context == "user") {
-      contextLinks = [
-        makeContextLink(userMessagesLink, true),
-        makeContextLink(conversationLink, false),
-      ];
-    } else {
-      contextLinks = [
-        makeContextLink(conversationLink, false),
-        makeContextLink(userMessagesLink, false),
-      ];
-    }
-    modal = (
-      <div className="modalBackdrop" onClick={() => setModalOpen(false)}>
-        <div className="centeredModal">
-          <h3>
-            Sent by{" "}
-            {(user.nickname || user.display_name) + ` (@${user.handle})`} at{" "}
-            {zStringToDateTime(message.sent_time)}
-          </h3>
-          {contextLinks}
-          {message.reactions.map((v) => (
-            <p key={v.id}>
-              {reactionEmojis[v.emotion]} left by{" "}
-              {users[v.creator].nickname || `@${users[v.creator].handle}`} at{" "}
-              {zStringToDateTime(v.creation_time)}
-            </p>
-          ))}
-        </div>
-      </div>
-    );
-  } else if (message.schema == "NameUpdate") {
-    alignment = "center";
-  } else if (message.schema == "ParticipantLeave") {
-    alignment = "center";
-    content = (
-      <p style={{ textAlign: "center" }}>
-        <Link to={"/user/info/" + user.id}>
-          {user.nickname || `@${user.handle}`}
-        </Link>{" "}
-        left the conversation. ({zStringToDateTime(message.time)})
-      </p>
-    );
-  } else if (message.schema == "ParticipantJoin") {
-    const addedBy = users[message.added_by];
-    alignment = "center";
-    content = (
-      <p style={{ textAlign: "center" }}>
-        <Link to={"/user/info/" + user.id}>
-          {user.nickname || `@${user.handle}`}
-        </Link>{" "}
-        was added to the conversation by{" "}
-        <Link to={"/user/info/" + message.added_by}>
-          {addedBy.nickname || `@${addedBy.handle}`}
-        </Link>
-        . ({zStringToDateTime(message.time)})
-      </p>
     );
   }
+  const mediaItems = message.media.map((i) => (
+    <MediaItem
+      onDoubleClick={() => props.openModal()}
+      media={i}
+      key={i.id}
+      className="smallMedia"
+      style={alignment}
+    />
+  ));
+  return (
+    <>
+      {mediaItems}
+      {textSection}
+      {!message.sameUserAsNext && (
+        <>
+          <span className="messageAttribution" style={alignment}>
+            <Link to={"/user/info/" + user.id}>
+              {(user.nickname || user.display_name) + ` (@${user.handle})`}
+            </Link>
+            {", " + zStringToDateTime(message.sent_time)}
+          </span>
+          {message.showContextLink && (
+            <Link
+              to={
+                "/conversation/messages/" +
+                message.conversation +
+                "?start=" +
+                message.sent_time
+              }
+              className="messageAttribution"
+              style={alignment}
+            >
+              (see in context)
+            </Link>
+          )}
+          {!!message.reactions.length && (
+            <span
+              style={{
+                padding: 3,
+                border: "1px solid black",
+                backgroundColor: "#ccc",
+                borderRadius: 4,
+                marginTop: 2,
+                ...alignment,
+              }}
+            >
+              {message.reactions
+                .map((r) => reactionEmojis[r.emotion])
+                .join(" ")}
+            </span>
+          )}
+        </>
+      )}
+    </>
+  );
+};
+
+function MessageInfoModal(message) {
+  const conversationLink =
+    "/conversation/messages/" +
+    message.conversation +
+    "?start=" +
+    message.sent_time;
+  const userMessagesLink =
+    "/user/messages/" + message.sender + "?start=" + message.sent_time;
+  const copyLinkHref = (e) => {
+    e.preventDefault();
+    navigator.clipboard
+      .writeText(e.target.href)
+      .then(() => (e.target.innerHTML += " (copied!)"))
+      .catch((err) => {
+        console.log("copying error", err);
+        e.target.innerHTML =
+          "copying forbidden by your browser settings :( " +
+          "right click or long press to copy this link";
+      });
+  };
+  const user = useSelector((state) => state.users[message.sender]);
+  let contextLinks;
+  const makeContextLink = (to, copyMode) => {
+    return (
+      <Link
+        to={to}
+        style={{ display: "block" }}
+        onClick={copyMode ? copyLinkHref : null}
+        key={to}
+      >
+        {(copyMode ? "Copy link to " : "Go to ") +
+          (to == conversationLink ? "conversation" : "user's messages") +
+          " at this point"}
+      </Link>
+    );
+  };
+  if (message.context == "conversation") {
+    contextLinks = [
+      makeContextLink(conversationLink, true),
+      makeContextLink(userMessagesLink, false),
+    ];
+  } else if (message.context == "user") {
+    contextLinks = [
+      makeContextLink(userMessagesLink, true),
+      makeContextLink(conversationLink, false),
+    ];
+  } else {
+    contextLinks = [
+      makeContextLink(conversationLink, false),
+      makeContextLink(userMessagesLink, false),
+    ];
+  }
+  return (
+    <div className="modalBackdrop" onClick={() => message.closeModal()}>
+      <div className="centeredModal" onClick={(e) => e.stopPropagation()}>
+        <h3>
+          Sent by {(user.nickname || user.display_name) + ` (@${user.handle})`}{" "}
+          at {zStringToDateTime(message.sent_time)}
+        </h3>
+        {contextLinks}
+        {message.reactions.map((v) => (
+          <p key={v.id}>
+            {reactionEmojis[v.emotion]} left by{" "}
+            {users[v.creator].nickname || `@${users[v.creator].handle}`} at{" "}
+            {zStringToDateTime(v.creation_time)}
+          </p>
+        ))}
+        <button onClick={() => message.closeModal()}>close</button>
+      </div>
+    </div>
+  );
+}
+
+const ComplexMessage = forwardRef(function FullMessage(message, ref) {
+  const [modalOpen, setModalOpen] = useState(false);
   let containerClass = "messageContainer";
   if (message.schema == "Message" && !message.sameUserAsNext) {
     containerClass += " marginedMessage";
   }
+  const MessageShape = messageTypes[message.schema];
   return (
-    <div ref={ref} className={containerClass} style={{ alignItems: alignment }}>
-      {content}
-      {modalOpen && modal ? modal : null}
+    <div ref={ref} className={containerClass}>
+      <MessageShape {...message} openModal={() => setModalOpen(true)} />
+      {modalOpen && (
+        <MessageInfoModal {...message} closeModal={() => setModalOpen(false)} />
+      )}
     </div>
   );
 });
