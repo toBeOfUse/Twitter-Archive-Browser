@@ -348,6 +348,7 @@ function MessagePage(props) {
           sameUserAsNext={
             nextUser &&
             user == nextUser &&
+            messages[i + 1]?.schema == "Message" &&
             zStringDiffMinutes(getTime(message), getTime(messages[i + 1])) < 2
           }
           highlight={message.sent_time == startingPlace}
@@ -647,7 +648,7 @@ messageTypes["Message"] = function NormalMessage(message) {
   }
   const mediaItems = message.media.map((i) => (
     <MediaItem
-      onDoubleClick={() => props.openModal()}
+      onDoubleClick={() => message.openModal()}
       media={i}
       key={i.id}
       className="smallMedia"
