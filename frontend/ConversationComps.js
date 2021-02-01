@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { zStringToDate, zStringToDateTime } from "./DateHandling";
 import { NicknameSetter } from "./UserComps";
-import { NavLink, Link, useHistory, useParams } from "react-router-dom";
+import { Link, useHistory, useParams, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 function ConversationListing(props) {
@@ -94,13 +94,13 @@ function SimpleNameUpdate(update) {
 function SimpleParticipantListing(participant) {
   return (
     <p key={participant.handle}>
-      <NavLink to={"/user/info/" + participant.id}>
+      <Link to={"/user/info/" + participant.id}>
         {(participant.nickname ? participant.nickname + " - " : "") +
           participant.display_name +
           " (@" +
           participant.handle +
           ")"}
-      </NavLink>
+      </Link>
       {" | sent " +
         participant.messages_in_conversation.toLocaleString() +
         " messages | " +
@@ -220,9 +220,7 @@ function ConversationInfo() {
           <h1>Conversation Info</h1>
         </div>
         <span className="infoPageLinks">
-          <NavLink to={"/conversation/messages/" + info.id}>
-            View Messages
-          </NavLink>
+          <Link to={"/conversation/messages/" + info.id}>View Messages</Link>
           <br className="noMobile" />
           <span className="onlyMobile"> | </span>
           <span>Share Conversation</span>
@@ -234,9 +232,7 @@ function ConversationInfo() {
       ) : (
         <h3>
           Conversation with{" "}
-          <NavLink to={"/user/info/" + info.other_person.id}>
-            {info.name}
-          </NavLink>
+          <Link to={"/user/info/" + info.other_person.id}>{info.name}</Link>
           {" | "}
           {zStringToDate(info.first_time)} - {zStringToDate(info.last_time)}
         </h3>
@@ -388,10 +384,10 @@ function ConversationList() {
       <div id="conversationHeader">
         <div style={{ display: "flex", alignItems: "center" }}>
           <h1 style={{ marginRight: 10 }}>Conversations</h1>
-          <NavLink to="/stats" style={{ marginRight: 5 }}>
+          <Link to="/stats" style={{ marginRight: 5 }}>
             (stats)
-          </NavLink>
-          <NavLink to="/messages">(view all messages)</NavLink>
+          </Link>
+          <Link to="/messages">(view all messages)</Link>
         </div>
         <div>
           <span>Sort by:</span>
@@ -441,6 +437,9 @@ function ConversationList() {
 
 function SearchBar(props) {
   const history = useHistory();
+  const location = useLocation();
+  const alreadyHome =
+    location.pathname == "/" || location.pathname == "/conversations";
   const [text, setText] = useState("");
   const receiveText = (event) => setText(event.target.value);
   const actOnSearch = (event) => {
@@ -449,7 +448,14 @@ function SearchBar(props) {
     }
   };
   return (
-    <div style={{ width: "100%", height: 30, display: "flex" }}>
+    <div className="searchBar">
+      <button
+        style={{ width: 30, padding: 0, flexShrink: 0 }}
+        disabled={alreadyHome}
+        onClick={() => history.push("/")}
+      >
+        🏠
+      </button>
       <button style={{ whiteSpace: "nowrap" }}>Go to date...</button>
       <input
         value={text}
