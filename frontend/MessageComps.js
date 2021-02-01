@@ -112,6 +112,15 @@ function MessagePage(props) {
 
   useEffect(getName, []);
 
+  let infoButton;
+  if (props.type) {
+    infoButton = (
+      <Link to={`/${props.type}/info/` + props.id}>
+        <img className="conversationInfoIcon" src="/assets/svg/info.svg" />
+      </Link>
+    );
+  }
+
   DOMState.prevSaveStateCleanup && DOMState.prevSaveStateCleanup();
   const saveState = (event, action) => {
     if ((action == "PUSH" || action == "POP" || event.type) && messages) {
@@ -364,7 +373,7 @@ function MessagePage(props) {
         }}
       >
         <h1 style={{ display: "inline", marginRight: 5 }}>
-          Messages - {conversationName}
+          Messages - {conversationName} {infoButton}
         </h1>
         <br />
         <Link

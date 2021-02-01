@@ -345,8 +345,6 @@ function ConversationList() {
     }
   );
 
-  const listPane = useRef(null);
-
   const dispatch = useDispatch();
 
   const resetButton = () => {
