@@ -41,6 +41,17 @@ const store = configureStore({
         case "pageState/markScrollPosUsed":
           console.log("obviating scroll top for key", action.payload);
           draft[action.payload].scrollTop = null;
+        /*
+        possible optimization: keep an ordered list of location keys and if a push is
+        detected while we're not at the end of the list, discard the key objects at
+        the end of the list. like so:
+        case "pageState/setKeyList":
+          draft._keyList = action.payload;
+        case "pageState/discardKeys":
+          for (const key of action.payload) {
+            delete draft[key];
+          }
+          */
       }
     }, {}),
     autoplay: (state = true, action) => {
