@@ -478,7 +478,7 @@ class Message(MessageLike):
                     from links where message=?""",
                 (row[4],),
             ).fetchall()
-            html_content = row[2]
+            html_content = row[2].replace("\n", "<br />")
             for link in link_rows:
                 if link["orig_url"].startswith(
                     "https://twitter.com/messages/media/"
