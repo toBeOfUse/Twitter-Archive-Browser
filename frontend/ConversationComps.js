@@ -295,18 +295,19 @@ function ConversationInfo() {
               <span>
                 <label
                   style={{ marginRight: 10 }}
-                  onClick={() => setMetaInfoOrder("oldest")}
                 >
                   <input
                     type="radio"
                     checked={metaInfoOrder == "oldest"}
                     style={{ marginRight: 5 }}
+                    onClick={() => setMetaInfoOrder("oldest")}
                   />
                   Oldest first
                 </label>
-                <label onClick={() => setMetaInfoOrder("newest")}>
+                <label>
                   <input
                     type="radio"
+                    onClick={() => setMetaInfoOrder("newest")}
                     checked={metaInfoOrder == "newest"}
                     style={{ marginRight: 5 }}
                   />
@@ -442,9 +443,16 @@ function SearchBar(props) {
     location.pathname == "/" || location.pathname == "/conversations";
   const [text, setText] = useState("");
   const receiveText = (event) => setText(event.target.value);
+  const [timeTraveling, setTimeTraveling] = useState(false);
+  const timeBounds = [
+    useSelector((state) => state.stats?.earliest_message),
+    useSelector((state) => state.stats?.latest_message),
+  ];
   const actOnSearch = (event) => {
     if (event.type == "click" || event.key == "Enter") {
-      history.push(props.baseURL + "?search=" + text);
+      if (text.trim()) {
+        history.push(props.baseURL + "?search=" + text);
+      }
     }
   };
   return (
@@ -456,7 +464,12 @@ function SearchBar(props) {
       >
         🏠
       </button>
-      <button style={{ whiteSpace: "nowrap" }}>Go to date...</button>
+      <button
+        onClick={() => setTimeTraveling(true)}
+        style={{ whiteSpace: "nowrap" }}
+      >
+        Go to date...
+      </button>
       <input
         value={text}
         onInput={receiveText}
@@ -466,6 +479,42 @@ function SearchBar(props) {
         placeholder="Search all messages..."
       />
       <button onClick={actOnSearch}>Search</button>
+      {timeTraveling && (
+        <TimeTravelModal
+          close={() => setTimeTraveling(false)}
+          after={timeBounds[0] && new Date(timeBounds[0])}
+          before={timeBounds[1] && new Date(timeBounds[1])}
+        />
+      )}
+    </div>
+  );
+}
+
+function TimeTravelModal(props) {
+  // TODO: make things on different lines and stuff
+  return (
+    <div className="modalBackdrop" onClick={props.close}>
+      <div
+        className="centeredModal"
+        style={{ display: "flex" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <label>Year: </label>
+        <input
+          type="number"
+          min={props.after.getFullYear()}
+          max={props.before.getFullYear()}
+          defaultValue={props.after.getFullYear()}
+        />
+
+        <label>Month:</label>
+        <input type="text" />
+
+        <label>
+          Day: <br />
+        </label>
+        <input type="number" />
+      </div>
     </div>
   );
 }
