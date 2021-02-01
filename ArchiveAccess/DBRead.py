@@ -736,6 +736,26 @@ class TwitterDataReader(sqlite3.Connection):
         )
         self.commit()
 
+    @staticmethod
+    def parse_search(query):
+        # all punctuation is meaningless to fts5 and needs to be sanitized except for
+        # matched pairs of double quotes, which create phrases. to preserve these,
+        # the search query is split on "s before sanitization; if there are an odd
+        # number of elements after splitting, then we can join everything together on
+        # " again; if there are an even number, then there was an unmatched ", which
+        # we will arbitrarily decide was the last one and exclude. TODO: move tests
+        # for this into main test package
+        escaper = str.maketrans({x: " " for x in string.punctuation})
+        search_comps = query.split('"')
+        parsed_search = ""
+        if len(search_comps) % 2 == 1:
+            parsed_search = '"'.join(x.translate(escaper) for x in search_comps)
+        else:
+            parsed_search = '"'.join(
+                x.translate(escaper) for x in search_comps[:-1]
+            ) + search_comps[-1].translate(escaper)
+        return parsed_search.replace('""', '" "')
+
     def traverse_messages(
         self,
         conversation="",
@@ -776,10 +796,9 @@ class TwitterDataReader(sqlite3.Connection):
             placeholders.append(int(user))
 
         if search:
-            search = search.translate(
-                str.maketrans({x: " " for x in string.punctuation})
+            where.add(
+                "messages_text_search MATCH '" + self.parse_search(search) + "'"
             )
-            where.add('messages_text_search MATCH "' + search + '"')
             select = Message.db_select_for_search
         else:
             select = Message.db_select
