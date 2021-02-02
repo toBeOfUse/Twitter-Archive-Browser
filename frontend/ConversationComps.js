@@ -8,11 +8,13 @@ import {
   componentsToDate,
   maxDateForMonth,
   isMonthAllowed,
+  timestampType,
 } from "./DateHandling";
 import { NicknameSetter } from "./UserComps";
 import { Link, useHistory, useParams, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import LoadingSpinner from "./LoadingSpinner";
+import PropTypes from "prop-types";
 
 function ConversationListing(props) {
   console.assert(props.schema == "Conversation");
@@ -124,10 +126,22 @@ function SimpleParticipantListing(participant) {
   );
 }
 
-/* a unified one-way scrolly pane component would have: a url prop OR a function
-propr that created a url from a page number; an onMoreStuffLoaded prop that would
-take care of things like saving users and maybe return the actual items; a component
-to render each loaded item */
+ScrollyPane.propTypes = {
+  // url that the ScrollyPane should make a request to when it needs to fetch more
+  // items because of the user scrolling or because it is empty
+  url: PropTypes.string.isRequired,
+  // function that will process the json-parsed response from url and will return an
+  // array of objects that can be rendered in the pane; this array will be
+  // concatenated with the existing array of objects, if that exists yet
+  processItems: PropTypes.func.isRequired,
+  // component type that will be rendered for each object fetched from url and
+  // processed and returned by processItems, with the object unpacked so that each
+  // key in it is a prop like <ItemShape {...item} />
+  ItemShape: PropTypes.elementType.isRequired,
+  // these two are passed down to the top-level dom element
+  className: PropTypes.string,
+  id: PropTypes.string,
+};
 
 function ScrollyPane(props) {
   const contentPane = useRef(null);
@@ -388,9 +402,11 @@ function ConversationList() {
     return j.results;
   };
 
-  const timeSpan = [
-    useSelector((state) => state.stats?.earliest_message),
-    useSelector((state) => state.stats?.latest_message),
+  const globalStats = useSelector((state) => state.stats);
+
+  const timeSpan = globalStats && [
+    globalStats.earliest_message,
+    globalStats.latest_message,
   ];
 
   return (
@@ -449,6 +465,15 @@ function ConversationList() {
   );
 }
 
+SearchBar.propTypes = {
+  baseURL: PropTypes.string.isRequired,
+  timeSpan: PropTypes.arrayOf(timestampType),
+  // because finding the default time involves finding the middle message in a long
+  // list of messages, it is not done until it needs to be done (when this prop is
+  // called)
+  getDefaultTime: PropTypes.func,
+};
+
 function SearchBar(props) {
   const history = useHistory();
   const location = useLocation();
@@ -494,9 +519,13 @@ function SearchBar(props) {
             close={() => setTimeTraveling(false)}
             baseURL={props.baseURL}
             timeSpan={props.timeSpan}
+            start={props.getDefaultTime && props.getDefaultTime()}
           />
         ) : (
-          <div className="modalBackdrop" onClick={props.close}>
+          <div
+            className="modalBackdrop"
+            onClick={() => setTimeTraveling(false)}
+          >
             <div className="centeredModal">
               <LoadingSpinner />
             </div>
@@ -505,6 +534,13 @@ function SearchBar(props) {
     </div>
   );
 }
+
+TimeTravelModal.propTypes = {
+  timeSpan: PropTypes.arrayOf(timestampType).isRequired,
+  start: timestampType,
+  close: PropTypes.func.isRequired,
+  baseURL: PropTypes.string.isRequired,
+};
 
 function TimeTravelModal(props) {
   const history = useHistory();

@@ -1,3 +1,5 @@
+import PropTypes from "prop-types";
+
 function zToLocaleDate(zString) {
   if (!isNaN(Date.parse(zString))) {
     return new Date(zString).toLocaleDateString();
@@ -73,6 +75,17 @@ function isMonthAllowed(year, month, lowerBoundDate, upperBoundDate) {
   }
 }
 
+function timestampType(props, propName, componentName) {
+  if (props[propName] === undefined) {
+    return;
+  }
+  if (props[propName].length != 24 || isNaN(Date.parse(props[propName]))) {
+    return new Error(
+      `incorrect ${propName} supplied to ${componentName}; not in timestamp form`
+    );
+  }
+}
+
 export {
   zToLocaleDate,
   zToLocaleDateTime,
@@ -83,4 +96,5 @@ export {
   clampDate,
   maxDateForMonth,
   isMonthAllowed,
+  timestampType,
 };
