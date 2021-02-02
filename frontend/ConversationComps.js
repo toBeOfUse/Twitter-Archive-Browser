@@ -1,8 +1,18 @@
 import React, { useEffect, useState, useRef } from "react";
-import { zStringToDate, zStringToDateTime } from "./DateHandling";
+import {
+  zToLocaleDate,
+  zToLocaleDateTime,
+  dateToZString,
+  dateToComponents,
+  clampDate,
+  componentsToDate,
+  maxDateForMonth,
+  isMonthAllowed,
+} from "./DateHandling";
 import { NicknameSetter } from "./UserComps";
 import { Link, useHistory, useParams, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import LoadingSpinner from "./LoadingSpinner";
 
 function ConversationListing(props) {
   console.assert(props.schema == "Conversation");
@@ -16,9 +26,9 @@ function ConversationListing(props) {
         {props.name}
       </Link>
       <span className="conversationDate">
-        {`${zStringToDate(props.first_time)}`}
+        {`${zToLocaleDate(props.first_time)}`}
         <br />
-        {`${zStringToDate(props.last_time)}`}
+        {`${zToLocaleDate(props.last_time)}`}
       </span>
       <Link to={"/conversation/info/" + props.id}>
         <img className="conversationInfoIcon" src="/assets/svg/info.svg" />
@@ -85,7 +95,7 @@ function SimpleNameUpdate(update) {
           update.update_time
         }
       >
-        {zStringToDateTime(update.update_time)}
+        {zToLocaleDateTime(update.update_time)}
       </Link>
     </p>
   );
@@ -107,9 +117,9 @@ function SimpleParticipantListing(participant) {
         (participant.is_main_user
           ? "is You"
           : "in conversation from " +
-            (zStringToDate(participant.join_time) || "before you") +
+            (zToLocaleDate(participant.join_time) || "before you") +
             " to " +
-            (zStringToDate(participant.leave_time) || "now"))}
+            (zToLocaleDate(participant.leave_time) || "now"))}
     </p>
   );
 }
@@ -234,7 +244,7 @@ function ConversationInfo() {
           Conversation with{" "}
           <Link to={"/user/info/" + info.other_person.id}>{info.name}</Link>
           {" | "}
-          {zStringToDate(info.first_time)} - {zStringToDate(info.last_time)}
+          {zToLocaleDate(info.first_time)} - {zToLocaleDate(info.last_time)}
         </h3>
       )}
       <div className="statsRow">
@@ -293,9 +303,7 @@ function ConversationInfo() {
             <>
               <br />
               <span>
-                <label
-                  style={{ marginRight: 10 }}
-                >
+                <label style={{ marginRight: 10 }}>
                   <input
                     type="radio"
                     checked={metaInfoOrder == "oldest"}
@@ -380,6 +388,11 @@ function ConversationList() {
     return j.results;
   };
 
+  const timeSpan = [
+    useSelector((state) => state.stats?.earliest_message),
+    useSelector((state) => state.stats?.latest_message),
+  ];
+
   return (
     <>
       <div id="conversationHeader">
@@ -431,7 +444,7 @@ function ConversationList() {
         ItemShape={ConversationListing}
         processItems={processConversations}
       />
-      <SearchBar baseURL="/messages" />
+      <SearchBar timeSpan={timeSpan} baseURL="/messages" />
     </>
   );
 }
@@ -441,17 +454,13 @@ function SearchBar(props) {
   const location = useLocation();
   const alreadyHome =
     location.pathname == "/" || location.pathname == "/conversations";
-  const [text, setText] = useState("");
+  const [text, setText] = useState(location.state?.lastSearch || "");
   const receiveText = (event) => setText(event.target.value);
   const [timeTraveling, setTimeTraveling] = useState(false);
-  const timeBounds = [
-    useSelector((state) => state.stats?.earliest_message),
-    useSelector((state) => state.stats?.latest_message),
-  ];
   const actOnSearch = (event) => {
     if (event.type == "click" || event.key == "Enter") {
       if (text.trim()) {
-        history.push(props.baseURL + "?search=" + text);
+        history.push(props.baseURL + "?search=" + text, { lastSearch: text });
       }
     }
   };
@@ -479,41 +488,209 @@ function SearchBar(props) {
         placeholder="Search all messages..."
       />
       <button onClick={actOnSearch}>Search</button>
-      {timeTraveling && (
-        <TimeTravelModal
-          close={() => setTimeTraveling(false)}
-          after={timeBounds[0] && new Date(timeBounds[0])}
-          before={timeBounds[1] && new Date(timeBounds[1])}
-        />
-      )}
+      {timeTraveling &&
+        (props.timeSpan && props.timeSpan[0] && props.timeSpan[1] ? (
+          <TimeTravelModal
+            close={() => setTimeTraveling(false)}
+            baseURL={props.baseURL}
+            timeSpan={props.timeSpan}
+          />
+        ) : (
+          <div className="modalBackdrop" onClick={props.close}>
+            <div className="centeredModal">
+              <LoadingSpinner />
+            </div>
+          </div>
+        ))}
     </div>
   );
 }
 
 function TimeTravelModal(props) {
-  // TODO: make things on different lines and stuff
+  const history = useHistory();
+  const dates = props.timeSpan.map((v) => {
+    // discards data that we're not using in our components model, like seconds and
+    // milliseconds
+    return componentsToDate(dateToComponents(new Date(v)));
+  });
+  const [timeElements, setTimeElements] = useState(
+    dateToComponents((props.start && new Date(props.start)) || dates[0])
+  );
+  const [validationWarning, setValidationWarning] = useState("");
+  const elementsAreIncomplete = (elements) => {
+    return elements.some((e) => e === "");
+  };
+  const substitute = (value, index) => {
+    const newTimeElements = [
+      ...timeElements.slice(0, index),
+      value,
+      ...timeElements.slice(index + 1),
+    ];
+    return newTimeElements;
+  };
+  const substituteAndClamp = (value, index) => {
+    return clampDate(
+      componentsToDate(substitute(value, index)),
+      dates[0],
+      dates[1]
+    );
+  };
+  const changeComp = (value, index) => {
+    const newTimeElements = substitute(value, index);
+    if (!elementsAreIncomplete(newTimeElements)) {
+      // only validate input if there are no empty fields; if the user has backspaced
+      // everything in a field, we cannot validate anything, and need to leave the
+      // input alone
+      const clampedTimeElements = dateToComponents(
+        substituteAndClamp(value, index)
+      );
+      setTimeElements(clampedTimeElements);
+    } else {
+      setTimeElements(newTimeElements);
+    }
+  };
+  const isSubstitutionInvalid = (value, index) => {
+    return (
+      componentsToDate(substitute(value, index)).getTime() !==
+      componentsToDate(substituteAndClamp(value, index)).getTime()
+    );
+  };
+  const monthOptions = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ].map((m, i) => (
+    <option
+      key={m}
+      value={i}
+      disabled={!isMonthAllowed(timeElements[0], i, dates[0], dates[1])}
+    >
+      {m}
+    </option>
+  ));
   return (
     <div className="modalBackdrop" onClick={props.close}>
       <div
         className="centeredModal"
-        style={{ display: "flex" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          width: "auto",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <label>Year: </label>
-        <input
-          type="number"
-          min={props.after.getFullYear()}
-          max={props.before.getFullYear()}
-          defaultValue={props.after.getFullYear()}
-        />
-
-        <label>Month:</label>
-        <input type="text" />
-
-        <label>
-          Day: <br />
-        </label>
-        <input type="number" />
+        <h3>Go to:</h3>
+        <span>
+          <Link to={props.baseURL + "?start=" + props.timeSpan[0]}>
+            The Beginning
+          </Link>
+          {" | "}
+          <Link to={props.baseURL + "?start=" + props.timeSpan[1]}>
+            The End
+          </Link>
+        </span>
+        <p>Or enter a date and time below:</p>
+        <div style={{ display: "flex" }}>
+          <div className="timeField">
+            <label>Year: </label>
+            <input
+              min={dates[0].getFullYear()}
+              max={dates[1].getFullYear()}
+              type="number"
+              value={timeElements[0]}
+              onChange={(e) => changeComp(e.target.value, 0)}
+            />
+          </div>
+          <div className="timeField">
+            <label>Month:</label>
+            <select
+              value={timeElements[1]}
+              onChange={(e) => changeComp(parseInt(e.target.value), 1)}
+            >
+              {monthOptions}
+            </select>
+          </div>
+          <div className="timeField">
+            <label>Day:</label>
+            <input
+              type="number"
+              min={1}
+              max={maxDateForMonth(timeElements[0], timeElements[1])}
+              value={timeElements[2]}
+              onChange={(e) =>
+                changeComp(e.target.value && parseInt(e.target.value), 2)
+              }
+            />
+          </div>
+          <div className="timeField">
+            <label>Hour:</label>
+            <input
+              type="number"
+              min={1}
+              max={12}
+              value={timeElements[3]}
+              onChange={(e) =>
+                changeComp(e.target.value && parseInt(e.target.value), 3)
+              }
+            />
+          </div>
+          <div className="timeField">
+            <label>Minute:</label>
+            <input
+              min={1}
+              max={59}
+              type="number"
+              value={timeElements[4]}
+              onChange={(e) =>
+                changeComp(e.target.value && parseInt(e.target.value), 4)
+              }
+            />
+          </div>
+          <div className="timeField">
+            <label>&nbsp;</label>
+            <select
+              value={timeElements[5]}
+              onChange={(e) => changeComp(e.target.value, 5)}
+            >
+              <option disabled={isSubstitutionInvalid("AM", 5)} value="AM">
+                AM
+              </option>
+              <option disabled={isSubstitutionInvalid("PM", 5)} value="PM">
+                PM
+              </option>
+            </select>
+          </div>
+        </div>
+        {validationWarning && <p>{validationWarning}</p>}
+        <div>
+          <button
+            onClick={() => {
+              if (!elementsAreIncomplete(timeElements)) {
+                history.push(
+                  props.baseURL +
+                    "?start=" +
+                    dateToZString(componentsToDate(timeElements))
+                );
+              } else {
+                setValidationWarning("date is incomplete");
+              }
+            }}
+            style={{ marginRight: 5 }}
+          >
+            Zoom
+          </button>
+          <button onClick={props.close}>Cancel</button>
+        </div>
       </div>
     </div>
   );

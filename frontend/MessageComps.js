@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, forwardRef } from "react";
 import { useLocation, useHistory, Link } from "react-router-dom";
 import {
-  zStringToDateTime,
-  zStringToDate,
+  zToLocaleDateTime,
+  zToLocaleDate,
   zStringDiffMinutes,
 } from "./DateHandling";
 import { SearchBar } from "./ConversationComps";
@@ -65,52 +65,65 @@ function MessagePage(props) {
   const [hitBottom, setHitBottom] = useState(
     savedState?.hitBottom ?? startingPlace == "end"
   );
-  const [conversationName, setConversationName] = useState("");
+
   // loading could currently be converted to a ref/instance variable but it could
   // also be used in rendering to display a spinner in the future so idk
   let [loading, setLoading] = useState(false);
 
   const dispatch = useDispatch();
 
-  const name = useSelector((state) => {
+  const meta = useSelector((state) => {
     if (props.type == "conversation") {
-      return state.conversations[props.id]?.name;
+      return state.conversations[props.id];
     } else if (props.type == "user") {
-      return state.users[props.id]?.name;
+      return state.users[props.id];
+    } else {
+      return state.stats;
     }
   });
 
-  const getName = () => {
-    if (name) {
-      setConversationName(name);
-    } else if (props.type == "conversation") {
-      fetch("/api/conversation?id=" + props.id).then((r) =>
-        r.json().then((j) => {
-          dispatch({
-            type: "conversations/addConversations",
-            payload: [j],
-          });
-          setConversationName(j.name);
-        })
-      );
+  let timeSpan = [];
+  let name;
+  if (meta) {
+    if (props.type == "conversation") {
+      name = meta.name;
+      timeSpan = [meta.first_time, meta.last_time];
     } else if (props.type == "user") {
-      fetch("/api/user?id=" + props.id).then((r) =>
-        r.json().then((j) => {
-          dispatch({
-            type: "users/addUsers",
-            payload: [j],
-          });
-          setConversationName(
-            "from " + (j.nickname || j.display_name + " (@" + j.handle + ")")
-          );
-        })
-      );
+      name =
+        "from " +
+        (meta.nickname || meta.display_name + " (@" + meta.handle + ")");
+      timeSpan = [meta.first_appearance, meta.last_appearance];
     } else {
-      setConversationName("all messages");
+      name = "all messages";
+      timeSpan = [meta.earliest_message, meta.latest_message];
+    }
+  }
+
+  const fetchMeta = () => {
+    if (!meta) {
+      if (props.type == "conversation") {
+        fetch("/api/conversation?id=" + props.id).then((r) =>
+          r.json().then((j) => {
+            dispatch({
+              type: "conversations/addConversations",
+              payload: [j],
+            });
+          })
+        );
+      } else if (props.type == "user") {
+        fetch("/api/user?id=" + props.id).then((r) =>
+          r.json().then((j) => {
+            dispatch({
+              type: "users/addUsers",
+              payload: [j],
+            });
+          })
+        );
+      }
     }
   };
 
-  useEffect(getName, []);
+  useEffect(fetchMeta, []);
 
   let infoButton;
   if (props.type) {
@@ -374,7 +387,7 @@ function MessagePage(props) {
         }}
       >
         <h1 style={{ display: "inline", marginRight: 5 }}>
-          Messages - {conversationName} {infoButton}
+          {name} {infoButton}
         </h1>
         <br />
         <Link
@@ -408,7 +421,7 @@ function MessagePage(props) {
       >
         {renderedMessages}
       </div>
-      <SearchBar baseURL={location.pathname} />
+      <SearchBar baseURL={location.pathname} timeSpan={timeSpan} />
     </>
   );
 }
@@ -556,7 +569,7 @@ function SimpleMessage(message) {
         <Link to={"/user/info/" + user.id}>
           {(user.nickname || user.display_name) + ` (@${user.handle})`}
         </Link>
-        {", " + zStringToDate(message.sent_time) + " "}
+        {", " + zToLocaleDate(message.sent_time) + " "}
         <Link
           to={
             "/conversation/messages/" +
@@ -582,7 +595,7 @@ messageTypes["NameUpdate"] = function NameUpdateContent(update) {
         {user.nickname || `@${user.handle}`}
       </Link>{" "}
       changed the conversation's name to {update.new_name} (
-      {zStringToDateTime(update.update_time)})
+      {zToLocaleDateTime(update.update_time)})
     </p>
   );
 };
@@ -599,7 +612,7 @@ messageTypes["ParticipantJoin"] = function ParticipantJoinContent(event) {
       <Link to={"/user/info/" + adder.id}>
         {adder.nickname || `@${adder.handle}`}
       </Link>
-      . ({zStringToDateTime(event.time)})
+      . ({zToLocaleDateTime(event.time)})
     </p>
   );
 };
@@ -611,7 +624,7 @@ messageTypes["ParticipantLeave"] = function ParticipantLeaveContent(event) {
       <Link to={"/user/info/" + user.id}>
         {user.nickname || `@${user.handle}`}
       </Link>{" "}
-      left the conversation. ({zStringToDateTime(event.time)})
+      left the conversation. ({zToLocaleDateTime(event.time)})
     </p>
   );
 };
@@ -665,7 +678,7 @@ messageTypes["Message"] = function NormalMessage(message) {
             <Link to={"/user/info/" + user.id}>
               {(user.nickname || user.display_name) + ` (@${user.handle})`}
             </Link>
-            {", " + zStringToDateTime(message.sent_time)}
+            {", " + zToLocaleDateTime(message.sent_time)}
           </span>
           {message.showContextLink && (
             <Link
@@ -768,14 +781,14 @@ function MessageInfoModal(message) {
       <div className="centeredModal" onClick={(e) => e.stopPropagation()}>
         <h3>
           Sent by {(user.nickname || user.display_name) + ` (@${user.handle})`}{" "}
-          at {zStringToDateTime(message.sent_time)}
+          at {zToLocaleDateTime(message.sent_time)}
         </h3>
         {contextLinks}
         {message.reactions.map((v) => (
           <p key={v.id}>
             {reactionEmojis[v.emotion]} left by{" "}
             {users[v.creator].nickname || `@${users[v.creator].handle}`} at{" "}
-            {zStringToDateTime(v.creation_time)}
+            {zToLocaleDateTime(v.creation_time)}
           </p>
         ))}
         <button onClick={() => message.closeModal()}>close</button>

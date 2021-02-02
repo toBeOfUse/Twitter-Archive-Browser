@@ -87,13 +87,27 @@ a:active {
 
 /* conversations */
 
+.timeField {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.timeField:not(:last-child) {
+    margin-right: 5px;
+}
+
+.timeField > input, .timeField > select{
+    height: 20px;
+
+}
+
 #conversationOrderSelect {
     margin: 0 5px 0 5px;
 }
 
 #conversationHeader {
     width: 100%;
-    /*height: 100px;*/
 }
 
 #conversationList {

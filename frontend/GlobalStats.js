@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { zStringToDateTime } from "./DateHandling";
+import { zToLocaleDateTime } from "./DateHandling";
 import { SimpleMessage } from "./MessageComps";
 
 function GlobalStats() {
@@ -28,12 +28,12 @@ function GlobalStats() {
       <div className="statsRow" style={{ width: "100%" }}>
         <div className="statsContainer" style={{ width: "100%" }}>
           <p>First message</p>
-          <h3>{zStringToDateTime(stats.earliest_message)}</h3>
+          <h3>{zToLocaleDateTime(stats.earliest_message)}</h3>
         </div>
         <div className="verticalLine" />
         <div className="statsContainer" style={{ width: "100%" }}>
           <p>Last message</p>
-          <h3>{zStringToDateTime(stats.latest_message)}</h3>
+          <h3>{zToLocaleDateTime(stats.latest_message)}</h3>
         </div>
       </div>
       <div className="statsRow">

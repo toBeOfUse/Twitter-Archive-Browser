@@ -39,7 +39,7 @@ const store = configureStore({
           Object.assign(draft, action.payload);
           break;
         case "pageState/markScrollPosUsed":
-          console.log("obviating scroll top for key", action.payload);
+          console.log("obviating scroll pos for key", action.payload);
           draft[action.payload].scrollTop = null;
         /*
         possible optimization: keep an ordered list of location keys and if a push is

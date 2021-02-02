@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, Link, useParams } from "react-router-dom";
-import { zStringToDateTime } from "./DateHandling";
+import { zToLocaleDateTime } from "./DateHandling";
 
 function NicknameSetter(userInfo) {
   const [nickname, setNickname] = useState(userInfo.nickname);
@@ -133,12 +133,12 @@ function UserInfo() {
             <div className="verticalLine" />
             <div className="statsContainer">
               <p>First Seen</p>
-              <h3>{zStringToDateTime(info.first_appearance)}</h3>
+              <h3>{zToLocaleDateTime(info.first_appearance)}</h3>
             </div>
             <div className="verticalLine" />
             <div className="statsContainer">
               <p>Last Seen</p>
-              <h3>{zStringToDateTime(info.last_appearance)}</h3>
+              <h3>{zToLocaleDateTime(info.last_appearance)}</h3>
             </div>
           </>
         )}
