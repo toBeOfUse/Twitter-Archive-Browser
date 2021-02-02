@@ -82,7 +82,7 @@ function MessagePage(props) {
     }
   });
 
-  let timeSpan = [];
+  let timeSpan;
   let name;
   if (meta) {
     if (props.type == "conversation") {
@@ -166,6 +166,9 @@ function MessagePage(props) {
     // is then applied to the message pane's pre-update scroll position; therefore,
     // the scroll position remains the same relative to the messages that were
     // previously on the page and visible to the user.
+    if (!messages || !messages.length) {
+      return;
+    }
     const currentPane = DOMState.messagesPane;
     console.log("restoring scroll position");
     console.log("it is currently", currentPane?.scrollTop);
@@ -191,23 +194,73 @@ function MessagePage(props) {
         } else if (startingPlace == "beginning") {
           currentPane.scrollTop = 0;
         } else {
+          let el;
           if (DOMState.highlightElement) {
-            const el = DOMState.highlightElement;
-            currentPane.scrollTop =
-              el.offsetTop -
-              currentPane.offsetTop -
-              currentPane.offsetHeight / 2 +
-              el.offsetHeight / 2;
+            el = DOMState.highlightElement;
           } else {
-            currentPane.scrollTop =
-              currentScrollHeight / 2 - currentPane.clientHeight / 2;
+            // if there is no element exactly equal to the timestamp in startingPlace
+            // (if there was, it would have been assigned to DOMState.highlighElement
+            // upon rendering) then we perform a binary search to find the element
+            // with the closest time to the startingPlace time.
+            let index;
+            if (getTime(messages[0]) > startingPlace) {
+              index = 0;
+            } else if (getTime(messages[messages.length - 1]) < startingPlace) {
+              index = messages.length - 1;
+            } else {
+              let low = 0;
+              let high = messages.length - 1;
+              while (low <= high) {
+                let mid = Math.floor((high + low) / 2);
+                if (startingPlace < getTime(messages[mid])) {
+                  high = mid - 1;
+                } else {
+                  low = mid + 1;
+                }
+              }
+              index =
+                zStringDiffMinutes(getTime(messages[low]), startingPlace) <
+                zStringDiffMinutes(getTime(messages[high]), startingPlace)
+                  ? low
+                  : high;
+            }
+            el = messagesPane.children[index];
           }
+          currentPane.scrollTop =
+            el.offsetTop -
+            currentPane.offsetTop -
+            currentPane.offsetHeight / 2 +
+            el.offsetHeight / 2;
         }
       }
     }
   };
 
   useEffect(restoreScroll, [messages]);
+
+  const findMiddleMessage = () => {
+    if (messages) {
+      const pane = DOMState.messagesPane;
+      const midHeight = pane.scrollTop + pane.offsetHeight / 2;
+      let index;
+      let low = 0;
+      let high = pane.children.length - 1;
+      while (low <= high) {
+        let mid = Math.floor((low + high) / 2);
+        if (pane.children[mid].offsetTop < midHeight) {
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+      index =
+        pane.children[low].offsetTop - midHeight <
+        midHeight - pane.children[high].offsetTop
+          ? low
+          : high;
+      return getTime(messages[index]);
+    }
+  };
 
   const loadMore = (direction) => {
     if (loading) {
@@ -421,7 +474,11 @@ function MessagePage(props) {
       >
         {renderedMessages}
       </div>
-      <SearchBar baseURL={location.pathname} timeSpan={timeSpan} />
+      <SearchBar
+        baseURL={location.pathname}
+        timeSpan={timeSpan}
+        getDefaultTime={findMiddleMessage}
+      />
     </>
   );
 }
