@@ -552,7 +552,7 @@ function TimeTravelModal(props) {
   const isSubstitutionInvalid = (value, index) => {
     return (
       componentsToDate(substitute(value, index)).getTime() !==
-      componentsToDate(substituteAndClamp(value, index)).getTime()
+      substituteAndClamp(value, index).getTime()
     );
   };
   const monthOptions = [
