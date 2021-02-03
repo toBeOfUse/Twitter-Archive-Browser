@@ -114,10 +114,10 @@ function MessagePage(props) {
   }
 
   DOMState.prevSaveStateCleanup && DOMState.prevSaveStateCleanup();
-  const saveState = (event, action) => {
-    if ((action == "PUSH" || action == "POP" || event.type) && messages) {
-      console.log("saving current state under key " + locationKey);
-      console.log("event is ", action || event);
+  const saveState = (_newLocation, action) => {
+    if ((action == "PUSH" || action == "POP") && messages) {
+      console.log("MESSAGES: saving current state under key " + locationKey);
+      console.log("MESSAGES: event is ", action);
       dispatch({
         type: "pageState/save",
         payload: {
@@ -149,17 +149,23 @@ function MessagePage(props) {
       return;
     }
     const currentPane = DOMState.messagesPane;
-    console.log("restoring scroll position");
-    console.log("it is currently", currentPane?.scrollTop);
-    console.log("it used to be", DOMState.prevScrollTop);
+    console.log("MESSAGES: restoring scroll position");
+    console.log("MESSAGES: it is currently", currentPane?.scrollTop);
+    console.log("MESSAGES: it used to be", DOMState.prevScrollTop);
     if (savedState?.scrollTop) {
       currentPane.scrollTop = savedState.scrollTop;
       dispatch({ type: "pageState/markScrollPosUsed", payload: locationKey });
     } else if (currentPane) {
       currentPane.focus();
       if (DOMState.signpostElement) {
-        console.log("signpost used to be at", DOMState.prevSignpostPosition);
-        console.log("signpost is now at", DOMState.signpostElement.offsetTop);
+        console.log(
+          "MESSAGES: signpost used to be at",
+          DOMState.prevSignpostPosition
+        );
+        console.log(
+          "MESSAGES: signpost is now at",
+          DOMState.signpostElement.offsetTop
+        );
         const delta =
           DOMState.signpostElement.offsetTop - DOMState.prevSignpostPosition;
         currentPane.scrollTop = DOMState.prevScrollTop + delta;
@@ -475,11 +481,10 @@ function MediaItem(props) {
   const detectAutoplay = (event) => {
     if (props.media.type == "gif" && event.target) {
       const el = event.target;
-      console.log("loaded gif element", el);
+      console.log("MEDIA: loaded gif element", el);
       el.setAttribute("muted", "");
       el.play().catch((err) => {
-        console.log("detected autoplay not allowed :(");
-        console.log(err);
+        console.log("MEDIA: detected autoplay not allowed :(", err);
         dispatch({
           type: "autoplay/allowed",
           payload: false,
@@ -784,7 +789,7 @@ function MessageInfoModal(message) {
       .writeText(e.target.href)
       .then(() => (e.target.innerHTML += " (copied!)"))
       .catch((err) => {
-        console.log("copying error", err);
+        console.log("MESSAGES MODAL: copying error", err);
         e.target.innerHTML =
           "copying forbidden by your browser settings :( " +
           "right click or long press to copy this link";
