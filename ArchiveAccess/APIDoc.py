@@ -4,11 +4,6 @@ API Documentation
 
 All API requests must contain an Authorization cookie obtained from /api/authenticate. All query string parameters are required unless otherwise indicated. Page numbers start at 1. The standard way to display a user's name is "display name (@handle) | nickname if it exists". Because top-level JSON arrays constitute a security risk, arrays returned by these endpoints will be wrapped in an object with the key "results" pointing to the payload.
 
-Messagelikes
-------------
-
-Messagelikes, represented here as objects that inherit from `ArchiveAccess.DBRead.MessageLike`, represent pieces of information that fit naturally in the flow of a conversation, including regular messages. Because messagelikes in any given conversation tend to reference the same users over and over again, it would be highly redundant for each of them to contain nested user objects; instead, they simply contain user ids, and when they are requested from the API, the top-level JSON object that is returned contains a "results" array and a "users" array, containing the requested serialized MessageLike objects and serialized `ArchiveAccess.DBRead.ArchivedUserSummary` objects, respectively.
-
 Authorization
 -------------
 
@@ -48,6 +43,11 @@ Sets a conversation's "notes" field in the database to the plain text in the bod
 Get Messages
 ------------
 
+Messagelikes
+------------
+
+Messagelikes, represented here as objects that inherit from `ArchiveAccess.DBRead.MessageLike`, represent pieces of information that fit naturally in the flow of a conversation, including regular messages. Because messagelikes in any given conversation tend to reference the same users over and over again, it would be highly redundant for each of them to contain nested user objects; instead, they simply contain user ids, and when they are requested from the API, the top-level JSON object that is returned contains a "results" array and a "users" array, containing the requested serialized MessageLike objects and serialized `ArchiveAccess.DBRead.ArchivedUserSummary` objects, respectively. Additionally, they come with a "conversations" array containing `ArchiveAccess.DBRead.Conversation` objects that give information on all the conversations that they belong to. Note: the random messages do not include the conversations array because in the frontend I currently like them better out of context and can't 'be bothered.
+
 ### `GET /api/messages?`
 
 Filter clause (optional): `conversation=[conversation_id]|byuser=[user_id]`
@@ -56,13 +56,13 @@ Timezone clause: `after=[timestamp]|before=[timestamp]|at=[timestamp]`
 
 Search clause (optional): `search=[query]`
 
-The main endpoint for obtaining messages from the API. This endpoint's payload includes all messagelike objects; in other words, any that inherit from `ArchiveAccess.DBRead.MessageLike`. You can tell which type each object has by looking at the "schema" field in the serialized result, which contains the name of the original object's class. This endpoint returns 40 normal messages at a time; the name update and joining and leaving events are additional to that. Message/event objects are always sorted oldest to newest (ascending.)
+The main endpoint for obtaining messages from the API. This endpoint's payload includes all messagelike objects; in other words, any that inherit from `ArchiveAccess.DBRead.MessageLike`. You can tell which type each object has by looking at the "schema" field in the serialized result, which contains the name of the original object's class. This endpoint returns 40 normal messages at a time; the name update and joining and leaving events are additional to that. Messavelikes are always sorted oldest to newest (ascending.)
 
 Note that the html_contents field in normal messages contains links presented as HTML `<a>` tags.
 
 The filter clause is fairly self explanatory; pick either a conversation= or a byuser= parameter to send in. If it is omitted, any and all messages can come through, and if displayed to an end user, conversation events will need to be presented with their conversation name to make things clear.
 
-The timezone clause's first two options can be either "beginning" or "end" respectively, to retrieve messages from the very beginning or very end of the conversation; the "at" option will return the 20 messages from immediately before the timestamp and 20 messages after; if a message was sent at that exact timestamp, it will count as being before it. Events are included if they happened after the given timestamp but before the 40th message if the first option is used and vice versa for the second; for the third, only events that happened after the first returned message and before the last returned message are included. The exception is when you are at the very beginning or very end of the conversation, in which case all the events before the first message/after the last message are returned. Don't overthink the logic of retrieving a complete set of messages and events as you move in either direction in time; if you want to retrieve messages from before the ones you currently have loaded, just use the before option with the oldest timestamp you have in the messages and events you have; if you want to populate messages from after, use the after option with the newest timestamp you have. You can tell your traversal is done when this endpoint returns 0 messages or messagelikes.
+The timezone clause's first two options can be either "beginning" or "end" respectively, to retrieve messages from the very beginning or very end of the conversation; the "at" option will return the 20 messages from immediately before the timestamp and 20 messages after; if a message was sent at that exact timestamp, it will count as being before it. Events are included if they happened after the given timestamp but before the 40th message if the first option is used and vice versa for the second; for the third, only events that happened after the first returned message and before the last returned message are included. The exception is when you are at the very beginning or very end of the conversation, in which case all the events before the first message/after the last message are returned. Don't overthink the logic of retrieving a complete set of messages and events as you move in either direction in time; if you want to retrieve messages from before the ones you currently have loaded, just use the before option with the oldest timestamp you have in the messages and events you have; if you want to populate messages from after, use the after option with the newest timestamp you have. You can tell your traversal in each direction is done when this endpoint returns 0 messages or messagelikes.
 
 The search clause allows you to further filter message results by their contents. It takes a URL-encoded string containing words that will be searched for individually and quotation mark-surrounded phrases that will be searched for as a unit. Words that are searched for individually will use a "stemmed" index so that searches for "walk" will also match "walking", for example.
 

@@ -512,7 +512,8 @@ class TwitterDataReader(sqlite3.Connection):
             db_path, uri=("mode=memory" in str(db_path))
         )
         self.row_factory = sqlite3.Row
-        self.users_cache = {}
+        self.users_cache: dict[int, ArchivedUserSummary] = {}
+        self.conversations_cache: dict[str, Conversation] = {}
 
     def get_main_user(self):
         with set_row_mode(self, ArchivedUser.from_row):
@@ -655,7 +656,7 @@ class TwitterDataReader(sqlite3.Connection):
         asc: bool = True,
         group: bool = True,
         individual: bool = True,
-    ) -> list[ConversationRow]:
+    ) -> list[Conversation]:
         """Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by when their most
         or least recent messages were sent. Most of the arguments are passed on to
         `ArchiveAccess.DBRead.TwitterDataReader.get_conversations`, except for:
@@ -675,7 +676,7 @@ class TwitterDataReader(sqlite3.Connection):
         group: bool = True,
         individual: bool = True,
         by_me: bool = False,
-    ) -> list[ConversationRow]:
+    ) -> list[Conversation]:
         """Retrieves `CONVERSATIONS_PER_PAGE` conversations ordered by how many
         messages were sent in them or by how many messages were sent in them by you.
         Most of the arguments are passed on to
@@ -693,7 +694,7 @@ class TwitterDataReader(sqlite3.Connection):
 
     def get_conversations_by_user(
         self, user_id: Union[str, int], page_number: int
-    ) -> list[ConversationRow]:
+    ) -> list[Conversation]:
         """returns the conversations that a specific user has appeared in, sorted by
         the number of messages they have sent in each conversation highest to
         lowest."""
@@ -708,10 +709,23 @@ class TwitterDataReader(sqlite3.Connection):
             True, True, order_by, page_number, where_clause, (user_id, user_id)
         )
 
-    def get_conversation_by_id(self, conversation_id: str) -> ConversationRow:
+    def get_conversation_by_id(self, conversation_id: str) -> Conversation:
         """Retrieves the record for a specific conversation with a specific id."""
-        c = self.get_conversations(True, True, "", 1, "id=?", [conversation_id])[0]
-        return c
+        if conversation_id in self.conversations_cache:
+            return self.conversations_cache[conversation_id]
+        else:
+            c = self.get_conversations(True, True, "", 1, "id=?", [conversation_id])[
+                0
+            ]
+            self.conversations_cache[conversation_id] = c
+            return c
+
+    def get_conversations_by_id(
+        self, conversation_ids: Iterable[str]
+    ) -> list[Conversation]:
+        # this might be slightly faster using an in clause like get_user_by_id; not
+        # sure
+        return [self.get_conversation_by_id(x) for x in conversation_ids]
 
     def get_conversation_names(
         self, conversation_id: str, oldest_first=True, page_number: int = 1
@@ -740,6 +754,7 @@ class TwitterDataReader(sqlite3.Connection):
         self.execute(
             "update conversations set notes=? where id=?;", (notes, conversation_id)
         )
+        self.conversations_cache.pop(conversation_id, None)
         self.commit()
 
     @staticmethod
@@ -933,7 +948,11 @@ class TwitterDataReader(sqlite3.Connection):
         users = self.get_users_by_id(
             MessageLike.user_id_iterator((x.user_ids for x in messages))
         )
-        return {"results": messages, "users": users}
+        conversations = self.get_conversations_by_id(
+            set(x.conversation for x in messages)
+        )
+
+        return {"results": messages, "users": users, "conversations": conversations}
 
     def get_message_by_id(self, id: int) -> dict[str, list]:
         with set_row_mode(self, Message.from_row):
@@ -941,7 +960,11 @@ class TwitterDataReader(sqlite3.Connection):
                 Message.db_select + " where id=?;", (id,)
             ).fetchone()
             users = self.get_users_by_id(set(message.user_ids))
-            return {"results": [message], "users": users}
+            return {
+                "results": [message],
+                "users": users,
+                "conversation": [self.get_conversation_by_id(message.conversation)],
+            }
 
     def get_message_timestamp_by_id(self, id: int) -> str:
         result = self.execute(

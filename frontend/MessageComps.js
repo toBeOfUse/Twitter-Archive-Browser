@@ -73,6 +73,8 @@ function MessagePage(props) {
   const dispatch = useDispatch();
 
   const meta = useSelector((state) => {
+    // this meta information will be populated by calls to dispatch when the first
+    // message(s) load
     if (props.type == "conversation") {
       return state.conversations[props.id];
     } else if (props.type == "user") {
@@ -101,32 +103,6 @@ function MessagePage(props) {
       document.title = "All Messages";
     }
   }
-
-  const fetchMeta = () => {
-    if (!meta) {
-      if (props.type == "conversation") {
-        fetch("/api/conversation?id=" + props.id).then((r) =>
-          r.json().then((j) => {
-            dispatch({
-              type: "conversations/addConversations",
-              payload: [j],
-            });
-          })
-        );
-      } else if (props.type == "user") {
-        fetch("/api/user?id=" + props.id).then((r) =>
-          r.json().then((j) => {
-            dispatch({
-              type: "users/addUsers",
-              payload: [j],
-            });
-          })
-        );
-      }
-    }
-  };
-
-  useEffect(fetchMeta, []);
 
   let infoButton;
   if (props.type) {
@@ -168,7 +144,7 @@ function MessagePage(props) {
     // the element's updated position; the change in the signpost element's position
     // is then applied to the message pane's pre-update scroll position; therefore,
     // the scroll position remains the same relative to the messages that were
-    // previously on the page and visible to the user.
+    // previously on the page.
     if (!messages || !messages.length) {
       return;
     }
@@ -313,6 +289,10 @@ function MessagePage(props) {
         dispatch({
           type: "users/addUsers",
           payload: j.users,
+        });
+        dispatch({
+          type: "conversations/addConversations",
+          payload: j.conversations,
         });
         let newMessages = null;
         if (direction == "start") {
@@ -657,8 +637,15 @@ messageTypes["NameUpdate"] = function NameUpdateContent(update) {
       <Link to={"/user/info/" + user.id}>
         {user.nickname || `@${user.handle}`}
       </Link>{" "}
-      changed the conversation's name to {update.new_name} (
-      {zToLocaleDateTime(update.update_time)})
+      changed{" "}
+      {update.context != "conversation" ? (
+        <Link to={"/conversation/info/" + update.conversation}>
+          the conversation
+        </Link>
+      ) : (
+        "the conversation"
+      )}
+      's name to {update.new_name} ({zToLocaleDateTime(update.update_time)})
     </p>
   );
 };
@@ -666,12 +653,15 @@ messageTypes["NameUpdate"] = function NameUpdateContent(update) {
 messageTypes["ParticipantJoin"] = function ParticipantJoinContent(event) {
   const added = useSelector((state) => state.users[event.participant]);
   const adder = useSelector((state) => state.users[event.added_by]);
+  const conversation = useSelector(
+    (state) => state.conversations[event.conversation]
+  );
   return (
     <p style={{ textAlign: "center" }}>
       <Link to={"/user/info/" + added.id}>
         {added.nickname || `@${added.handle}`}
       </Link>{" "}
-      was added to the conversation by{" "}
+      was added to {conversation.name} by{" "}
       <Link to={"/user/info/" + adder.id}>
         {adder.nickname || `@${adder.handle}`}
       </Link>
@@ -682,12 +672,15 @@ messageTypes["ParticipantJoin"] = function ParticipantJoinContent(event) {
 
 messageTypes["ParticipantLeave"] = function ParticipantLeaveContent(event) {
   const user = useSelector((state) => state.users[event.participant]);
+  const conversation = useSelector(
+    (state) => state.conversations[event.conversation]
+  );
   return (
     <p style={{ textAlign: "center" }}>
       <Link to={"/user/info/" + user.id}>
         {user.nickname || `@${user.handle}`}
       </Link>{" "}
-      left the conversation. ({zToLocaleDateTime(event.time)})
+      left {conversation.name}. ({zToLocaleDateTime(event.time)})
     </p>
   );
 };
@@ -781,13 +774,10 @@ messageTypes["Message"] = function NormalMessageContent(message) {
 
 function MessageInfoModal(message) {
   const conversationLink =
-    "/conversation/messages/" +
-    message.conversation +
-    "?start=" +
-    message.sent_time;
+    "/conversation/messages/" + message.conversation + "/" + message.id;
   const userMessagesLink =
-    "/user/messages/" + message.sender + "?start=" + message.sent_time;
-  const allMessagesLink = "/messages?start=" + message.sent_time;
+    "/user/messages/" + message.sender + "/" + message.id;
+  const allMessagesLink = "/messages/" + message.id;
   const copyLinkHref = (e) => {
     e.preventDefault();
     navigator.clipboard
@@ -801,6 +791,9 @@ function MessageInfoModal(message) {
       });
   };
   const user = useSelector((state) => state.users[message.sender]);
+  const conversation = useSelector(
+    (state) => state.conversations[message.conversation]
+  );
   let contextLinks;
   const makeContextLink = (to, copyMode) => {
     return (
@@ -847,7 +840,15 @@ function MessageInfoModal(message) {
         style={{ textAlign: "center" }}
       >
         <h3>
-          Sent by {(user.nickname || user.display_name) + ` (@${user.handle})`}{" "}
+          Sent by {(user.nickname || user.display_name) + ` (@${user.handle}) `}
+          {message.context != "conversation" && (
+            <span>
+              in{" "}
+              <Link to={"/conversation/info/" + conversation.id}>
+                {conversation.name}
+              </Link>
+            </span>
+          )}{" "}
           at {zToLocaleDateTime(message.sent_time)}
         </h3>
         {contextLinks}
