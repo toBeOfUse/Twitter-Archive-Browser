@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { NavLink, Link, useParams } from "react-router-dom";
 import { zToLocaleDateTime } from "./DateHandling";
+import ScrollyPane from "./ScrollyPane";
 
 function NicknameSetter(userInfo) {
   const [nickname, setNickname] = useState(userInfo.nickname);
@@ -51,49 +52,45 @@ function NicknameSetter(userInfo) {
   );
 }
 
+// simple component used to show each conversation that a user is in; used by the
+// ScrollyPane in UserInfo. could probably be in conversation comps
+function SimpleConversationListing(conversation) {
+  return (
+    <NavLink
+      style={{ display: "flex", alignItems: "center" }}
+      key={conversation.id}
+      to={"/conversation/info/" + conversation.id}
+    >
+      <img
+        style={{ height: 30, borderRadius: "50%", marginRight: 10 }}
+        src={conversation.image_url}
+      />
+      {conversation.name}
+    </NavLink>
+  );
+}
+
 function UserInfo() {
   const { id } = useParams();
+  // note: the user info cannot be taken from the redux store bc that only stores
+  // ArchivedUserSummary objects, not full ArchivedUser objects that we need to
+  // render this component
   const [info, setInfo] = useState(null);
-
-  const [conversations, setConversations] = useState([]);
-  const [page, setPage] = useState(1);
-  const [loadingConvos, setLoadingConvos] = useState(false);
-  const listPane = useRef(null);
 
   if (!info) {
     fetch("/api/user?id=" + id).then((r) =>
       r.json().then((result) => setInfo(result))
     );
+  } else {
+    document.title = (info.nickname || "@" + info.handle) + " - User Info";
   }
 
-  const checkUpdates = () => {
-    const el = listPane.current;
-    if (
-      info &&
-      (el.scrollHeight < el.parentElement.scrollHeight ||
-        el.scrollTop + el.offsetHeight > el.scrollHeight - 30) &&
-      page != -1 &&
-      !loadingConvos
-    ) {
-      setLoadingConvos(true);
-      const url = `/api/conversations/withuser?id=${id}&page=${page}`;
-      fetch(url).then((r) =>
-        r.json().then((j) => {
-          if (j.results.length) {
-            setConversations((prevConvs) => prevConvs.concat(j.results));
-          } else {
-            setPage(-1);
-          }
-          setLoadingConvos(false);
-        })
-      );
-      setPage((prevPage) => (prevPage == -1 ? prevPage : prevPage + 1));
-    }
-  };
-
-  useEffect(checkUpdates);
+  const metaInfoURL = `/api/conversations/withuser?id=${id}&page=`;
+  const processMetaInfo = (response) => response.results;
 
   const acceptChange = () => {
+    // when a user's notes or nickname are changed, we set the user object to null so
+    // that it will be reloaded. this probably could be optimized
     setInfo(null);
   };
 
@@ -144,26 +141,12 @@ function UserInfo() {
         )}
       </div>
       <h3>In conversations:</h3>
-      <div
-        style={{ height: 250 }}
+      <ScrollyPane
+        url={metaInfoURL}
+        processItems={processMetaInfo}
+        ItemShape={SimpleConversationListing}
         className="metaInfoContainer"
-        ref={listPane}
-        onScroll={checkUpdates}
-      >
-        {conversations.map((v) => (
-          <NavLink
-            style={{ display: "flex", alignItems: "center" }}
-            key={v.id}
-            to={"/conversation/info/" + v.id}
-          >
-            <img
-              style={{ height: 30, borderRadius: "50%", marginRight: 10 }}
-              src={v.image_url}
-            />
-            {v.name}
-          </NavLink>
-        ))}
-      </div>
+      />
     </>
   ) : (
     <p>loading...</p>
