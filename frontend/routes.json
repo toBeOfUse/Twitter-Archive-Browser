@@ -1,5 +1,14 @@
 {
     "/": "Conversations",
     "/conversations": "Conversations",
-    "/stats": "Twitter Archive Statistics"
+    "/stats": "Twitter Archive Statistics",
+    "/messages": "All Messages",
+    "*": "Twitter Data Archive",
+    "dynamic route title specification to be implemented server- and client-side": {
+        "/conversation/info/:id": "[conversation.name] - Conversation Info",
+        "/conversation/messages/:id/:message_id?": "[conversation.name]",
+        "/user/info/:id": "[user.nickname || '@'+user.handle] - User Info",
+        "/user/messages/:id/:message_id?": "Messages from [user.nickname || '@'+user.handle]",
+        "/messages/message_id?": "All Messages"
+    }
 }

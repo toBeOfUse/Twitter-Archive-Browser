@@ -935,13 +935,20 @@ class TwitterDataReader(sqlite3.Connection):
         )
         return {"results": messages, "users": users}
 
-    def get_message(self, id: int) -> dict[str, list]:
+    def get_message_by_id(self, id: int) -> dict[str, list]:
         with set_row_mode(self, Message.from_row):
             message = self.execute(
                 Message.db_select + " where id=?;", (id,)
             ).fetchone()
             users = self.get_users_by_id(set(message.user_ids))
             return {"results": [message], "users": users}
+
+    def get_message_timestamp_by_id(self, id: int) -> str:
+        result = self.execute(
+            "select sent_time from messages where id=?;", (id,)
+        ).fetchone()
+        if result:
+            return result[0]
 
     def get_random_messages(self) -> dict[str, list]:
         with set_row_mode(self, Message.from_row):

@@ -7,8 +7,7 @@ from mimetypes import guess_type
 from pathlib import Path
 import json
 import subprocess
-
-query_string = r"\?.+"
+import re
 
 
 class ServeFrontend(RequestHandler):
@@ -20,11 +19,41 @@ class ServeFrontend(RequestHandler):
     def get(self, path):
         description = self.db_owner + "'s Twitter archive"
         image = None
-        title = (
-            self.titles[self.request.path]
-            if self.request.path in self.titles
-            else ""
-        )
+        if self.request.path in self.titles:
+            title = self.titles[self.request.path]
+        elif m := re.match(r"/user/(info|messages)/(\d+)", self.request.path):
+            id = int(m[2])
+            users = self.db.get_users_by_id([id])
+            if users:
+                user = users[0]
+                title = (
+                    ("Messages from " if m[1] == "messages" else "")
+                    + (user.nickname if user.nickname else ("@" + user.handle))
+                    + (" - User Info" if m[1] == "info" else "")
+                )
+        elif m := re.match(
+            r"/conversation/(info|messages)/((?:\d|-)+)", self.request.path
+        ):
+            conversation = self.db.get_conversation_by_id(m[2])
+            title = conversation.name + (
+                " - Conversation Info" if m[1] == "info" else ""
+            )
+        else:
+            title = "Twitter Data Archive"
+
+        if m := re.search(r"/messages/(?:(?:\d|-)+)/(\d+)", self.request.path):
+            message = self.db.get_message_by_id(int(m[1]))
+            if message["results"]:
+                message = message["results"][0]
+                description = message.content
+                if any(x.type == "image" for x in message.media):
+                    image = (
+                        self.request.protocol
+                        + "://"
+                        + self.request.host
+                        + next(x for x in message.media if x.type == "image").src
+                    )
+
         self.render(
             "index.html",
             title=title,
@@ -208,7 +237,11 @@ class RandomMessages(APIRequestHandler):
 class Messages(APIRequestHandler):
     def get(self):
         conversation, user = self.arguments("conversation", "byuser")
-        after, before, at = self.arguments("after", "before", "at")
+        after, before, at, message = self.arguments(
+            "after", "before", "at", "message"
+        )
+        if message:
+            at = self.db.get_message_timestamp_by_id(int(message))
         search = self.get_query_argument("search", None)
         self.finish(
             self.db.traverse_messages(conversation, user, after, before, at, search)
@@ -218,7 +251,7 @@ class Messages(APIRequestHandler):
 @handles(r"/api/message")
 class SingleMessage(APIRequestHandler):
     def get(self):
-        self.finish(self.db.get_message(int(self.get_query_argument("id"))))
+        self.finish(self.db.get_message_by_id(int(self.get_query_argument("id"))))
 
 
 @handles(r"/api/users")

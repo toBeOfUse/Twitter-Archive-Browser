@@ -847,7 +847,7 @@ async def test_get_message(writer: TwitterDataWriter, reader: TwitterDataReader)
     writer.add_message(message_with_link_and_reaction)
     await writer.finalize()
 
-    result_with_media = reader.get_message(1)["results"][0]
+    result_with_media = reader.get_message_by_id(1)["results"][0]
     assert result_with_media.id == message_with_media["id"]
     assert len(result_with_media.media) == len(message_with_media["mediaUrls"])
     assert (
@@ -859,7 +859,7 @@ async def test_get_message(writer: TwitterDataWriter, reader: TwitterDataReader)
     )
     assert message_with_media["urls"][0]["url"] not in result_with_media.html_content
 
-    result_with_links_and_reactions = reader.get_message(2)["results"][0]
+    result_with_links_and_reactions = reader.get_message_by_id(2)["results"][0]
     for reactions_result, reaction in zip(
         result_with_links_and_reactions.reactions,
         message_with_link_and_reaction["reactions"],
