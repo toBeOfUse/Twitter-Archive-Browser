@@ -5,7 +5,7 @@ import {
   zToLocaleDate,
   zStringDiffMinutes,
 } from "./DateHandling";
-import { SearchBar } from "./ConversationComps";
+import SearchBar from "./SearchBar";
 import LoadingSpinner from "./LoadingSpinner";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -88,14 +88,17 @@ function MessagePage(props) {
     if (props.type == "conversation") {
       name = meta.name;
       timeSpan = [meta.first_time, meta.last_time];
+      document.title = meta.name;
     } else if (props.type == "user") {
       name =
         "from " +
         (meta.nickname || meta.display_name + " (@" + meta.handle + ")");
       timeSpan = [meta.first_appearance, meta.last_appearance];
+      document.title = "Messages from " + (meta.nickname || "@" + meta.handle);
     } else {
       name = "all messages";
       timeSpan = [meta.earliest_message, meta.latest_message];
+      document.title = "All Messages";
     }
   }
 
@@ -196,12 +199,15 @@ function MessagePage(props) {
         } else {
           let el;
           if (DOMState.highlightElement) {
+            // if there is a message id in the /:message_id? route parameter and we
+            // are currently rendering it, the render function assigns a reference to
+            // it to DOMState.highlightElement in distributeRefs below
             el = DOMState.highlightElement;
-          } else {
-            // if there is no element exactly equal to the timestamp in startingPlace
-            // (if there was, it would have been assigned to DOMState.highlighElement
-            // upon rendering) then we perform a binary search to find the element
-            // with the closest time to the startingPlace time.
+          } else if (startingPlace && !isNaN(Date.parse(startingPlace))) {
+            // if we don't have a message to scroll to but rather a timestamp in the
+            // start query parameter (which is what startingPlace stores) then we
+            // will use a binary search to find the message closest to that timestamp
+            // and scroll to it. (we ignore startingPlace if it isn't a valid timestamp)
             let index;
             if (getTime(messages[0]) > startingPlace) {
               index = 0;
@@ -239,6 +245,9 @@ function MessagePage(props) {
   useEffect(restoreScroll, [messages]);
 
   const findMiddleMessage = () => {
+    // this function is called when the time travel modal is opened by searchBar; it
+    // finds the message in the middle of the messages pane and returns its
+    // timestamp, so that the time travel modal can initially show the current time.
     if (messages) {
       const pane = DOMState.messagesPane;
       const midHeight = pane.scrollTop + pane.offsetHeight / 2;
@@ -285,7 +294,9 @@ function MessagePage(props) {
     }
 
     if (direction == "start") {
-      if (startingPlace == "beginning") {
+      if (props.message_id) {
+        nextQueries.set("message", props.message_id);
+      } else if (startingPlace == "beginning") {
         nextQueries.set("after", "beginning");
       } else if (startingPlace == "end") {
         nextQueries.set("before", "end");
@@ -339,11 +350,6 @@ function MessagePage(props) {
               }
             }
           }
-          console.log(
-            "going " +
-              direction +
-              "; setting relevant signpost; then setting messages"
-          );
           if (direction == "up") {
             DOMState.signpostElement = DOMState.topMessage;
             DOMState.prevSignpostPosition = DOMState.topMessage.offsetTop;
@@ -387,7 +393,7 @@ function MessagePage(props) {
 
   const distributeRefs = (message) => {
     return (node) => {
-      if (getTime(message) == startingPlace) {
+      if (message.id == props.message_id) {
         DOMState.highlightElement = node;
       }
       if (message.id == messages[0].id) {
@@ -686,7 +692,7 @@ messageTypes["ParticipantLeave"] = function ParticipantLeaveContent(event) {
   );
 };
 
-messageTypes["Message"] = function NormalMessage(message) {
+messageTypes["Message"] = function NormalMessageContent(message) {
   const user = useSelector((state) => state.users[message.sender]);
   const alignment = user.is_main_user
     ? { marginLeft: "auto" }

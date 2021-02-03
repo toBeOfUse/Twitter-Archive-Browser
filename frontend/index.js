@@ -26,6 +26,8 @@ const addToIDMap = (IDMap, items) => {
 const store = configureStore({
   reducer: {
     users: (state = {}, action) =>
+      // note: redux stores ArchivedUserSummary objects, not the full user data that
+      // is used by UserInfo in UserComps
       action.type == "users/addUsers"
         ? addToIDMap(state, action.payload)
         : state,
@@ -87,7 +89,7 @@ function TitledRoute(props) {
     if (titles[location.pathname]) {
       document.title = titles[location.pathname];
     }
-  }, []);
+  }, [location.pathname]);
   return <Route {...props} />;
 }
 
@@ -123,7 +125,10 @@ function RoutingTable() {
                 <UserInfo />
               </Route>
               <Route
-                path={["/:type/messages/:id", "/messages"]}
+                path={[
+                  "/:type/messages/:id/:message_id?",
+                  "/messages/:message_id?",
+                ]}
                 render={(routeProps) => {
                   const queries = new URLSearchParams(
                     routeProps.location.search
@@ -132,7 +137,10 @@ function RoutingTable() {
                     search: queries.get("search"),
                     type: routeProps.match.params.type,
                     id: routeProps.match.params.id,
-                    startingPlace: queries.get("start") || "beginning",
+                    startingPlace:
+                      queries.get("start") ||
+                      (routeProps.match.params.message_id ? "" : "beginning"),
+                    message_id: routeProps.match.params.message_id,
                   };
                   return <MessagePage key={Date.now()} {...props} />;
                 }}
