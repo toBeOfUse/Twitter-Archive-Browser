@@ -835,7 +835,11 @@ function MessageInfoModal(message) {
   }
   return (
     <div className="modalBackdrop" onClick={() => message.closeModal()}>
-      <div className="centeredModal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="centeredModal"
+        onClick={(e) => e.stopPropagation()}
+        style={{ textAlign: "center" }}
+      >
         <h3>
           Sent by {(user.nickname || user.display_name) + ` (@${user.handle})`}{" "}
           at {zToLocaleDateTime(message.sent_time)}
