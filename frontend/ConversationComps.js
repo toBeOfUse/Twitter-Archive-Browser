@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { zToLocaleDate, zToLocaleDateTime } from "./DateHandling";
 import { NicknameSetter } from "./UserComps";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation, useHistory } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import ScrollyPane from "./ScrollyPane";
 import SearchBar from "./SearchBar";
@@ -280,26 +280,49 @@ function ConversationInfo() {
 }
 
 function ConversationList() {
+  const location = useLocation();
+  const history = useHistory();
+  const savedState = useSelector((state) => state.pageState[location.key]);
+
   const [order, setOrder] = useState(
-    localStorage.getItem("conversationOrder") || "oldest"
+    savedState?.conversationOrder ||
+      localStorage.getItem("conversationOrder") ||
+      "oldest"
   );
   const [types, setTypes] = useState(
-    JSON.parse(localStorage.getItem("conversationTypes")) || {
-      group: true,
-      individual: true,
-    }
+    savedState?.conversationTypes ||
+      JSON.parse(localStorage.getItem("conversationTypes")) || {
+        group: true,
+        individual: true,
+      }
   );
 
   const dispatch = useDispatch();
 
-  const resetButton = () => {
-    setConversations([]);
+  const historyListenerCleanup = useRef(null);
+  if (historyListenerCleanup.current) {
+    historyListenerCleanup.current();
+  }
+  const saveState = (_newLocation, action) => {
+    {
+      if (action == "PUSH" || action == "POP") {
+        console.log("CC: saving state to", location.key);
+        dispatch({
+          type: "pageState/save",
+          payload: {
+            conversationTypes: types,
+            conversationOrder: order,
+          },
+        });
+      }
+      historyListenerCleanup.current();
+    }
   };
+  historyListenerCleanup.current = history.listen(saveState);
 
   const changeOrder = (event) => {
     setOrder(event.target.value);
     localStorage.setItem("conversationOrder", event.target.value);
-    resetButton();
   };
 
   const changeTypes = (event) => {
@@ -311,7 +334,6 @@ function ConversationList() {
       localStorage.setItem("conversationTypes", JSON.stringify(newTypes));
       return newTypes;
     });
-    resetButton();
   };
 
   const typesString = Object.keys(types)
@@ -385,6 +407,8 @@ function ConversationList() {
         id="conversationList"
         ItemShape={ConversationListing}
         processItems={processConversations}
+        saveHistoryState="conversationsScrollPane"
+        currentKey={url}
       />
       <SearchBar timeSpan={timeSpan} baseURL="/messages" />
     </>
