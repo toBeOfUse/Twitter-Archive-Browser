@@ -27,13 +27,16 @@ export default function ScrollyPane(props) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const renderedItems = items.length ? (
-    items.map((item) => (
+  let renderedItems;
+  if (items.length) {
+    renderedItems = items.map((item) => (
       <props.ItemShape key={item.id} {...item}></props.ItemShape>
-    ))
-  ) : (
-    <p>loading...</p>
-  );
+    ));
+  } else if (page != -1) {
+    renderedItems = <p>loading...</p>;
+  } else {
+    renderedItems = <p>No items</p>;
+  }
 
   const scrollCheck = () => {
     const el = contentPane.current;
