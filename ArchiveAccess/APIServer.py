@@ -177,7 +177,7 @@ class AllConversationsHandler(APIRequestHandler):
         group = "group" in types
         individual = "individual" in types
         assert (
-            len([x for x in types if x not in ("group", "individual")]) == 0
+            len([x for x in types if x not in ("", "group", "individual")]) == 0
         ), "conversation types are limited to 'group' and 'individual'"
         method, page_number = self.arguments("first", "page")
         if (asc := method == "oldest") or method == "newest":
