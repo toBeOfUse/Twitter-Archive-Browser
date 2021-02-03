@@ -23,7 +23,7 @@ class ServeFrontend(RequestHandler):
             title = self.titles[self.request.path]
         elif m := re.match(r"/user/(info|messages)/(\d+)", self.request.path):
             id = int(m[2])
-            users = self.db.get_users_by_id([id])
+            users = self.db.get_users_by_id([int(id)])
             if users:
                 user = users[0]
                 title = (
@@ -265,7 +265,7 @@ class Users(APIRequestHandler):
 class SingleUser(APIRequestHandler):
     def get(self):
         self.finish(
-            self.db.get_users_by_id([self.get_query_argument("id")], False)[0]
+            self.db.get_users_by_id([int(self.get_query_argument("id"))], False)[0]
         )
 
 
