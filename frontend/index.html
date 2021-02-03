@@ -6,14 +6,20 @@
     <meta charset="utf-8">
 
     <title>{{title}}</title>
+    <meta property="og:title" content="{{title}}" />
+    <meta property="twitter:title" content="{{title}}" />
     <link rel="shortcut icon" href="/assets/png/icon.png" />
     {% if description %}
+    <meta property="og:description" content="{{description}}">
     <meta name="description" content="{{description}}">
+    <meta name="twitter:description" content="{{description}}">
     {% end %}
     {% if image %}
-    <meta name="og:image" content="{{image}}" />
+    <meta property="og:image" content="{{image}}" />
+    <meta name="twitter:image" content="{{image}}" />
     {% end %}
     <meta name="author" content="mitcho">
+    <meta name="twitter:card" content="summary">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script defer src="{{ static_url('js/main.js') }}"></script>
 
