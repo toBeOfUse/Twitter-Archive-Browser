@@ -514,6 +514,12 @@ class TwitterDataReader(sqlite3.Connection):
         self.row_factory = sqlite3.Row
         self.users_cache = {}
 
+    def get_main_user(self):
+        with set_row_mode(self, ArchivedUser.from_row):
+            return self.execute(
+                ArchivedUser.db_select + " where id=(select id from me);"
+            ).fetchone()
+
     def get_users_by_id(
         self, user_ids: Iterable[int], sidecar: bool = True
     ) -> list[Union[ArchivedUserSummary, ArchivedUser]]:

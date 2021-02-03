@@ -1,25 +1,36 @@
 from tornado.web import RequestHandler, Application, StaticFileHandler
+from tornado.template import Template, Loader
 from tornado.ioloop import IOLoop
 from ArchiveAccess.DBRead import TwitterDataReader, DBRow
 from typing import Union, Iterable
 from mimetypes import guess_type
 from pathlib import Path
+import json
 import subprocess
 
 query_string = r"\?.+"
 
 
-class DevStaticFileHandler(StaticFileHandler):
-    def set_extra_headers(self, path):
-        self.set_header(
-            "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
-        )
-
-
 class ServeFrontend(RequestHandler):
+    def initialize(self, reader, titles, db_owner):
+        self.db = reader
+        self.titles = titles
+        self.db_owner = db_owner
+
     def get(self, path):
-        with open("./frontend/assets/html/index.html") as page:
-            self.finish(page.read())
+        description = self.db_owner + "'s Twitter archive"
+        image = None
+        title = (
+            self.titles[self.request.path]
+            if self.request.path in self.titles
+            else ""
+        )
+        self.render(
+            "index.html",
+            title=title,
+            image=image,
+            description=description,
+        )
 
 
 class ArchiveAPIServer:
@@ -32,27 +43,31 @@ class ArchiveAPIServer:
         individual_media_path: str,
         group_media_path: str,
     ):
-        self.db = reader
+        db_owner = "@" + reader.get_main_user().handle
         initializer = {
-            "reader": self.db,
+            "reader": reader,
             "group_media": group_media_path,
             "individual_media": individual_media_path,
         }
         assets_handler = (
-            r"/(assets/.*)",
-            DevStaticFileHandler,
-            {"path": "./frontend/"},
+            r"/assets/(.*)",
+            StaticFileHandler,
+            {"path": "./frontend/assets/"},
         )
-        source_handler = (
-            r"/(frontend/.*)",
-            DevStaticFileHandler,
-            {"path": "./"},
+        with open("./frontend/routes.json") as routes:
+            titles = json.load(routes)
+        frontend_handler = (
+            r"^(?!/assets/|/api/|/frontend/)/(.*)$",
+            ServeFrontend,
+            {"reader": reader, "titles": titles, "db_owner": db_owner},
         )
-        frontend_handler = (r"^(?!/assets/|/api/|/frontend/)/(.*)$", ServeFrontend)
         self.application = Application(
-            [assets_handler, source_handler, frontend_handler]
+            [assets_handler, frontend_handler]
             + [x + (initializer,) for x in self.handlers],
             compress_response=True,
+            static_path="./frontend/assets/",
+            template_path="./frontend/",
+            static_hash_cache=False,
         )
 
     def start(self):

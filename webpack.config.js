@@ -3,7 +3,6 @@ const path = require("path");
 module.exports = function (_env, argv) {
   const isProduction = argv.mode === "production";
   const isDevelopment = !isProduction;
-  const HTMLWebpackPlugin = require("html-webpack-plugin");
 
   return {
     devtool: isDevelopment && "cheap-module-source-map",
@@ -14,15 +13,10 @@ module.exports = function (_env, argv) {
     },
     output: {
       path: path.resolve(__dirname, "frontend"),
-      filename: "assets/js/[name].[contenthash:8].js",
+      filename: "assets/js/[name].js",
       publicPath: "/",
     },
-    plugins: [
-      new HTMLWebpackPlugin({
-        template: "./frontend/index.html",
-        filename: "assets/html/index.html",
-      }),
-    ],
+    plugins: [],
     module: {
       rules: [
         {

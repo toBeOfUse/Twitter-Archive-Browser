@@ -1,6 +1,6 @@
 import "normalize.css";
 import "./assets/css/index.css";
-import React from "react";
+import React, { useEffect } from "react";
 import ReactDOM from "react-dom";
 import {
   BrowserRouter as Router,
@@ -8,6 +8,7 @@ import {
   Switch,
   Route,
   Redirect,
+  useLocation,
 } from "react-router-dom";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
@@ -16,6 +17,7 @@ import { ConversationList, ConversationInfo } from "./ConversationComps";
 import { UserInfo } from "./UserComps";
 import { GlobalStats } from "./GlobalStats";
 import { MessagePage } from "./MessageComps";
+import titles from "./routes.json";
 
 const addToIDMap = (IDMap, items) => {
   return Object.assign({}, IDMap, ...items.map((i) => ({ [i.id]: i })));
@@ -79,6 +81,16 @@ ReactDOM.render(
   document.getElementById("root")
 );
 
+function TitledRoute(props) {
+  const location = useLocation();
+  useEffect(() => {
+    if (titles[location.pathname]) {
+      document.title = titles[location.pathname];
+    }
+  }, []);
+  return <Route {...props} />;
+}
+
 function RoutingTable() {
   return (
     <Router>
@@ -98,12 +110,12 @@ function RoutingTable() {
           </div>
           <div className="contentPane">
             <Switch>
-              <Route exact path="/">
+              <TitledRoute exact path="/">
                 <Redirect to="/conversations" />
-              </Route>
-              <Route path="/conversations">
+              </TitledRoute>
+              <TitledRoute path="/conversations">
                 <ConversationList />
-              </Route>
+              </TitledRoute>
               <Route path="/conversation/info/:id">
                 <ConversationInfo />
               </Route>
@@ -125,9 +137,9 @@ function RoutingTable() {
                   return <MessagePage key={Date.now()} {...props} />;
                 }}
               ></Route>
-              <Route path="/stats">
+              <TitledRoute path="/stats">
                 <GlobalStats />
-              </Route>
+              </TitledRoute>
               <Route path="*">
                 <Redirect to="/404" />
               </Route>
