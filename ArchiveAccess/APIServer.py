@@ -44,8 +44,11 @@ class ServeFrontend(RequestHandler):
         if m := re.search(r"/messages/(?:(?:\d|-)+)/(\d+)", self.request.path):
             message = self.db.get_message_by_id(int(m[1]))
             if message["results"]:
+                user = message["users"][0]
                 message = message["results"][0]
-                description = message.content
+                description = (
+                    message.content + " - " + (user.nickname or "@" + user.handle)
+                )
                 if any(x.type == "image" for x in message.media):
                     protocol = (
                         "https://"
