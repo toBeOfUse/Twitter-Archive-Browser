@@ -648,11 +648,33 @@ class TwitterDataWriter(Connection):
         self.commit()
 
         with open(SQL_SCRIPTS_PATH / "indexes.sql") as index_script:
-            self.executescript(index_script.read())
+            indexes = [
+                x
+                for x in index_script.readlines()
+                if x.strip() and not x.startswith("--")
+            ]
+            print()
+            for i, index in enumerate(indexes, start=1):
+                print(f"\rCreating search index {i}/{len(indexes)}...", end="")
+                self.execute(index)
+                await asyncio.sleep(2)
+
+            print("\rCreated all indexes")
+
         with open(
             SQL_SCRIPTS_PATH / "cache_conversation_stats.sql"
         ) as conversation_stats_script:
-            self.executescript(conversation_stats_script.read())
+            command = ""
+            for line in conversation_stats_script:
+                if not line.strip():
+                    if command:
+                        self.execute(command)
+                    command = ""
+                elif line.startswith("--"):
+                    print(line[2:].strip())
+                    await asyncio.sleep(0.5)
+                else:
+                    command += line
 
         await self.api_client.flush_queue()
         self.api_client.close()
