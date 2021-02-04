@@ -283,21 +283,9 @@ function ConversationList() {
   const location = useLocation();
   const history = useHistory();
   const savedState = useSelector((state) => state.pageState[location.key]);
-  const [requestedStats, setRequestedStats] = useState(false);
   const dispatch = useDispatch();
   const globalStats = useSelector((state) => state.stats);
 
-  if (!globalStats && !requestedStats) {
-    setRequestedStats(true);
-    fetch("/api/globalstats").then((r) =>
-      r.json().then((result) => {
-        dispatch({
-          type: "stats/setStats",
-          payload: result,
-        });
-      })
-    );
-  }
   const [order, setOrder] = useState(
     savedState?.conversationOrder ||
       localStorage.getItem("conversationOrder") ||

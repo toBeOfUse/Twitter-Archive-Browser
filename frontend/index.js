@@ -4,14 +4,13 @@ import React, { useEffect, useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import {
   BrowserRouter as Router,
-  NavLink,
   Switch,
   Route,
   Redirect,
   useLocation,
 } from "react-router-dom";
 import { configureStore } from "@reduxjs/toolkit";
-import { Provider } from "react-redux";
+import { Provider, useDispatch, useSelector } from "react-redux";
 import produce from "immer";
 import { ConversationList, ConversationInfo } from "./ConversationComps";
 import { UserInfo } from "./UserComps";
@@ -68,7 +67,12 @@ const store = configureStore({
   },
 });
 
-ReactDOM.render(<App />, document.getElementById("root"));
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById("root")
+);
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -90,6 +94,21 @@ function App() {
     }
   }, []);
 
+  const dispatch = useDispatch();
+  const fetchStats = () => {
+    if (loggedIn) {
+      fetch("/api/globalstats").then((r) =>
+        r.json().then((result) => {
+          dispatch({
+            type: "stats/setStats",
+            payload: result,
+          });
+        })
+      );
+    }
+  };
+  useEffect(fetchStats, [loggedIn]);
+
   const centeredDiv = {
     position: "absolute",
     top: "50%",
@@ -98,11 +117,7 @@ function App() {
   };
 
   if (loggedIn) {
-    return (
-      <Provider store={store}>
-        <RoutingTable />
-      </Provider>
-    );
+    return <RoutingTable />;
   } else if (needAuth) {
     const attemptAuth = () => {
       fetch("/api/authenticate", {
@@ -159,15 +174,6 @@ function RoutingTable() {
           <h1>404 :(</h1>
         </Route>
         <Route path="*">
-          <div className="leftPane">
-            <NavLink
-              to="/conversations"
-              className="bigLink"
-              activeClassName="activeBigLink"
-            >
-              Home
-            </NavLink>
-          </div>
           <div className="contentPane">
             <Switch>
               <TitledRoute exact path="/">

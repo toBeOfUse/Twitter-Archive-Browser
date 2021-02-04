@@ -98,7 +98,7 @@ function MessagePage(props) {
       timeSpan = [meta.first_appearance, meta.last_appearance];
       document.title = "Messages from " + (meta.nickname || "@" + meta.handle);
     } else {
-      name = "all messages";
+      name = "All Messages";
       timeSpan = [meta.earliest_message, meta.latest_message];
       document.title = "All Messages";
     }
