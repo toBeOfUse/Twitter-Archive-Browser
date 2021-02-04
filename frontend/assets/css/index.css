@@ -23,7 +23,7 @@ label {
 #root {
     height: 100%;
     display: flex;
-    width: 60%;
+    width: 100%;
     margin: 0 auto;
 }
 
@@ -61,7 +61,9 @@ a:active {
     font-family: sans-serif;
     overflow-y: auto;
     max-height: 95vh;
-    width: 75%;
+    width: 700px;
+    max-width: 95%;
+    margin: 0 auto;
     border: 2px black solid;
     display: flex;
     flex-direction: column;
@@ -71,17 +73,8 @@ a:active {
 }
 
 @media (max-width: 500px) {
-    #root {
-        width: 100%;
-    }
-
     html {
         font-size: 0.7em;
-    }
-
-    .contentPane {
-        width: 95%;
-        margin: 0 auto;
     }
 }
 

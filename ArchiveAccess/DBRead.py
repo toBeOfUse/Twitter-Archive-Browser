@@ -10,6 +10,14 @@ from os import PathLike
 from contextlib import contextmanager
 from copy import deepcopy
 import string
+from pathlib import Path
+from cv2 import (
+    imread as open_image,
+    VideoCapture as Video,
+    IMREAD_COLOR as color_image,
+    CAP_PROP_FRAME_HEIGHT as video_height,
+    CAP_PROP_FRAME_WIDTH as video_width,
+)
 
 CONVERSATIONS_PER_PAGE: Final = 20
 CONVERSATION_NAMES_PER_PAGE: Final = 50
@@ -415,20 +423,44 @@ class Reaction(DBRow):
 
 @dataclass(frozen=True)
 class Media(DBRow):
-    db_select: ClassVar = (
-        "select id, type, message, filename, from_group_message from media"
-    )
+    db_select: ClassVar = "select id, type, message, filename, from_group_message, width, height from media"
+
+    dm_media_path: ClassVar
+    group_media_path: ClassVar
 
     id: str
     type: str
     src: str
+    width: int
+    height: int
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
+        if not (row[5] and row[6]):
+            print("obtaining dimensions for a " + row[1] + " id " + str(row[0]))
+            file_path = str(
+                (cls.group_media_path if row[4] else cls.dm_media_path)
+                / (f"{row[2]}-{row[3]}")
+            )
+            if row[1] == "image":
+                img = open_image(file_path, color_image)
+                height, width, _ = img.shape
+            else:
+                vid = Video(file_path)
+                height, width = vid.get(video_height), vid.get(video_width)
+            cursor.connection.execute(
+                "update media set width=?, height=? where id=?",
+                (width, height, row[0]),
+            )
+            cursor.connection.commit()
+        else:
+            height, width = row[6], row[5]
         return cls(
             str(row[0]),
             row[1],
             f"{MEDIA_API_URL}{'group/' if row[4] else 'individual/'}{row[2]}-{row[3]}",
+            width,
+            height,
         )
 
 
@@ -505,7 +537,7 @@ class TwitterDataReader(sqlite3.Connection):
     """Provides an interface between the server that will create the API endpoints
     and the database."""
 
-    def __init__(self, db_path: PathLike):
+    def __init__(self, db_path: PathLike, data_path: Pathlike):
         """Takes in the path to a database created by DBWrite and opens it for
         querying."""
         super(TwitterDataReader, self).__init__(
@@ -514,6 +546,8 @@ class TwitterDataReader(sqlite3.Connection):
         self.row_factory = sqlite3.Row
         self.users_cache: dict[int, ArchivedUserSummary] = {}
         self.conversations_cache: dict[str, Conversation] = {}
+        Media.dm_media_path = Path(data_path) / "direct_messages_media"
+        Media.group_media_path = Path(data_path) / "direct_messages_group_media"
 
     def get_main_user(self):
         with set_row_mode(self, ArchivedUser.from_row):

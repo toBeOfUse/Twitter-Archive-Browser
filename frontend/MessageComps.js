@@ -395,7 +395,7 @@ function MessagePage(props) {
   if (messages?.length) {
     let nextUser = getUserID(messages[0]);
     renderedMessages = [];
-    !hitTop && renderedMessages.push(<LoadingSpinner />);
+    !hitTop && renderedMessages.push(<LoadingSpinner key="topSpinner" />);
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i];
       const user = nextUser;
@@ -417,7 +417,7 @@ function MessagePage(props) {
         />
       );
     }
-    !hitBottom && renderedMessages.push(<LoadingSpinner />);
+    !hitBottom && renderedMessages.push(<LoadingSpinner key="bottomSpinner" />);
   } else if (hitTop && hitBottom) {
     renderedMessages = <p>No messages found, sorry :(</p>;
   } else {
@@ -501,48 +501,37 @@ function MediaItem(props) {
     }
   };
   const [haveStartedPlaying, setHaveStartedPlaying] = useState(false);
-  const findScrollParent = (element) => {
-    while (element && element.clientHeight >= element.scrollHeight) {
-      element = element.parentElement;
-    }
-    return element || window;
+
+  // the following is dangerously dependent on certain css properties staying the same
+  const contentPaneWidth = Math.min(700, window.innerWidth);
+  const maxMediaWidth = 0.7 * contentPaneWidth;
+  const maxMediaHeight = 0.4 * window.innerHeight;
+  let width, height;
+  if (props.media.height > props.media.width) {
+    height = Math.min(props.media.height, maxMediaHeight);
+    width = props.media.width * (height / props.media.height);
+  } else {
+    width = Math.min(props.media.width, maxMediaWidth);
+    height = props.media.height * (width / props.media.width);
+  }
+  const style = {
+    height,
+    width,
+    ...props.style,
   };
-  const scrollPositionLog = (event) => {
-    console.log("MEDIA: loaded media from url", props.media.src);
-    const scrollParent = findScrollParent(event.target);
-    console.log(
-      "MEDIA: parent currently has scroll height",
-      scrollParent.scrollHeight
-    );
-    console.log(
-      "MEDIA: parent currently has scroll pos",
-      scrollParent.scrollTop
-    );
-  };
+
   if (props.media.type == "image") {
     return (
       <img
         onDoubleClick={props.onDoubleClick}
         className={props.className}
-        style={props.style}
+        style={style}
         src={props.media.src}
         ref={(node) => {
           if (!node) {
             return;
           }
-          console.log("MEDIA: created image node:", node);
-          console.log("MEDIA: this is for url", props.media.src);
-          const scrollParent = findScrollParent(node);
-          console.log(
-            "MEDIA: current parent scrollPos is",
-            scrollParent.scrollTop
-          );
-          console.log(
-            "MEDIA: current parent scrollHeight is",
-            scrollParent.scrollHeight
-          );
         }}
-        onLoad={scrollPositionLog}
       />
     );
   } else if (props.media.type == "video") {
@@ -551,7 +540,7 @@ function MediaItem(props) {
         onDoubleClick={props.onDoubleClick}
         controls
         className={props.className}
-        style={props.style}
+        style={style}
         src={props.media.src}
       />
     );
@@ -566,7 +555,7 @@ function MediaItem(props) {
         onLoadedData={detectAutoplay}
         className={props.className}
         src={props.media.src}
-        style={props.style}
+        style={style}
       />
     );
     if (!autoplayAllowed) {
@@ -592,11 +581,14 @@ function MediaItem(props) {
           </span>
         </div>
       );
+    } else {
+      return gif;
     }
-    return gif;
   } else {
     console.error(
-      "media item of type " + media.type + " received; type not recognized"
+      "media item of type " +
+        props.media.type +
+        " received; type not recognized"
     );
     console.error(JSON.stringify(props.media, null, 2));
     return null;
@@ -733,7 +725,6 @@ messageTypes["Message"] = function NormalMessageContent(message) {
       onDoubleClick={() => message.openModal()}
       media={i}
       key={i.id}
-      className="smallMedia"
       style={alignment}
     />
   ));

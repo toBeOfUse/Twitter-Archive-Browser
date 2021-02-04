@@ -9,6 +9,7 @@ import json
 import subprocess
 import re
 import secrets
+from time import perf_counter
 
 
 class ServeFrontend(RequestHandler):
@@ -317,6 +318,7 @@ class RandomMessages(APIRequestHandler):
 @handles(r"/api/messages")
 class Messages(APIRequestHandler):
     def get(self):
+        started_at = perf_counter()
         conversation, user = self.arguments("conversation", "byuser")
         after, before, at, message = self.arguments(
             "after", "before", "at", "message"
@@ -327,6 +329,7 @@ class Messages(APIRequestHandler):
         self.finish(
             self.db.traverse_messages(conversation, user, after, before, at, search)
         )
+        print(f"request for messages took {(perf_counter()-started_at/1000):.0f} ms")
 
 
 @handles(r"/api/message")
