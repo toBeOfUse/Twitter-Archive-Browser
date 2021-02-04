@@ -802,6 +802,8 @@ function MessageInfoModal(message) {
       });
   };
   const user = useSelector((state) => state.users[message.sender]);
+  // for reaction attribution
+  const users = useSelector((state) => state.users);
   const conversation = useSelector(
     (state) => state.conversations[message.conversation]
   );
