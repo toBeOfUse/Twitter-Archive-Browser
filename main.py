@@ -76,8 +76,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "path_to_data",
         help=r'The path of the "data" folder from your unzipped Twitter data '
-        r"archive. This will be something like ../twitterarchive/data/ or "
-        r'"C:/Users/Jim/Downloads/Twitter Archive/data/"',
+        r"archive. This will be something like ../twitterarchive/data or "
+        r'"C:/Users/Jim/Downloads/Twitter Archive/data"',
     )
     parser.add_argument(
         "-pw",
@@ -101,15 +101,15 @@ if __name__ == "__main__":
 
     async def locate_or_create_db():
         global db_path
-        db_path = await main(data_path + "manifest.js")
+        db_path = await main(Path(data_path) / "manifest.js")
 
     IOLoop.current().run_sync(locate_or_create_db)
 
     reader = TwitterDataReader(db_path)
     server = ArchiveAPIServer(
         reader,
-        data_path + "direct_messages_media/",
-        data_path + "direct_messages_group_media/",
+        Path(data_path) / "direct_messages_media",
+        Path(data_path) / "direct_messages_group_media",
         port=args.port,
         password=args.password,
     )

@@ -374,8 +374,9 @@ class UserNotes(APIRequestHandler):
 class Media(APIRequestHandler):
     def get(self, type, filename):
         file_location = (
-            self.group_media if type == "group" else self.individual_media
-        ) + filename
+            Path(self.group_media if type == "group" else self.individual_media)
+            / filename
+        )
         self.set_header("Content-Type", guess_type(self.request.path)[0])
         if Path(file_location).exists():
             with open(file_location, "rb") as media:
