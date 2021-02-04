@@ -657,7 +657,7 @@ class TwitterDataWriter(Connection):
             for i, index in enumerate(indexes, start=1):
                 print(f"\rCreating search index {i}/{len(indexes)}...", end="")
                 self.execute(index)
-                await asyncio.sleep(2)
+                # await asyncio.sleep(2)
 
             print("\rCreated all indexes")
 
@@ -672,7 +672,7 @@ class TwitterDataWriter(Connection):
                     command = ""
                 elif line.startswith("--"):
                     print(line[2:].strip())
-                    await asyncio.sleep(0.5)
+                    # await asyncio.sleep(0.5)
                 else:
                     command += line
 

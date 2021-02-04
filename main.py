@@ -10,8 +10,8 @@ import sys
 import argparse
 
 
-async def main(manifest_path):
-    base_path = Path(*Path(manifest_path).parts[:-2])
+async def main(data_path: Path):
+    manifest_path = data_path / "manifest.js"
     with PrefixedJSON(manifest_path) as manifest_file:
         manifest = json.load(manifest_file)
     db_path = Path.cwd() / "db" / Path(manifest["userInfo"]["userName"] + ".db")
@@ -25,7 +25,7 @@ async def main(manifest_path):
         def process_file(file_dict, group_dm):
             print(f"processing file {file_dict['fileName']}")
             for message in (
-                s := MessageStream(Path(base_path, file_dict["fileName"]))
+                s := MessageStream(data_path.parent / file_dict["fileName"])
             ) :
                 db_store.add_message(message, group_dm)
                 if db_store.added_messages % 1000 == 0:
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     async def locate_or_create_db():
         global db_path
-        db_path = await main(Path(data_path) / "manifest.js")
+        db_path = await main(Path(data_path))
 
     IOLoop.current().run_sync(locate_or_create_db)
 
