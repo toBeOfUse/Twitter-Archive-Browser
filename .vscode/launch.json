@@ -8,7 +8,7 @@
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "args": ["../data/"],
+            "args": ["../data/", "-b", "api_keys.json"],
             "console": "integratedTerminal",
             "justMyCode": true
         },
@@ -17,7 +17,7 @@
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "args": ["../data/", "-pw", "not_real_password"],
+            "args": ["../data/", "-pw", "not_real_password", "-b", "api_keys.json"],
             "console": "integratedTerminal",
             "justMyCode": true
         },

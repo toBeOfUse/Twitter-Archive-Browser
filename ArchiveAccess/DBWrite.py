@@ -29,8 +29,8 @@ class SimpleTwitterAPIClient:
     Attributes:
         http_client: instance of tornado.httpclient.AsyncHTTPClient to make HTTP
             requests with.
-        twitter_api_keys: dict holding at least a 'bearer_token' field to
-            authenticate api requests with.
+        bearer_token: key obtained from Twitter that we will authenticate requests
+            with.
         queued_users: list of user ids that we want data for.
         found_users: maps user ids to callbacks which will receive an object
             representing the user or None if no data is available.
@@ -39,7 +39,7 @@ class SimpleTwitterAPIClient:
             all the rest are awaiting the one in front of them before they start.
 
     How to use:
-        >>> stac = SimpleTwitterAPIClient("api_keys.json")
+        >>> stac = SimpleTwitterAPIClient("SJKLJKDSLJDSKL")
         >>> def user_dict_handler(user_dict):
         ...     print(user_dict)
         >>> stac.queue_twitter_user_request("10101010", user_dict_handler)
@@ -48,7 +48,7 @@ class SimpleTwitterAPIClient:
         >>> await stac.flush_queue()
     """
 
-    def __init__(self, keyfile):
+    def __init__(self, bearer_token):
         """initializes instance variables and reads api keys from a json file.
 
         Arguments:
@@ -58,8 +58,7 @@ class SimpleTwitterAPIClient:
 
         self.http_client = AsyncHTTPClient()
 
-        with open(keyfile) as keys:
-            self.twitter_api_keys = json.load(keys)
+        self.bearer_token = bearer_token
 
         self.queued_users = []
 
@@ -70,7 +69,7 @@ class SimpleTwitterAPIClient:
     async def queue_http_request(self, url_or_req):
         """adds a http request to queued_http_requests and starts it once there are
         less than 10 active requests. keeps requests from timing out in tornado's
-        request queue.
+        request queue; they can't time out if they haven't started yet.
 
         Arguments:
             url_or_req: either a string containing a url or a
@@ -86,7 +85,7 @@ class SimpleTwitterAPIClient:
         self.queued_http_requests.popleft()
         return resp
 
-    async def get_avatar(self, user_dict):
+    async def add_avatar(self, user_dict):
         """asynchronously retrieves an avatar based on user data from an api request
         and adds it to the user data in the 'avatar_bytes' field. meant to be run in
         parallel with other coroutines for efficiency. also places the file extension
@@ -98,7 +97,6 @@ class SimpleTwitterAPIClient:
         """
 
         try:
-            print(f"saving avatar for user @{user_dict['screen_name']}")
             user_dict["avatar_bytes"] = (
                 await self.queue_http_request(
                     user_dict["profile_image_url_https"].replace("normal", "400x400")
@@ -119,17 +117,18 @@ class SimpleTwitterAPIClient:
         """makes an api request for the users specified by the ids in the users
         argument; runs the requests for the avatars of those users in parallel; calls
         the callback function associated with each user id to deliver the data to
-        this object's owner.
+        this object's owner. does not accept more than 100 ids at a time.
 
         Arguments:
             users: a list of user ids in string form.
         """
+        assert len(users) <= 100, "only 100 user ids allowed per request"
         users_string = ",".join(str(x) for x in users)
         url = f"https://api.twitter.com/1.1/users/lookup.json?user_id={users_string}"
         req = HTTPRequest(
             url,
             "GET",
-            {"Authorization": f"Bearer {self.twitter_api_keys['bearer_token']}"},
+            {"Authorization": f"Bearer {self.bearer_token}"},
         )
 
         try:
@@ -140,12 +139,15 @@ class SimpleTwitterAPIClient:
             print(f"warning: not able to retrieve user data for any ids in {users}")
             return
 
-        print(f"retrieved data for {len(user_data)} twitter accounts")
+        print(
+            f"retrieved data for {len(user_data)} twitter accounts: "
+            + ", ".join("@" + x["screen_name"] for x in user_data)
+        )
         retrieved_users = set(x["id_str"] for x in user_data)
 
         avatar_reqs = []
         for user in user_data:
-            avatar_reqs.append(self.get_avatar(user))
+            avatar_reqs.append(self.add_avatar(user))
         await asyncio.gather(*avatar_reqs)
 
         for user in user_data:
@@ -185,8 +187,6 @@ class SimpleTwitterAPIClient:
         # within this class, they're represented consistently
         self.queued_users.append(str(user_id))
         self.found_users[user_id] = callback
-        if len(self.queued_users) == 100:
-            asyncio.create_task(self.flush_queue())
 
     def close(self):
         self.http_client.close()
@@ -221,7 +221,14 @@ class TwitterDataWriter(Connection):
             owner for progress reports
     """
 
-    def __init__(self, db_path, account_name, account_id, automatic_overwrite=False):
+    def __init__(
+        self,
+        db_path,
+        account_name,
+        account_id,
+        bearer_token,
+        automatic_overwrite=False,
+    ):
         """creates a database file for an archive for a specific account, initializes
         it with a sql script that creates tables within it, begins our overall sql
         transaction, and saves the id of the account being archived in the
@@ -266,7 +273,7 @@ class TwitterDataWriter(Connection):
         # contains tuples of the form (user_id, conversation_id)
         self.added_participants_cache = set()
 
-        self.api_client = SimpleTwitterAPIClient(Path.cwd() / "api_keys.json")
+        self.api_client = SimpleTwitterAPIClient(bearer_token)
 
         self.added_messages = 0
 
@@ -428,6 +435,47 @@ class TwitterDataWriter(Connection):
                 (first_time, added_by, 0, conversation_id),
             )
 
+    def extract_media(self, message, group_dm):
+        for url in message["mediaUrls"]:
+            url_prefixes = {
+                "image": "https://ton.twitter.com/dm/",
+                "gif": "https://video.twimg.com/dm_gif/",
+                "video": "https://video.twimg.com/dm_video/",
+            }
+            try:
+                media_type, url_comps = next(
+                    (x, url[len(y) :].split("/"))
+                    for x, y in url_prefixes.items()
+                    if url.startswith(y)
+                )
+            except StopIteration:  # pragma: no cover
+                print(
+                    f"Unsupported media url format {url} found in message {message}"
+                )
+                raise RuntimeError(f"unsupported url format {url}")
+
+            if media_type == "image":
+                message_id, media_id, filename = url_comps
+                assert message_id == message["id"]
+            elif media_type == "gif":
+                media_id, filename = url_comps
+            elif media_type == "video":
+                media_id, _, _, filename = url_comps
+
+            self.execute(
+                """insert into media 
+                        (id, orig_url, filename, message, type, from_group_message)
+                        values (?, ?, ?, ?, ?, ?);""",
+                (
+                    media_id,
+                    url,
+                    filename,
+                    message["id"],
+                    media_type,
+                    1 if group_dm else 0,
+                ),
+            )
+
     def add_message(self, message, group_dm=False):
         """one-stop shop for adding a message or other conversation event to the
         database, with the requisite instances of the other types of record being
@@ -485,46 +533,7 @@ class TwitterDataWriter(Connection):
                     ),
                 )
 
-            for url in message["mediaUrls"]:
-                url_prefixes = {
-                    "image": "https://ton.twitter.com/dm/",
-                    "gif": "https://video.twimg.com/dm_gif/",
-                    "video": "https://video.twimg.com/dm_video/",
-                }
-                try:
-                    type, url_comps = next(
-                        (x, url[len(y) :].split("/"))
-                        for x, y in url_prefixes.items()
-                        if url.startswith(y)
-                    )
-                except StopIteration:  # pragma: no cover
-                    print(
-                        f"Unsupported media url format {url} found in message {message}"
-                    )
-                    raise RuntimeError(f"unsupported url format {url}")
-
-                if type == "image":
-                    message_id, media_id, filename = url_comps
-                    assert (
-                        message_id == message["id"]
-                    )  # honestly just out of curiosity
-                elif type == "gif":
-                    media_id, filename = url_comps
-                elif type == "video":
-                    media_id, _, _, filename = url_comps
-                self.execute(
-                    """insert into media 
-                        (id, orig_url, filename, message, type, from_group_message)
-                        values (?, ?, ?, ?, ?, ?);""",
-                    (
-                        media_id,
-                        url,
-                        filename,
-                        message["id"],
-                        type,
-                        1 if group_dm else 0,
-                    ),
-                )
+            self.extract_media(message, group_dm)
 
             for link in message["urls"]:
                 self.execute(
@@ -658,8 +667,7 @@ class TwitterDataWriter(Connection):
                 print(f"\rCreating search index {i}/{len(indexes)}...", end="")
                 self.execute(index)
                 # await asyncio.sleep(2)
-
-            print("\rCreated all indexes")
+            print()
 
         with open(
             SQL_SCRIPTS_PATH / "cache_conversation_stats.sql"
