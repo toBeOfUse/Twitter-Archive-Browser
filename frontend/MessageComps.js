@@ -409,7 +409,7 @@ function MessagePage(props) {
             messages[i + 1]?.schema == "Message" &&
             zStringDiffMinutes(getTime(message), getTime(messages[i + 1])) < 2
           }
-          highlight={message.sent_time == startingPlace}
+          highlight={message.id == props.message_id}
           context={props.type}
           ref={distributeRefs(message)}
           key={message.id}
