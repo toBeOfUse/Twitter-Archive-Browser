@@ -1,6 +1,6 @@
 import "normalize.css";
 import "./assets/css/index.css";
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import {
   BrowserRouter as Router,
@@ -18,6 +18,7 @@ import { UserInfo } from "./UserComps";
 import { GlobalStats } from "./GlobalStats";
 import { MessagePage } from "./MessageComps";
 import titles from "./routes.json";
+import LoadingSpinner from "./LoadingSpinner";
 
 const addToIDMap = (IDMap, items) => {
   return Object.assign({}, IDMap, ...items.map((i) => ({ [i.id]: i })));
@@ -67,21 +68,78 @@ const store = configureStore({
   },
 });
 
-fetch("/api/globalstats").then((r) =>
-  r.json().then((result) => {
-    store.dispatch({
-      type: "stats/setStats",
-      payload: result,
-    });
-  })
-);
+ReactDOM.render(<App />, document.getElementById("root"));
 
-ReactDOM.render(
-  <Provider store={store}>
-    <RoutingTable />
-  </Provider>,
-  document.getElementById("root")
-);
+function App() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [needAuth, setNeedAuth] = useState(false);
+  const [warning, setWarning] = useState("");
+  const passwordField = useRef(null);
+
+  useEffect(() => {
+    if (!loggedIn) {
+      fetch("/api/authenticate", { method: "POST", body: "" }).then(
+        (response) => {
+          if (response.status == 403) {
+            setNeedAuth(true);
+          } else if (response.status == 200) {
+            setLoggedIn(true);
+          }
+        }
+      );
+    }
+  }, []);
+
+  const centeredDiv = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%,-50%)",
+  };
+
+  if (loggedIn) {
+    return (
+      <Provider store={store}>
+        <RoutingTable />
+      </Provider>
+    );
+  } else if (needAuth) {
+    const attemptAuth = () => {
+      fetch("/api/authenticate", {
+        method: "POST",
+        body: passwordField.current.value,
+      }).then((resp) => {
+        if (resp.status == 200) {
+          setLoggedIn(true);
+        } else if (resp.status == 403) {
+          passwordField.current.value = "";
+          setWarning("incorrect password");
+        }
+      });
+    };
+    return (
+      <div
+        style={{
+          border: "1px solid black",
+          borderRadius: 5,
+          padding: 10,
+          ...centeredDiv,
+        }}
+      >
+        <h1>Enter password:</h1>
+        <input
+          onKeyPress={(e) => e.key == "Enter" && attemptAuth()}
+          ref={passwordField}
+          type="password"
+        />
+        <button onClick={attemptAuth}>Log in</button>
+        {warning && <p>{warning}</p>}
+      </div>
+    );
+  } else {
+    return <LoadingSpinner style={centeredDiv} />;
+  }
+}
 
 function TitledRoute(props) {
   const location = useLocation();

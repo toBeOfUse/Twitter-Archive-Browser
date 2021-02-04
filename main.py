@@ -7,6 +7,7 @@ from pathlib import Path
 from tornado.ioloop import IOLoop
 import asyncio
 import sys
+import argparse
 
 
 async def main(manifest_path):
@@ -68,9 +69,35 @@ async def main(manifest_path):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Load messages from a Twitter data archive and display "
+        "them via a web client."
+    )
+    parser.add_argument(
+        "path_to_data",
+        help=r'The path of the "data" folder from your unzipped Twitter data '
+        r"archive. This will be something like ../twitterarchive/data/ or "
+        r'"C:/Users/Jim/Downloads/Twitter Archive/data/"',
+    )
+    parser.add_argument(
+        "-pw",
+        "--password",
+        help="A password that anyone who navigates to the web client will be "
+        "required to enter.",
+    )
+    parser.add_argument(
+        "-po",
+        "--port",
+        type=int,
+        default=8008,
+        help="The port that your data will be served from. If unsure, ignore this "
+        "and just go to the localhost url that appears after starting the program "
+        "to view your archive.",
+    )
+    args = parser.parse_args()
 
     db_path = ""
-    data_path = sys.argv[1]
+    data_path = args.path_to_data
 
     async def locate_or_create_db():
         global db_path
@@ -83,5 +110,7 @@ if __name__ == "__main__":
         reader,
         data_path + "direct_messages_media/",
         data_path + "direct_messages_group_media/",
+        port=args.port,
+        password=args.password,
     )
     server.start()

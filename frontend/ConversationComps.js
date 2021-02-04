@@ -283,7 +283,21 @@ function ConversationList() {
   const location = useLocation();
   const history = useHistory();
   const savedState = useSelector((state) => state.pageState[location.key]);
+  const [requestedStats, setRequestedStats] = useState(false);
+  const dispatch = useDispatch();
+  const globalStats = useSelector((state) => state.stats);
 
+  if (!globalStats && !requestedStats) {
+    setRequestedStats(true);
+    fetch("/api/globalstats").then((r) =>
+      r.json().then((result) => {
+        dispatch({
+          type: "stats/setStats",
+          payload: result,
+        });
+      })
+    );
+  }
   const [order, setOrder] = useState(
     savedState?.conversationOrder ||
       localStorage.getItem("conversationOrder") ||
@@ -296,8 +310,6 @@ function ConversationList() {
         individual: true,
       }
   );
-
-  const dispatch = useDispatch();
 
   const historyListenerCleanup = useRef(null);
   if (historyListenerCleanup.current) {
@@ -349,8 +361,6 @@ function ConversationList() {
     });
     return j.results;
   };
-
-  const globalStats = useSelector((state) => state.stats);
 
   const timeSpan = globalStats && [
     globalStats.earliest_message,

@@ -8,15 +8,35 @@ from pathlib import Path
 import json
 import subprocess
 import re
+import secrets
 
 
 class ServeFrontend(RequestHandler):
-    def initialize(self, reader, titles, db_owner):
+    def initialize(
+        self,
+        reader: TwitterDataReader,
+        titles: dict,
+        db_owner: str,
+        tokens: Union[set, None],
+    ):
         self.db = reader
         self.titles = titles
         self.db_owner = db_owner
+        self.authenticated_tokens = tokens
 
     def get(self, path):
+        if (
+            self.authenticated_tokens
+            and self.get_cookie("Authentication") not in self.authenticated_tokens
+        ):
+            self.render(
+                "index.html",
+                title="Twitter Data Archive",
+                image="",
+                description="",
+            )
+            return
+
         description = self.db_owner + "'s Twitter archive"
         image = None
         if self.request.path in self.titles:
@@ -69,6 +89,28 @@ class ServeFrontend(RequestHandler):
         )
 
 
+class Authenticator(RequestHandler):
+    def initialize(self, token_store, password):
+        self.token_store: set = token_store
+        self.password: str = password
+
+    def post(self):
+        if (
+            str(self.request.body, "utf-8") == self.password
+            or self.get_cookie("Authentication") in self.token_store
+        ):
+            new_token = secrets.token_urlsafe(32)
+            self.token_store.add(new_token)
+            self.set_cookie("Authentication", new_token, expires_days=365)
+            self.finish()
+        elif not self.password:
+            self.set_status(200)
+            self.finish()
+        else:
+            self.set_status(403, "missing or incorrect password")
+            self.finish()
+
+
 class ArchiveAPIServer:
 
     handlers = []
@@ -78,12 +120,18 @@ class ArchiveAPIServer:
         reader: TwitterDataReader,
         individual_media_path: str,
         group_media_path: str,
+        port: int,
+        password: str = "",
     ):
+        self.port = port
         db_owner = "@" + reader.get_main_user().handle
+        authenticated_tokens = set()
         initializer = {
             "reader": reader,
             "group_media": group_media_path,
             "individual_media": individual_media_path,
+            "require_password": bool(password),
+            "tokens": authenticated_tokens,
         }
         assets_handler = (
             r"/assets/(.*)",
@@ -95,10 +143,20 @@ class ArchiveAPIServer:
         frontend_handler = (
             r"^(?!/assets/|/api/|/frontend/)/(.*)$",
             ServeFrontend,
-            {"reader": reader, "titles": titles, "db_owner": db_owner},
+            {
+                "reader": reader,
+                "titles": titles,
+                "db_owner": db_owner,
+                "tokens": authenticated_tokens if password else None,
+            },
+        )
+        authenticator = (
+            "/api/authenticate",
+            Authenticator,
+            {"token_store": authenticated_tokens, "password": password},
         )
         self.application = Application(
-            [assets_handler, frontend_handler]
+            [assets_handler, frontend_handler, authenticator]
             + [x + (initializer,) for x in self.handlers],
             compress_response=True,
             static_path="./frontend/assets/",
@@ -111,8 +169,8 @@ class ArchiveAPIServer:
             "npx webpack --watch --stats minimal",
             shell=True,
         )
-        print("starting server on port 8008")
-        self.application.listen(8008)
+        print("starting server at http://localhost:" + str(self.port))
+        self.application.listen(self.port)
         IOLoop.current().start()
 
 
@@ -127,16 +185,27 @@ class APIRequestHandler(RequestHandler):
     """abstract base class"""
 
     def initialize(
-        self, reader: TwitterDataReader, group_media: str, individual_media: str
+        self,
+        reader: TwitterDataReader,
+        group_media: str,
+        individual_media: str,
+        require_password: bool,
+        tokens: set,
     ):
         self.db = reader
         self.group_media = group_media
         self.individual_media = individual_media
+        self.require_password = require_password
+        self.tokens = tokens
 
     def prepare(self):
         super().prepare()
-        # TODO: check authentication; maybe using an access_level_required parameter
-        # passed to initialize
+        if (
+            self.require_password
+            and self.get_cookie("Authentication") not in self.tokens
+        ):
+            self.set_status(403, "Not authenticated >:(")
+            self.finish()
 
     @classmethod
     def recursive_serialize(cls, item):
@@ -177,6 +246,7 @@ class APIRequestHandler(RequestHandler):
         return tuple(self.get_query_argument(x, None) for x in args)
 
 
+@handles(r"/api/login")
 @handles(r"/api/conversations")
 class AllConversationsHandler(APIRequestHandler):
     def get(self):

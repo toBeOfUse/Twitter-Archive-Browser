@@ -1,8 +1,8 @@
 import React from "react";
 
-function LoadingSpinner() {
+function LoadingSpinner(props) {
   return (
-    <div className="lds-ellipsis">
+    <div style={props.style} className="lds-ellipsis">
       <div></div>
       <div></div>
       <div></div>

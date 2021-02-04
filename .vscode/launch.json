@@ -13,6 +13,15 @@
             "justMyCode": true
         },
         {
+            "name": "Python: With Password",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "args": ["../data/", "-pw", "not_real_password"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
