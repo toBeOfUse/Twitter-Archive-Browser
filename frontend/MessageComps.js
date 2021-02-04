@@ -438,7 +438,10 @@ function MessagePage(props) {
         <Link
           replace
           to={
-            location.pathname +
+            "/" +
+            props.type +
+            "/messages/" +
+            props.id +
             "?start=beginning" +
             (props.search ? "&search=" + props.search : "")
           }
@@ -449,7 +452,10 @@ function MessagePage(props) {
         <Link
           replace
           to={
-            location.pathname +
+            "/" +
+            props.type +
+            "/messages/" +
+            props.id +
             "?start=end" +
             (props.search ? "&search=" + props.search : "")
           }
