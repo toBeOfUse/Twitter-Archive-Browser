@@ -47,9 +47,13 @@ class ServeFrontend(RequestHandler):
                 message = message["results"][0]
                 description = message.content
                 if any(x.type == "image" for x in message.media):
+                    protocol = (
+                        "https://"
+                        if self.request.headers.get("X-Forwarded-Proto") == "https"
+                        else "http://"
+                    )
                     image = (
-                        self.request.protocol
-                        + "://"
+                        protocol
                         + self.request.host
                         + next(x for x in message.media if x.type == "image").src
                     )
