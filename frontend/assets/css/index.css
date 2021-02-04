@@ -117,7 +117,7 @@ a:active {
     overflow-y: scroll;
     border-top: 1px solid black;
     width: 100%;
-    /*height: calc(100% - 100px);*/
+    height: 100%;
 }
 
 .conversationListing {
