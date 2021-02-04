@@ -25,7 +25,9 @@ async def main(data_path: Path):
         def process_file(file_dict, group_dm):
             print(f"processing file {file_dict['fileName']}")
             for message in (
-                s := MessageStream(data_path.parent / file_dict["fileName"])
+                s := MessageStream(
+                    data_path / file_dict["fileName"].replace("data/", "")
+                )
             ) :
                 db_store.add_message(message, group_dm)
                 if db_store.added_messages % 1000 == 0:
