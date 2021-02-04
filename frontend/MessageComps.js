@@ -366,11 +366,11 @@ function MessagePage(props) {
         loadMore("down");
       }
     } else if (
-      el.scrollTop + el.offsetHeight > el.scrollHeight - 200 &&
+      el.scrollTop + el.offsetHeight > el.scrollHeight - 400 &&
       !hitBottom
     ) {
       loadMore("down");
-    } else if (el.scrollTop < 200 && !hitTop) {
+    } else if (el.scrollTop < 400 && !hitTop) {
       loadMore("up");
     }
   };
@@ -395,6 +395,7 @@ function MessagePage(props) {
   if (messages?.length) {
     let nextUser = getUserID(messages[0]);
     renderedMessages = [];
+    !hitTop && renderedMessages.push(<LoadingSpinner />);
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i];
       const user = nextUser;
@@ -416,6 +417,7 @@ function MessagePage(props) {
         />
       );
     }
+    !hitBottom && renderedMessages.push(<LoadingSpinner />);
   } else if (hitTop && hitBottom) {
     renderedMessages = <p>No messages found, sorry :(</p>;
   } else {

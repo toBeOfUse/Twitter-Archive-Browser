@@ -114,7 +114,7 @@ export default function ScrollyPane(props) {
     if (
       el &&
       (el.scrollHeight < el.parentElement.scrollHeight ||
-        el.scrollTop + el.offsetHeight > el.scrollHeight - 30) &&
+        el.scrollTop + el.offsetHeight > el.scrollHeight - 100) &&
       page != -1 &&
       !loading
     ) {
