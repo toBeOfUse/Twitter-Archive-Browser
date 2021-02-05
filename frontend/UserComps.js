@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { NavLink, Link, useParams } from "react-router-dom";
 import { zToLocaleDateTime } from "./DateHandling";
 import ScrollyPane from "./ScrollyPane";
+import SearchBar from "./SearchBar";
 
 function NicknameSetter(userInfo) {
   const [nickname, setNickname] = useState(userInfo.nickname);
@@ -160,6 +161,10 @@ function UserInfo() {
         processItems={processMetaInfo}
         ItemShape={SimpleConversationListing}
         className="metaInfoContainer"
+      />
+      <SearchBar
+        baseURL={"/user/messages/" + info.id}
+        timeSpan={[info.first_appearance, info.last_appearance]}
       />
     </>
   ) : (

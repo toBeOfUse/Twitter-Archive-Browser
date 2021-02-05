@@ -14,6 +14,11 @@ import PropTypes from "prop-types";
 
 SearchBar.propTypes = {
   baseURL: PropTypes.string.isRequired,
+  // when this is true, the search field and time travel button are disabled and the
+  // only thing available is the home button
+  noSearch: PropTypes.bool,
+  // this is passed down to the Time Travel modal and defines the earliest and latest
+  // dates that one can currently time travel to
   timeSpan: PropTypes.arrayOf(timestampType),
   // because finding the default time involves finding the middle message in a long
   // list of messages, it is not done until it needs to be done (when this prop is
@@ -31,13 +36,13 @@ export default function SearchBar(props) {
   const [timeTraveling, setTimeTraveling] = useState(false);
   const actOnSearch = (event) => {
     if (event.type == "click" || event.key == "Enter") {
-      if (text.trim()) {
+      if (!props.noSearch && text.trim()) {
         history.push(props.baseURL + "?search=" + text, { lastSearch: text });
       }
     }
   };
   return (
-    <div className="searchBar">
+    <div className="searchBar" style={{ marginTop: "auto" }}>
       <button
         style={{ width: 30, padding: 0, flexShrink: 0 }}
         disabled={alreadyHome}
@@ -46,12 +51,14 @@ export default function SearchBar(props) {
         🏠
       </button>
       <button
-        onClick={() => setTimeTraveling(true)}
+        disabled={props.noSearch}
+        onClick={() => !props.noSearch && setTimeTraveling(true)}
         style={{ whiteSpace: "nowrap" }}
       >
         Go to date...
       </button>
       <input
+        disabled={props.noSearch}
         value={text}
         onInput={receiveText}
         onKeyDown={actOnSearch}
@@ -59,7 +66,9 @@ export default function SearchBar(props) {
         type="text"
         placeholder="Search all messages..."
       />
-      <button onClick={actOnSearch}>Search</button>
+      <button disabled={props.noSearch} onClick={actOnSearch}>
+        Search
+      </button>
       {timeTraveling &&
         (props.timeSpan && props.timeSpan[0] && props.timeSpan[1] ? (
           <TimeTravelModal
