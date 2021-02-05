@@ -250,14 +250,18 @@ function ConversationInfo() {
                     type="radio"
                     checked={metaInfoOrder == "oldest"}
                     style={{ marginRight: 5 }}
-                    onClick={() => setMetaInfoOrder("oldest")}
+                    onChange={(e) =>
+                      e.target.checked && setMetaInfoOrder("oldest")
+                    }
                   />
                   Oldest first
                 </label>
                 <label>
                   <input
                     type="radio"
-                    onClick={() => setMetaInfoOrder("newest")}
+                    onChange={(e) =>
+                      e.target.checked && setMetaInfoOrder("newest")
+                    }
                     checked={metaInfoOrder == "newest"}
                     style={{ marginRight: 5 }}
                   />
@@ -277,6 +281,10 @@ function ConversationInfo() {
           />
         </>
       )}
+      <SearchBar
+        baseURL={"/conversation/messages/" + info.id}
+        timeSpan={[info.first_time, info.last_time]}
+      />
     </>
   );
 }
