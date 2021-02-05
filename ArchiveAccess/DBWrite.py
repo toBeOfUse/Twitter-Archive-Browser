@@ -273,7 +273,11 @@ class TwitterDataWriter(Connection):
         # contains tuples of the form (user_id, conversation_id)
         self.added_participants_cache = set()
 
-        self.api_client = SimpleTwitterAPIClient(bearer_token)
+        if bearer_token:
+            self.api_client = SimpleTwitterAPIClient(bearer_token)
+            self.online_mode = True
+        else:
+            self.online_mode = False
 
         self.added_messages = 0
 
@@ -332,9 +336,10 @@ class TwitterDataWriter(Connection):
                     "insert into users (id, loaded_full_data) values(?, 0);",
                     (user_id,),
                 )
-                self.api_client.queue_twitter_user_request(
-                    user_id, self.save_user_data
-                )
+                if self.online_mode:
+                    self.api_client.queue_twitter_user_request(
+                        user_id, self.save_user_data
+                    )
                 self.added_users_cache.add(user_id)
 
     def add_participant_if_necessary(
@@ -684,8 +689,21 @@ class TwitterDataWriter(Connection):
                 else:
                     command += line
 
-        await self.api_client.flush_queue()
-        self.api_client.close()
+        if self.online_mode:
+            try:
+                await self.api_client.flush_queue()
+                self.api_client.close()
+            except:
+                print(
+                    "could not connect to Twitter API for user data; check that you "
+                    "are online, your bearer token was valid, and that Twitter still "
+                    "exists. users will be shown in the archive by their ID numbers"
+                )
+        else:
+            print(
+                "no bearer token provided; not fetching user data. users will be "
+                "shown in the archive by their ID numbers"
+            )
 
         self.execute("pragma optimize;")
 

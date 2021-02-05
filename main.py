@@ -11,17 +11,18 @@ import argparse
 import traceback
 
 
-async def main(data_path: Path, bearer_token: str):
+async def main(data_path: Path, bearer_token: str, overwrite: bool):
     manifest_path = data_path / "manifest.js"
     with PrefixedJSON(manifest_path) as manifest_file:
         manifest = json.load(manifest_file)
     db_path = Path.cwd() / "db" / Path(manifest["userInfo"]["userName"] + ".db")
-    if not db_path.exists():
+    if not db_path.exists() or overwrite:
         db_store = TwitterDataWriter(
             db_path,
             manifest["userInfo"]["userName"],
             manifest["userInfo"]["accountId"],
             bearer_token,
+            automatic_overwrite=overwrite,
         )
         try:
 
@@ -79,6 +80,7 @@ async def main(data_path: Path, bearer_token: str):
             sys.exit(1)
 
         db_store.close()
+        print("database created at " + str(db_path))
     else:
         print("found database " + str(db_path))
     return db_path
@@ -87,7 +89,10 @@ async def main(data_path: Path, bearer_token: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Load messages from a Twitter data archive and display "
-        "them via a web client."
+        "them via a web client. The loaded messages will be placed in a "
+        ".db file in the db folder in this directory; you can then navigate "
+        "your browser to the web client, which will display them analytically "
+        "and elegantly."
     )
     parser.add_argument(
         "path_to_data",
@@ -103,13 +108,26 @@ if __name__ == "__main__":
         "the token itself or a path to a JSON file with a 'bearer_token' field. If "
         "this is not supplied, users will be identified only with numbers (although "
         "you can then go through and give them nicknames for the purposes of "
-        "viewing the archive.)",
+        "viewing the archive.) This is only needed when creating a database; "
+        "if you're invoking this command later to re-start the web client, ignore "
+        "this.",
+    )
+    parser.add_argument(
+        "-o",
+        "--overwrite",
+        action="store_true",
+        help="This flag causes any existing database generated for an account with "
+        "this program to be overwritten with a newly-created database. Use this "
+        "option if, for example, you initially created the database without user "
+        "data being fetched and you want to create a new database while supplying "
+        "a bearer token.",
     )
     parser.add_argument(
         "-pw",
         "--password",
         help="A password that anyone who navigates to the web client will be "
-        "required to enter.",
+        "required to enter. This password will not be saved; it must be re-entered "
+        "each time you run this program.",
     )
     parser.add_argument(
         "-po",
@@ -125,15 +143,15 @@ if __name__ == "__main__":
     db_path = ""
     data_path = args.path_to_data
 
-    if Path(args.bearer_token).exists():
+    if args.bearer_token and Path(args.bearer_token).exists():
         with open(args.bearer_token) as key_file:
             bearer_token = json.load(key_file)["bearer_token"]
     else:
-        bearer_token = args.bearer_token
+        bearer_token = args.bearer_token or None
 
     async def locate_or_create_db():
         global db_path
-        db_path = await main(Path(data_path), bearer_token)
+        db_path = await main(Path(data_path), bearer_token, args.overwrite)
 
     IOLoop.current().run_sync(locate_or_create_db)
 
