@@ -688,6 +688,10 @@ class TwitterDataWriter(Connection):
                     # await asyncio.sleep(0.5)
                 else:
                     command += line
+            if command:
+                # execute the last command, which is terminated by the EOF rather
+                # than a blank line
+                self.execute(command)
 
         if self.online_mode:
             try:
