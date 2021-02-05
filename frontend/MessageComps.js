@@ -72,7 +72,7 @@ function MessagePage(props) {
 
   const dispatch = useDispatch();
 
-  const meta = useSelector((state) => {
+  const preliminaryMeta = useSelector((state) => {
     // this meta information will be populated by calls to dispatch when the first
     // message(s) load
     if (props.type == "conversation") {
@@ -83,6 +83,23 @@ function MessagePage(props) {
       return state.stats;
     }
   });
+
+  const [meta, setMeta] = useState(preliminaryMeta);
+
+  const getUserMeta = () => {
+    // if we're displaying a user's messages, we need the time span that those
+    // messages take place in to pass to the time travel modal in the SearchBar
+    // component, which means fetching their full user data
+    if (props.type == "user") {
+      fetch("/api/user?id=" + props.id).then((r) =>
+        r.json().then((j) => {
+          setMeta(j);
+        })
+      );
+    }
+  };
+
+  useEffect(getUserMeta, []);
 
   let timeSpan;
   let name;
