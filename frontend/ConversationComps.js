@@ -81,8 +81,7 @@ function SimpleNameUpdate(update) {
       {update.new_name + " (set by "}
       <Link to={"/user/info/" + update.initiator}>
         @{users[update.initiator]?.handle}
-      </Link>
-      {") "}
+      </Link>{" "}
       on{" "}
       <Link
         to={
@@ -94,6 +93,7 @@ function SimpleNameUpdate(update) {
       >
         {zToLocaleDateTime(update.update_time)}
       </Link>
+      {")"}
     </p>
   );
 }
