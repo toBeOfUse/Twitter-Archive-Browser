@@ -620,10 +620,7 @@ function SimpleMessage(message) {
         {", " + zToLocaleDate(message.sent_time) + " "}
         <Link
           to={
-            "/conversation/messages/" +
-            message.conversation +
-            "?start=" +
-            message.sent_time
+            "/conversation/messages/" + message.conversation + "/" + message.id
           }
         >
           (context)
@@ -745,8 +742,8 @@ messageTypes["Message"] = function NormalMessageContent(message) {
               to={
                 "/conversation/messages/" +
                 message.conversation +
-                "?start=" +
-                message.sent_time
+                "/" +
+                message.id
               }
               className="messageAttribution"
               style={alignment}
