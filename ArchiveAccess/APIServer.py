@@ -341,7 +341,7 @@ class Messages(APIRequestHandler):
         self.finish(
             self.db.traverse_messages(conversation, user, after, before, at, search)
         )
-        print(f"request for messages took {(time()-started_at/1000):.0f} ms")
+        print(f"request for messages took {((time()-started_at)/1000):.0f} ms")
 
 
 @handles(r"/api/message")
