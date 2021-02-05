@@ -138,6 +138,16 @@ if __name__ == "__main__":
         "and just go to the localhost url that appears after starting the program "
         "to view your archive.",
     )
+    parser.add_argument(
+        "-m",
+        "--mode",
+        choices=["dev", "single_build", "no_build"],
+        default="single_build",
+        help='Set this flag to "dev" if you plan on editing the frontend code and '
+        'want it to be continuously rebuild, "single_build" if you need the '
+        "frontend to be built once so that you can use it (the default), and "
+        '"no_build" if you are using a pre-made main.js bundle from a release. ',
+    )
     args = parser.parse_args()
 
     db_path = ""
@@ -160,6 +170,7 @@ if __name__ == "__main__":
         reader,
         Path(data_path) / "direct_messages_media",
         Path(data_path) / "direct_messages_group_media",
+        build_mode=args.mode,
         port=args.port,
         password=args.password,
     )

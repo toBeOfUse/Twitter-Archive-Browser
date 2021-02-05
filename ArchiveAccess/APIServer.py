@@ -9,7 +9,6 @@ import json
 import subprocess
 import re
 import secrets
-from time import time
 from tornado.log import enable_pretty_logging
 import logging
 
@@ -130,8 +129,10 @@ class ArchiveAPIServer:
         individual_media_path: str,
         group_media_path: str,
         port: int,
+        build_mode: str,
         password: str = "",
     ):
+        self.build_mode = build_mode
         logging.getLogger("tornado.access").addHandler(
             logging.FileHandler("logs/tornado.access.txt")
         )
@@ -183,10 +184,14 @@ class ArchiveAPIServer:
         )
 
     def start(self):
-        subprocess.Popen(
-            "npx webpack --watch --stats minimal",
-            shell=True,
-        )
+        if self.build_mode == "dev":
+            subprocess.Popen(
+                "npx webpack --mode=development --watch --stats minimal",
+                shell=True,
+            )
+        elif self.build_mode == "single_build":
+            print("building frontend...")
+            subprocess.run("npx webpack --mode=production", shell=True)
         print("starting server at http://localhost:" + str(self.port))
         self.application.listen(self.port)
         IOLoop.current().start()
@@ -330,7 +335,6 @@ class RandomMessages(APIRequestHandler):
 @handles(r"/api/messages")
 class Messages(APIRequestHandler):
     def get(self):
-        started_at = time()
         conversation, user = self.arguments("conversation", "byuser")
         after, before, at, message = self.arguments(
             "after", "before", "at", "message"
@@ -341,7 +345,6 @@ class Messages(APIRequestHandler):
         self.finish(
             self.db.traverse_messages(conversation, user, after, before, at, search)
         )
-        print(f"request for messages took {((time()-started_at)/1000):.0f} ms")
 
 
 @handles(r"/api/message")
