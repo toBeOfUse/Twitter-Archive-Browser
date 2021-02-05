@@ -4,7 +4,7 @@ import sqlite3
 from pprint import pprint
 from typing import Union, Final, ClassVar
 from collections.abc import Iterable, Callable
-from collections import namedtuple
+from collections import defaultdict
 from dataclasses import dataclass, asdict
 from os import PathLike
 from contextlib import contextmanager
@@ -243,12 +243,17 @@ class Conversation(DBRow):
         pass_through_values = row[0:8]
         created_by_me = bool(row[8])
 
-        other_person = (
-            cursor.connection.get_users_by_id([row[9]])[0] if row[9] else None
-        )
-        added_by = (
-            cursor.connection.get_users_by_id([row[10]])[0] if row[10] else None
-        )
+        if row[9]:
+            other_person = cursor.connection.get_users_by_id([row[9]])[0]
+            cursor.connection.cache_user_conversation_dependency(row[9], row[0])
+        else:
+            other_person = None
+
+        if row[10]:
+            added_by = cursor.connection.get_users_by_id([row[10]])[0]
+            cursor.connection.cache_user_conversation_dependency(row[10], 0)
+        else:
+            added_by = None
 
         if row[1] == "individual":
             name = (
@@ -279,14 +284,20 @@ class Conversation(DBRow):
                         order by messages_sent desc limit 6;""",
                         (row[0],),
                     ).fetchall()
-                participants = [
-                    x[0] if x[0] else (x[1] if x[1] else f"@{x[2]}")
-                    for x in participant_rows
-                ]
-                name = ", ".join(participants[0:5])
-                if len(participants) == 6:
+                participants = []
+                for x in participant_rows[0:5]:
+                    participants.append(
+                        x[0] if x[0] else (x[1] if x[1] else f"@{x[2]}")
+                    )
+                    cursor.connection.cache_user_conversation_dependency(
+                        x[2], row[0]
+                    )
+                name = ", ".join(participants)
+                if len(participant_rows) == 6:
                     name += ", etc."
+
         notes = row[11] or ""
+
         return cls(
             *pass_through_values,
             created_by_me,
@@ -546,8 +557,21 @@ class TwitterDataReader(sqlite3.Connection):
         self.row_factory = sqlite3.Row
         self.users_cache: dict[int, ArchivedUserSummary] = {}
         self.conversations_cache: dict[str, Conversation] = {}
+
+        # this object maps user ids to the ids of any conversation that depends on
+        # them through the added_by, other_person, or name fields. this is so that
+        # the right items can be invalidated from the conversation cache when user
+        # data is changed.
+        self.user_data_in_conversations: dict[int, set[str]] = defaultdict(set)
+
         Media.dm_media_path = Path(data_path) / "direct_messages_media"
         Media.group_media_path = Path(data_path) / "direct_messages_group_media"
+
+    def cache_user_conversation_dependency(self, user: int, conversation: str):
+        """called in the Conversation.from_row method to register the fact that the
+        conversation object being instantiated depends on the data of a user; this is
+        used for cache invalidation when the user's data changes"""
+        self.user_data_in_conversations[user].add(conversation)
 
     def get_main_user(self):
         with set_row_mode(self, ArchivedUser.from_row):
@@ -614,15 +638,20 @@ class TwitterDataReader(sqlite3.Connection):
                     (USERS_PER_PAGE, (page_number - 1) * USERS_PER_PAGE),
                 ).fetchall()
 
-    def set_user_nickname(self, user_id: Union[str, int], new_nickname: str) -> None:
+    def set_user_nickname(self, user_id: Union[str, int], new_nickname: str) -> list:
         self.execute(
             "update users set nickname=? where id=?;",
             (new_nickname[0:50], int(user_id)),
         )
+        for conversation in self.user_data_in_conversations[int(user_id)]:
+            self.conversations_cache.pop(conversation, None)
         self.users_cache.pop(int(user_id), None)
         self.commit()
+        return list(self.user_data_in_conversations[int(user_id)])
 
     def set_user_notes(self, user_id: Union[str, int], new_notes: str) -> None:
+        """this does not invalidate anything in the conversations cache because
+        nothing in a conversation object uses the user's notes, currently"""
         self.execute(
             "update users set notes=? where id=?;",
             (new_notes, int(user_id)),

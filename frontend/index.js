@@ -10,7 +10,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { configureStore } from "@reduxjs/toolkit";
-import { Provider, useDispatch, useSelector } from "react-redux";
+import { Provider, useDispatch } from "react-redux";
 import produce from "immer";
 import { ConversationList, ConversationInfo } from "./ConversationComps";
 import { UserInfo } from "./UserComps";
@@ -25,16 +25,51 @@ const addToIDMap = (IDMap, items) => {
 
 const store = configureStore({
   reducer: {
-    users: (state = {}, action) =>
+    users: (state = {}, action) => {
       // note: redux stores ArchivedUserSummary objects, not the full user data that
       // is used by UserInfo in UserComps
-      action.type == "users/addUsers"
-        ? addToIDMap(state, action.payload)
-        : state,
-    conversations: (state = {}, action) =>
-      action.type == "conversations/addConversations"
-        ? addToIDMap(state, action.payload)
-        : state,
+      switch (action.type) {
+        case "users/addUsers":
+          return addToIDMap(state, action.payload);
+        case "users/updateNickname":
+          if (state[action.payload[0]]) {
+            return {
+              ...state,
+              [action.payload[0]]: {
+                ...state[action.payload[0]],
+                nickname: action.payload[1],
+              },
+            };
+          } else {
+            return state;
+          }
+        default:
+          return state;
+      }
+    },
+    conversations: (state = {}, action) => {
+      switch (action.type) {
+        case "conversations/addConversations":
+          return addToIDMap(state, action.payload);
+        case "conversations/invalidateConversation":
+          const { [action.payload]: value, ...newState } = state;
+          return newState;
+        case "conversations/updateNotes":
+          if (state[action.payload[0]]) {
+            return {
+              ...state,
+              [action.payload[0]]: {
+                ...state[action.payload[0]],
+                notes: action.payload[1],
+              },
+            };
+          } else {
+            return state;
+          }
+        default:
+          return state;
+      }
+    },
     stats: (state = null, action) =>
       action.type == "stats/setStats" ? action.payload : state,
     pageState: produce((draft, action) => {

@@ -251,7 +251,6 @@ class APIRequestHandler(RequestHandler):
         return tuple(self.get_query_argument(x, None) for x in args)
 
 
-@handles(r"/api/login")
 @handles(r"/api/conversations")
 class AllConversationsHandler(APIRequestHandler):
     def get(self):
@@ -363,9 +362,11 @@ class SingleUser(APIRequestHandler):
 class UserNickname(APIRequestHandler):
     def post(self):
         id = self.get_query_argument("id")
-        self.db.set_user_nickname(id, str(self.request.body, "utf-8"))
+        invalidated_conversations = self.db.set_user_nickname(
+            id, str(self.request.body, "utf-8")
+        )
         self.set_status(200)
-        self.finish()
+        self.finish(invalidated_conversations)
 
 
 @handles(r"/api/user/notes")

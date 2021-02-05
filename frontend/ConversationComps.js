@@ -32,6 +32,7 @@ function ConversationListing(props) {
 function NotesSetter(props) {
   const [notes, setNotes] = useState(props.notes);
   const [editing, setEditing] = useState(!props.notes);
+  const dispatch = useDispatch();
 
   const editNotes = (event) => {
     setNotes(event.target.value);
@@ -49,7 +50,11 @@ function NotesSetter(props) {
       },
       body: notes,
     }).then(() => {
-      props.changed(notes);
+      props.changed && props.changed(notes);
+      dispatch({
+        type: "conversations/updateNotes",
+        payload: [props.id, notes],
+      });
     });
   };
 
@@ -118,23 +123,22 @@ function SimpleParticipantListing(participant) {
 
 function ConversationInfo() {
   const { id } = useParams();
-  const [info, setInfo] = useState(null);
+  const info = useSelector((state) => state.conversations[id]);
 
   const dispatch = useDispatch();
 
   if (!info) {
     fetch("/api/conversation?id=" + id).then((r) =>
-      r.json().then((result) => setInfo(result))
+      r.json().then((result) =>
+        dispatch({
+          type: "conversations/addConversations",
+          payload: [result],
+        })
+      )
     );
   } else {
     document.title = info.name + " - Conversation Info";
   }
-
-  const acceptChange = () => {
-    // if the user changes the conversation notes, we accept the change by simply
-    // reloading the whole conversation object. this could probably be optimized
-    setInfo(null);
-  };
 
   const [metaInfoShown, setMetaInfoShown] = useState("names");
   // only applies to name updates
@@ -212,10 +216,8 @@ function ConversationInfo() {
           </>
         )}
       </div>
-      {info.type != "group" && (
-        <NicknameSetter changed={acceptChange} {...info.other_person} />
-      )}
-      <NotesSetter changed={acceptChange} notes={info.notes} id={info.id} />
+      {info.type != "group" && <NicknameSetter {...info.other_person} />}
+      <NotesSetter notes={info.notes} id={info.id} />
       {info.type == "group" && (
         <>
           <span>
@@ -310,8 +312,10 @@ function ConversationList() {
         dispatch({
           type: "pageState/save",
           payload: {
-            conversationTypes: types,
-            conversationOrder: order,
+            [location.key]: {
+              conversationTypes: types,
+              conversationOrder: order,
+            },
           },
         });
       }
@@ -354,6 +358,20 @@ function ConversationList() {
     globalStats.earliest_message,
     globalStats.latest_message,
   ];
+
+  const processPaneHistoryState = (items, scrollPos, page) => {
+    // we will store the conversation ids in the pageState history so that we can
+    // reload them from the store below when this page is navigated back to; this
+    // will make sure name changes and such take effect
+    const itemIDs = items.map((v) => v.id);
+    return { itemIDs, scrollPos, page };
+  };
+
+  const conversationStore = useSelector((state) => state.conversations);
+  const restorePaneHistoryState = (state) => {
+    const items = state.itemIDs.map((v) => conversationStore[v]);
+    return [items, state.scrollPos, state.page];
+  };
 
   return (
     <>
@@ -406,6 +424,8 @@ function ConversationList() {
         ItemShape={ConversationListing}
         processItems={processConversations}
         saveHistoryState="conversationsScrollPane"
+        processHistoryState={processPaneHistoryState}
+        restoreHistoryState={restorePaneHistoryState}
         currentKey={url}
       />
       <SearchBar timeSpan={timeSpan} baseURL="/messages" />

@@ -7,7 +7,7 @@ All API requests must contain an Authorization cookie obtained from /api/authent
 Authorization
 -------------
 
-### `GET /api/getpassword/:conversation_id`
+### `GET /api/getpassword/:conversation_id` NOT YET IMPLEMENTED
 
 Asks the server for a randomly generated password that will grant access to a specific conversation, which can be placed in sharable links to conversations and messages. The response type will be text/plain. This endpoint can only be used by users who were authenticated via the master password.
 
@@ -101,7 +101,7 @@ Retrieves a user's avatar as an image file. The exact type of image file will be
 
 ### `POST /api/user/nickname?id=[user_id]`
 
-Sets the nickname field in the database for a user to the plain text in the body of this request. Nicknames have a character limit of 50 characters. Can only be used by users authenticated with the master password.
+Sets the nickname field in the database for a user to the plain text in the body of this request. Nicknames have a character limit of 50 characters. Can only be used by users authenticated with the master password. User data is sometimes embedded in conversations in the name, other_person, or added_by fields; this method returns (in an object, under the "results" key) a list of the IDs of the conversations that are now altered and need to be excised from any local cache.
 
 ### `POST /api/user/notes?id=[user_id]`
 

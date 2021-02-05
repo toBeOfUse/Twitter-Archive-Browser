@@ -22,6 +22,16 @@ ScrollyPane.propTypes = {
   // this value in the pageState slice of the redux store and restored when this
   // location is revisited due to history navigation.
   saveHistoryState: PropTypes.string,
+  // if this prop is passed, it is called as a function with the parameters items,
+  // scrollPos, pageNumber and is expected to return the state object that actually
+  // needs to be saved under the relevant key. if this is present,
+  // restoreHistoryState probably also should be present (most likely, it "undoes"
+  // it.) cannot be present without saveHistoryState.
+  processHistoryState: PropTypes.func,
+  // this prop is called with the state object that was returned by
+  // processHistoryState and must return an array composed like this: [items,
+  // scrollPos, pageNumber]. cannot be present without saveHistoryState.
+  restoreHistoryState: PropTypes.func,
   // if this prop is passed, the pane's state is only restored from pageState if this
   // prop matches the currentKey saved in pageState. this is useful when a different
   // instance of the ScrollyPane is mounted depending on some state value in the
@@ -50,7 +60,15 @@ export default function ScrollyPane(props) {
         state.pageState[locationKey].currentKey == props.currentKey
       ) {
         console.log("SP: reading page state from", locationKey);
-        return state.pageState[locationKey];
+        const basicState = state.pageState[locationKey];
+        if (props.restoreHistoryState) {
+          const [items, scrollPos, page] = props.restoreHistoryState(
+            basicState
+          );
+          return { items, scrollPos, page, currentKey: props.currentKey };
+        } else {
+          return basicState;
+        }
       }
     } else {
       console.log("SP: did not find page state for", locationKey);
@@ -61,9 +79,9 @@ export default function ScrollyPane(props) {
   useEffect(() => {
     if (savedState && contentPane.current) {
       console.log("SP: restoring scroll position");
-      contentPane.current.scrollTop = savedState.scrollTop;
+      contentPane.current.scrollTop = savedState.scrollPos;
     }
-  }, [savedState, contentPane.current]);
+  }, [savedState?.currentKey, contentPane.current]);
 
   const [page, setPage] = useState(savedState?.page || 1);
   const [items, setItems] = useState(savedState?.items || []);
@@ -81,16 +99,31 @@ export default function ScrollyPane(props) {
       ) {
         console.log("SP: saving state to", locationKey);
         console.log("SP: using sub-key", props.currentKey);
-        dispatch({
-          type: "pageState/save",
-          payload: {
+        let payload;
+        if (props.processHistoryState) {
+          payload = {
+            [locationKey]: {
+              ...props.processHistoryState(
+                items,
+                contentPane.current.scrollTop,
+                page
+              ),
+              currentKey: props.currentKey,
+            },
+          };
+        } else {
+          payload = {
             [locationKey]: {
               items,
               page,
-              scrollTop: contentPane.current.scrollTop,
+              scrollPos: contentPane.current.scrollTop,
               currentKey: props.currentKey,
             },
-          },
+          };
+        }
+        dispatch({
+          type: "pageState/save",
+          payload,
         });
       }
       historyListenerCleanup.current();

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { NavLink, Link, useParams } from "react-router-dom";
 import { zToLocaleDateTime } from "./DateHandling";
 import ScrollyPane from "./ScrollyPane";
@@ -6,21 +7,34 @@ import ScrollyPane from "./ScrollyPane";
 function NicknameSetter(userInfo) {
   const [nickname, setNickname] = useState(userInfo.nickname);
   const [editing, setEditing] = useState(!userInfo.nickname);
+  const dispatch = useDispatch();
 
   const changeNickname = (event) => {
     setNickname(event.target.value);
   };
 
   const saveNickname = () => {
+    dispatch({
+      type: "users/updateNickname",
+      payload: [userInfo.id, nickname],
+    });
     fetch("/api/user/nickname?id=" + userInfo.id, {
       method: "POST",
       headers: {
         "Content-Type": "text/plain",
       },
       body: nickname,
-    }).then(() => {
-      userInfo.changed(nickname);
-    });
+    }).then((r) =>
+      r.json().then((j) => {
+        userInfo.changed && userInfo.changed();
+        for (const conversation of j.results) {
+          dispatch({
+            type: "conversations/invalidateConversation",
+            payload: conversation,
+          });
+        }
+      })
+    );
   };
 
   const startEditing = () => setEditing(true);
