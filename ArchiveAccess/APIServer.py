@@ -9,7 +9,11 @@ import json
 import subprocess
 import re
 import secrets
-from time import perf_counter
+from time import time
+from tornado.log import enable_pretty_logging
+import logging
+
+enable_pretty_logging()
 
 
 class ServeFrontend(RequestHandler):
@@ -128,6 +132,15 @@ class ArchiveAPIServer:
         port: int,
         password: str = "",
     ):
+        logging.getLogger("tornado.access").addHandler(
+            logging.FileHandler("logs/tornado.access.txt")
+        )
+        logging.getLogger("tornado.application").addHandler(
+            logging.FileHandler("logs/tornado.application.txt")
+        )
+        logging.getLogger("tornado.general").addHandler(
+            logging.FileHandler("logs/tornado.general.txt")
+        )
         self.port = port
         db_owner = "@" + reader.get_main_user().handle
         authenticated_tokens = set()
@@ -317,7 +330,7 @@ class RandomMessages(APIRequestHandler):
 @handles(r"/api/messages")
 class Messages(APIRequestHandler):
     def get(self):
-        started_at = perf_counter()
+        started_at = time()
         conversation, user = self.arguments("conversation", "byuser")
         after, before, at, message = self.arguments(
             "after", "before", "at", "message"
@@ -328,7 +341,7 @@ class Messages(APIRequestHandler):
         self.finish(
             self.db.traverse_messages(conversation, user, after, before, at, search)
         )
-        print(f"request for messages took {(perf_counter()-started_at/1000):.0f} ms")
+        print(f"request for messages took {(time()-started_at/1000):.0f} ms")
 
 
 @handles(r"/api/message")
