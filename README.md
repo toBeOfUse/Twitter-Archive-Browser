@@ -80,4 +80,4 @@ optional arguments:
 
 ## Contributing
 
-I don't know how this works, but please do.
+I don't know how this works, but please do. Note: the tests are currently a mess.
