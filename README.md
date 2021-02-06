@@ -20,6 +20,8 @@ To compile the JSX code that lays out the template for the browser interface int
 
 ## Running it
 
+First, navigate your command line interface to this folder and enter the command `pipenv shell` to access the packages that pipenv installed earlier, in the installation section.
+
 The main thing that this program needs is the path to the "data" folder from your unzipped Twitter archive; you can run it if you want just by entering `python main.py /path/to/data`. Your archive data can be enhanced by downloading the usernames and avatars of each user who appears in your messages if you give the program a bearer token that will let it download information from Twitter, subject to certain limits that no one instance of this program should ever brush up against; you can get one from Twitter easily (more easily than they make it sound) [here](https://developer.twitter.com/en/apply-for-access) (or if you happen to know me, you can ask to use mine.) With that in place, the command line invocation becomes `python main.py /path/to/data -b PUTYOURTOKENHERE`. If you're running this program while connected to a network where people spy on each other regularly or if you want to make your archive available to some people over the open Internet, you can secure it with a password with the -pw option `python main.py /path/to/data -b PUTYOURTOKENHERE -pw PUTPASSWORDHERE`; if for similar reasons you want it to run on a specific network port, you can enter that with the -po option (figure it out.)
 
 After all that, the full command line options are here:
