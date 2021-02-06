@@ -142,11 +142,11 @@ if __name__ == "__main__":
         "-m",
         "--mode",
         choices=["dev", "single_build", "no_build"],
-        default="single_build",
+        default="no_build",
         help='Set this flag to "dev" if you plan on editing the frontend code and '
         'want it to be continuously rebuild, "single_build" if you need the '
-        "frontend to be built once so that you can use it (the default), and "
-        '"no_build" if you are using a pre-made main.js bundle from a release. ',
+        'frontend to be built once so that you can use it, and "no_build" (the '
+        "default) if you are using a pre-made main.js bundle from a release. ",
     )
     args = parser.parse_args()
 
