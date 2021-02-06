@@ -72,19 +72,7 @@ function MessagePage(props) {
 
   const dispatch = useDispatch();
 
-  const preliminaryMeta = useSelector((state) => {
-    // this meta information will be populated by calls to dispatch when the first
-    // message(s) load
-    if (props.type == "conversation") {
-      return state.conversations[props.id];
-    } else if (props.type == "user") {
-      return state.users[props.id];
-    } else {
-      return state.stats;
-    }
-  });
-
-  const [meta, setMeta] = useState(preliminaryMeta);
+  const [fullUserMeta, setFullUserMeta] = useState(null);
 
   const getUserMeta = () => {
     // if we're displaying a user's messages, we need the time span that those
@@ -93,13 +81,26 @@ function MessagePage(props) {
     if (props.type == "user") {
       fetch("/api/user?id=" + props.id).then((r) =>
         r.json().then((j) => {
-          setMeta(j);
+          setFullUserMeta(j);
         })
       );
     }
   };
 
   useEffect(getUserMeta, []);
+
+  const meta = useSelector((state) => {
+    // most meta information will be populated by calls to dispatch when the first
+    // message(s) load
+    if (props.type == "conversation") {
+      return state.conversations[props.id];
+    } else if (props.type == "user") {
+      // this is handled above
+      return fullUserMeta;
+    } else {
+      return state.stats;
+    }
+  });
 
   let timeSpan;
   let name;
@@ -112,7 +113,10 @@ function MessagePage(props) {
       name =
         "from " +
         (meta.nickname || meta.display_name + " (@" + meta.handle + ")");
-      timeSpan = [meta.first_appearance, meta.last_appearance];
+      timeSpan = meta.first_appearance && [
+        meta.first_appearance,
+        meta.last_appearance,
+      ];
       document.title = "Messages from " + (meta.nickname || "@" + meta.handle);
     } else {
       name = "All Messages";
@@ -492,7 +496,7 @@ function MessagePage(props) {
         {renderedMessages}
       </div>
       <SearchBar
-        baseURL={location.pathname}
+        baseURL={"/" + props.type + "/messages/" + props.id}
         timeSpan={timeSpan}
         getDefaultTime={findMiddleMessage}
       />
