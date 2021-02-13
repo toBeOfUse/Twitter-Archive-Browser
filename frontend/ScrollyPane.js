@@ -176,6 +176,7 @@ export default function ScrollyPane(props) {
       id={props.id}
       onScroll={scrollCheck}
       ref={contentPane}
+      style={props.style}
     >
       {renderedItems}
     </div>

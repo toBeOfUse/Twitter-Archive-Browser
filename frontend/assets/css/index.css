@@ -161,6 +161,12 @@ a:active {
     width: 100%;
 }
 
+@media(max-width: 500px) {
+    .centeredFlexHeading {
+        justify-content: center;
+    }
+}
+
 .threeItemHeading {
     width: 100%;
 }

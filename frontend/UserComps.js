@@ -161,6 +161,7 @@ function UserInfo() {
         processItems={processMetaInfo}
         ItemShape={SimpleConversationListing}
         className="metaInfoContainer"
+        style={{ margin: "10px 0" }}
       />
       <SearchBar
         baseURL={"/user/messages/" + info.id}

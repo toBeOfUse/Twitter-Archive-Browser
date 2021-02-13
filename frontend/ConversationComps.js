@@ -50,11 +50,11 @@ function NotesSetter(props) {
       },
       body: notes,
     }).then(() => {
-      props.changed && props.changed(notes);
       dispatch({
         type: "conversations/updateNotes",
         payload: [props.id, notes],
       });
+      setEditing(false);
     });
   };
 
@@ -278,6 +278,7 @@ function ConversationInfo() {
               showingNames ? SimpleNameUpdate : SimpleParticipantListing
             }
             processItems={processMetaInfo}
+            style={{ margin: "10px 0", padding: "0 5px" }}
           />
         </>
       )}

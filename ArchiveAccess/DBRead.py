@@ -448,7 +448,6 @@ class Media(DBRow):
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple):
         if not (row[5] and row[6]):
-            print("obtaining dimensions for a " + row[1] + " id " + str(row[0]))
             file_path = str(
                 (cls.group_media_path if row[4] else cls.dm_media_path)
                 / (f"{row[2]}-{row[3]}")
