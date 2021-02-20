@@ -447,13 +447,7 @@ function MessagePage(props) {
 
   return (
     <>
-      <div
-        style={{
-          margin: "20px 0",
-          width: "100%",
-          borderBottom: "1px solid black",
-        }}
-      >
+      <div id="messagesPaneHeader">
         <h1 style={{ display: "inline", marginRight: 5 }}>
           {name} {infoButton}
         </h1>

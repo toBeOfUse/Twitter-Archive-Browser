@@ -238,11 +238,22 @@ a:active {
     height: 100%;
 }
 
+#messagesPaneHeader {
+    margin-top: 20px;
+    width: 100%;
+    border-bottom: 1px solid black;
+    padding-bottom: 10px;
+}
+
 .messageContainer {
     display: flex;
     flex-direction: column;
     width: 100%;
     overflow-wrap: break-word;
+}
+
+.messageContainer:first-child {
+    margin-top: 10px;
 }
 
 .marginedMessage {
@@ -279,7 +290,24 @@ a:active {
     width: 100%;
     height: 30px;
     display: flex;
-    flex-shrink: 0
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+.homeButton {
+    width: 30px;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+@media(max-width: 500px) {
+    .searchBar {
+        height: 40px;
+        font-size: 1.35rem;
+    }
+    .homeButton {
+        width: 40px;
+    }
 }
 
 .centeredModal {
