@@ -9,7 +9,6 @@ html {
 body {
     height: 100%;
     margin: 0;
-    padding: 4px;
 }
 
 label {
@@ -60,9 +59,9 @@ a:active {
 .contentPane {
     font-family: sans-serif;
     overflow-y: auto;
-    max-height: 95vh;
+    max-height: 100%;
     width: 700px;
-    max-width: 95%;
+    max-width: 100%;
     margin: 0 auto;
     border: 2px black solid;
     display: flex;
@@ -70,6 +69,12 @@ a:active {
     padding: 10px;
     align-items: center;
     position: relative;
+}
+
+@media (min-width: 500px) {
+    .contentPane {
+        margin: 10px auto;
+    }
 }
 
 @media (max-width: 500px) {
@@ -253,6 +258,7 @@ a:active {
     padding: 5px;
     margin: 0;
     max-width: 70%;
+    cursor: default;
 }
 
 @media (min-width: 500px) {
