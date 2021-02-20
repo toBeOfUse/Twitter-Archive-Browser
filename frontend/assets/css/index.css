@@ -9,7 +9,6 @@ html {
 body {
     height: 100%;
     margin: 0;
-    padding: 4px;
 }
 
 label {
@@ -60,9 +59,9 @@ a:active {
 .contentPane {
     font-family: sans-serif;
     overflow-y: auto;
-    max-height: 95vh;
+    max-height: 100%;
     width: 700px;
-    max-width: 95%;
+    max-width: 100%;
     margin: 0 auto;
     border: 2px black solid;
     display: flex;
@@ -70,6 +69,12 @@ a:active {
     padding: 10px;
     align-items: center;
     position: relative;
+}
+
+@media (min-width: 500px) {
+    .contentPane {
+        margin: 10px auto;
+    }
 }
 
 @media (max-width: 500px) {
@@ -161,6 +166,12 @@ a:active {
     width: 100%;
 }
 
+@media(max-width: 500px) {
+    .centeredFlexHeading {
+        justify-content: center;
+    }
+}
+
 .threeItemHeading {
     width: 100%;
 }
@@ -227,11 +238,22 @@ a:active {
     height: 100%;
 }
 
+#messagesPaneHeader {
+    margin-top: 20px;
+    width: 100%;
+    border-bottom: 1px solid black;
+    padding-bottom: 10px;
+}
+
 .messageContainer {
     display: flex;
     flex-direction: column;
     width: 100%;
     overflow-wrap: break-word;
+}
+
+.messageContainer:first-child {
+    margin-top: 10px;
 }
 
 .marginedMessage {
@@ -247,6 +269,7 @@ a:active {
     padding: 5px;
     margin: 0;
     max-width: 70%;
+    cursor: default;
 }
 
 @media (min-width: 500px) {
@@ -267,7 +290,24 @@ a:active {
     width: 100%;
     height: 30px;
     display: flex;
-    flex-shrink: 0
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+.homeButton {
+    width: 30px;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+@media(max-width: 500px) {
+    .searchBar {
+        height: 40px;
+        font-size: 1.35rem;
+    }
+    .homeButton {
+        width: 40px;
+    }
 }
 
 .centeredModal {

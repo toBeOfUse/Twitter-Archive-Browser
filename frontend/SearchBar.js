@@ -42,9 +42,9 @@ export default function SearchBar(props) {
     }
   };
   return (
-    <div className="searchBar" style={{ marginTop: "auto" }}>
+    <div className="searchBar">
       <button
-        style={{ width: 30, padding: 0, flexShrink: 0 }}
+        className="homeButton"
         disabled={alreadyHome}
         onClick={() => history.push("/")}
       >
