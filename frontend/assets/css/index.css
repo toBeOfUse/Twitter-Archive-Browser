@@ -81,6 +81,10 @@ a:active {
     html {
         font-size: 0.7em;
     }
+
+    .contentPane {
+        border-width: 0px;
+    }
 }
 
 /* conversations */
@@ -95,17 +99,28 @@ a:active {
     margin-right: 5px;
 }
 
-.timeField > input, .timeField > select{
+.timeField>input,
+.timeField>select {
     height: 20px;
-
 }
 
 #conversationOrderSelect {
     margin: 0 5px 0 5px;
 }
 
-#conversationHeader {
+#conversationListHeader {
     width: 100%;
+}
+
+#conversationListHeader h1 {
+    margin-right: 10px;
+}
+
+@media (max-width: 500px) {
+    #conversationListHeader h1 {
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
 }
 
 #conversationList {
@@ -166,7 +181,7 @@ a:active {
     width: 100%;
 }
 
-@media(max-width: 500px) {
+@media (max-width: 500px) {
     .centeredFlexHeading {
         justify-content: center;
     }
@@ -245,6 +260,12 @@ a:active {
     padding-bottom: 10px;
 }
 
+@media (max-width: 500px) {
+    #messagesPaneHeader {
+        margin-top: 10px;
+    }
+}
+
 .messageContainer {
     display: flex;
     flex-direction: column;
@@ -294,17 +315,25 @@ a:active {
     margin-top: auto;
 }
 
+.searchBar button {
+    background: linear-gradient(#fff, #ddd);
+    border: 0.5px solid black;
+}
+
 .homeButton {
     width: 30px;
     padding: 0;
     flex-shrink: 0;
 }
 
-@media(max-width: 500px) {
+@media (max-width: 500px) {
     .searchBar {
         height: 40px;
         font-size: 1.35rem;
+        margin-bottom: -10px;
+        width: calc(100% + 20px);
     }
+
     .homeButton {
         width: 40px;
     }

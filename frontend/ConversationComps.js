@@ -384,9 +384,9 @@ function ConversationList() {
 
   return (
     <>
-      <div id="conversationHeader">
+      <div id="conversationListHeader">
         <div style={{ display: "flex", alignItems: "center" }}>
-          <h1 style={{ marginRight: 10 }}>Conversations</h1>
+          <h1>Conversations</h1>
           <Link to="/stats" style={{ marginRight: 5 }}>
             (stats)
           </Link>
