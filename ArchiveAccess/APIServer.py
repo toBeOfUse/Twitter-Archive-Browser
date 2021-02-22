@@ -402,6 +402,7 @@ class Media(APIRequestHandler):
             / filename
         )
         self.set_header("Content-Type", guess_type(self.request.path)[0])
+        self.set_header("Cache-Control", "max-age=604800, immutable")
         if Path(file_location).exists():
             with open(file_location, "rb") as media:
                 while True:
@@ -419,4 +420,5 @@ class AvatarRequestHandler(APIRequestHandler):
     def get(self, id):
         avatar = self.db.get_user_avatar(int(id))
         self.set_header("Content-Type", guess_type("a." + avatar[1])[0])
+        self.set_header("Cache-Control", "max-age=604800, immutable")
         self.finish(avatar[0])
