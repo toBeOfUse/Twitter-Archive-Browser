@@ -137,8 +137,8 @@ function MessagePage(props) {
   DOMState.prevSaveStateCleanup && DOMState.prevSaveStateCleanup();
   const saveState = (_newLocation, action) => {
     if ((action == "PUSH" || action == "POP") && messages) {
-      console.log("MESSAGES: saving current state under key " + locationKey);
-      console.log("MESSAGES: event is ", action);
+      console.log("MESSAGES: saving current state under key", locationKey);
+      console.log("MESSAGES: event is", action);
       dispatch({
         type: "pageState/save",
         payload: {
@@ -170,9 +170,9 @@ function MessagePage(props) {
       return;
     }
     const currentPane = DOMState.messagesPane;
-    console.log("MESSAGES: restoring scroll position");
+    console.log("MESSAGES: restoring scroll position for", locationKey);
     console.log("MESSAGES: it is currently", currentPane?.scrollTop);
-    console.log("MESSAGES: it used to be", DOMState.prevScrollTop);
+    console.log("MESSAGES: we are restoring it to its previous position,", savedState?.scrollTop);
     if (savedState?.scrollTop) {
       currentPane.scrollTop = savedState.scrollTop;
       dispatch({ type: "pageState/markScrollPosUsed", payload: locationKey });

@@ -37,7 +37,7 @@ export default function SearchBar(props) {
   const actOnSearch = (event) => {
     if (event.type == "click" || event.key == "Enter") {
       if (!props.noSearch && text.trim()) {
-        history.push(props.baseURL + "?search=" + text, { lastSearch: text });
+        history.push(props.baseURL + "?search=" + encodeURIComponent(text), { lastSearch: text });
       }
     }
   };
