@@ -7,10 +7,6 @@ module.exports = function (_env, argv) {
   return {
     devtool: isDevelopment && "cheap-module-source-map",
     entry: "./frontend/index.js",
-    stats: {
-      assets: false,
-      modules: false,
-    },
     output: {
       path: path.resolve(__dirname, "frontend"),
       filename: "assets/js/[name].js",
