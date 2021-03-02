@@ -2,13 +2,11 @@ import React, { useState } from "react";
 import {
   dateToZString,
   dateToComponents,
-  clampDate,
   componentsToDate,
-  maxDateForMonth,
-  isMonthAllowed,
   timestampType,
+  maxDateForMonth,
 } from "./DateHandling";
-import { Link, useHistory, useParams, useLocation } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 import LoadingSpinner from "./LoadingSpinner";
 import PropTypes from "prop-types";
 
@@ -37,7 +35,9 @@ export default function SearchBar(props) {
   const actOnSearch = (event) => {
     if (event.type == "click" || event.key == "Enter") {
       if (!props.noSearch && text.trim()) {
-        history.push(props.baseURL + "?search=" + encodeURIComponent(text), { lastSearch: text });
+        history.push(props.baseURL + "?search=" + encodeURIComponent(text), {
+          lastSearch: text,
+        });
       }
     }
   };
@@ -63,7 +63,7 @@ export default function SearchBar(props) {
         onInput={receiveText}
         onKeyDown={actOnSearch}
         style={{ width: "100%" }}
-        type="text"
+        type="search"
         placeholder="Search all messages..."
       />
       <button disabled={props.noSearch} onClick={actOnSearch}>
@@ -109,44 +109,76 @@ function TimeTravelModal(props) {
     dateToComponents((props.start && new Date(props.start)) || dates[0])
   );
   const [validationWarning, setValidationWarning] = useState("");
-  const elementsAreIncomplete = (elements) => {
-    return elements.some((e) => e === "");
+  const elementsAreIncomplete = timeElements.some((e) => e === "");
+  const [startYear, endYear] = dates.map((v) => v.getFullYear());
+  const clampInt = (i, min, max) => {
+    return Math.max(min, Math.min(parseInt(i), max));
   };
-  const substitute = (value, index) => {
+  const clampDate = (year, month, day) => {
+    day = day || 1;
+    if (year == startYear) {
+      if (month <= dates[0].getMonth()) {
+        month = dates[0].getMonth();
+        if (day < dates[0].getDate()) {
+          day = dates[0].getDate();
+        }
+      }
+    }
+    if (year == endYear) {
+      if (month >= dates[1].getMonth()) {
+        month = dates[1].getMonth();
+        if (day >= dates[1].getDate()) {
+          day = dates[1].getDate();
+        }
+      }
+    }
+    return [year, month, day];
+  };
+  const changeTimeElement = (value, index) => {
     const newTimeElements = [
       ...timeElements.slice(0, index),
-      value,
+      index == 5 || value === "" ? value : parseInt(value),
       ...timeElements.slice(index + 1),
     ];
-    return newTimeElements;
-  };
-  const substituteAndClamp = (value, index) => {
-    return clampDate(
-      componentsToDate(substitute(value, index)),
-      dates[0],
-      dates[1]
-    );
-  };
-  const changeComp = (value, index) => {
-    const newTimeElements = substitute(value, index);
-    if (!elementsAreIncomplete(newTimeElements)) {
-      // only validate input if there are no empty fields; if the user has backspaced
-      // everything in a field, we cannot validate anything, and need to leave the
-      // input alone
-      const clampedTimeElements = dateToComponents(
-        substituteAndClamp(value, index)
-      );
-      setTimeElements(clampedTimeElements);
+    if (value && index < 3) {
+      // auto-validate upon year and month changes, since they are chosen with select
+      // inputs; the date is entered through typing so it is not validated until the
+      // user is Finished.
+      const [cY, cM] = clampDate(...newTimeElements.slice(0, 3));
+      setTimeElements([cY, cM, ...newTimeElements.slice(2)]);
     } else {
       setTimeElements(newTimeElements);
     }
   };
-  const isSubstitutionInvalid = (value, index) => {
-    return (
-      componentsToDate(substitute(value, index)).getTime() !==
-      substituteAndClamp(value, index).getTime()
-    );
+  const isTimeValid = (value, min, max) =>
+    value === "" || (parseInt(value) <= max && parseInt(value) >= min);
+  const dayOptions = Array(maxDateForMonth(timeElements[0], timeElements[1]))
+    .fill(0)
+    .map((_v, i) => i + 1);
+  const minDay = dayOptions.find(
+    (v) => clampDate(timeElements[0], timeElements[1], v)[2] == v
+  );
+  dayOptions.reverse();
+  const maxDay = dayOptions.find(
+    (v) => clampDate(timeElements[0], timeElements[1], v)[2] == v
+  );
+  const validateDate = () => {
+    const vDay = clampInt(timeElements[2], minDay, maxDay);
+    setTimeElements([
+      ...clampDate(...timeElements.slice(0, 2), vDay),
+      ...timeElements.slice(3),
+    ]);
   };
+  const yearOptions = Array(endYear - startYear + 1)
+    .fill(0)
+    .map((_v, i) => {
+      const y = i + startYear;
+      return (
+        <option key={y} value={y}>
+          {y}
+        </option>
+      );
+    });
   const monthOptions = [
     "January",
     "February",
@@ -164,7 +196,7 @@ function TimeTravelModal(props) {
     <option
       key={m}
       value={i}
-      disabled={!isMonthAllowed(timeElements[0], i, dates[0], dates[1])}
+      disabled={clampDate(timeElements[0], i, 1)[1] !== i}
     >
       {m}
     </option>
@@ -192,89 +224,94 @@ function TimeTravelModal(props) {
           </Link>
         </span>
         <p>Or enter a date and time below:</p>
-        <div style={{ display: "flex" }}>
-          <div className="timeField">
-            <label>Year: </label>
-            <input
-              min={dates[0].getFullYear()}
-              max={dates[1].getFullYear()}
-              type="number"
-              value={timeElements[0]}
-              onChange={(e) => changeComp(e.target.value, 0)}
-            />
+        <div className="rowToColumn">
+          <div className="dateSubsection">
+            <div className="timeField">
+              <label>Year: </label>
+              <select
+                value={timeElements[0]}
+                onChange={(e) => changeTimeElement(e.target.value, 0)}
+              >
+                {yearOptions}
+              </select>
+            </div>
+            <div className="timeField">
+              <label>Month:</label>
+              <select
+                value={timeElements[1]}
+                onChange={(e) => changeTimeElement(e.target.value, 1)}
+              >
+                {monthOptions}
+              </select>
+            </div>
+            <div className="timeField">
+              <label>Day:</label>
+              <input
+                type="number"
+                min={minDay}
+                max={maxDay}
+                value={timeElements[2]}
+                onChange={(e) => changeTimeElement(e.target.value, 2)}
+                // the native onchange event will fire when the user clicks away from
+                // the input field, signifying that they are done typing and their
+                // input needs to be validated
+                ref={(n) => n && (n.onchange = validateDate)}
+              />
+            </div>
           </div>
-          <div className="timeField">
-            <label>Month:</label>
-            <select
-              value={timeElements[1]}
-              onChange={(e) => changeComp(parseInt(e.target.value), 1)}
-            >
-              {monthOptions}
-            </select>
-          </div>
-          <div className="timeField">
-            <label>Day:</label>
-            <input
-              type="number"
-              min={1}
-              max={maxDateForMonth(timeElements[0], timeElements[1])}
-              value={timeElements[2]}
-              onChange={(e) =>
-                changeComp(e.target.value && parseInt(e.target.value), 2)
-              }
-            />
-          </div>
-          <div className="timeField">
-            <label>Hour:</label>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={timeElements[3]}
-              onChange={(e) =>
-                changeComp(e.target.value && parseInt(e.target.value), 3)
-              }
-            />
-          </div>
-          <div className="timeField">
-            <label>Minute:</label>
-            <input
-              min={1}
-              max={59}
-              type="number"
-              value={timeElements[4]}
-              onChange={(e) =>
-                changeComp(e.target.value && parseInt(e.target.value), 4)
-              }
-            />
-          </div>
-          <div className="timeField">
-            <label>&nbsp;</label>
-            <select
-              value={timeElements[5]}
-              onChange={(e) => changeComp(e.target.value, 5)}
-            >
-              <option disabled={isSubstitutionInvalid("AM", 5)} value="AM">
-                AM
-              </option>
-              <option disabled={isSubstitutionInvalid("PM", 5)} value="PM">
-                PM
-              </option>
-            </select>
+          <div className="dateSubsection">
+            <div className="timeField">
+              <label>Hour:</label>
+              <input
+                type="number"
+                min={1}
+                max={12}
+                value={(timeElements[3] < 10 ? "0" : "") + timeElements[3]}
+                onChange={(e) => {
+                  isTimeValid(e.target.value, 1, 12) &&
+                    changeTimeElement(e.target.value, 3);
+                }}
+              />
+            </div>
+            <div className="timeField">
+              <label>Minute:</label>
+              <input
+                min={0}
+                max={59}
+                type="number"
+                value={(timeElements[4] < 10 ? "0" : "") + timeElements[4]}
+                onChange={(e) =>
+                  isTimeValid(e.target.value, 0, 59) &&
+                  changeTimeElement(e.target.value, 4)
+                }
+              />
+            </div>
+            <div className="timeField">
+              <label>&nbsp;</label>
+              <select
+                value={timeElements[5]}
+                onChange={(e) => changeTimeElement(e.target.value, 5)}
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </div>
         </div>
-        {validationWarning && <p>{validationWarning}</p>}
+        {validationWarning && (
+          <span style={{ color: "darkred" }}>{validationWarning}</span>
+        )}
         <div>
           <button
             onClick={() => {
-              if (!elementsAreIncomplete(timeElements)) {
+              if (!elementsAreIncomplete) {
                 history.push(
                   props.baseURL +
                     "?start=" +
                     dateToZString(componentsToDate(timeElements))
                 );
               } else {
-                setValidationWarning("date is incomplete");
+                setValidationWarning("Please don't leave empty boxes");
               }
             }}
             style={{ marginRight: 5 }}

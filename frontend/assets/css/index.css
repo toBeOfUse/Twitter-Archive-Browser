@@ -99,6 +99,16 @@ a:active {
     margin-right: 5px;
 }
 
+.dateSubsection {
+    display: flex;
+    align-self: center;
+    margin-right: 5px;
+}
+
+.dateSubsection:not(:last-child) {
+    margin-right: 5px;
+}
+
 .timeField>input,
 .timeField>select {
     height: 20px;
@@ -376,6 +386,7 @@ a:active {
 }
 
 .rowToColumn {
+    display: flex;
     flex-direction: row;
 }
 
