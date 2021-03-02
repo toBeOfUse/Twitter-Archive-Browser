@@ -1,5 +1,7 @@
 # Twitter Archive Browser: Take back your DMs
 
+View the demo [here](https://messageviewerdemo.mitch.website/conversation/messages/1).
+
 Twitter allows you to download zip files containing all of the data that it has ever collected on you, but tragically, that data is then trapped inside huge .js files with esoteric schema and unapproachable documentation. This project aims to fix that; it can parse the huge files, save their contents to an easily browsable on-disk database, and then display them through your web browser in a client that rivals the experience of the best messaging apps like Discord.
 
 This project is currently focused on displaying messages (both direct and group) since those are currently the least easily untangled from the archive and the hardest to search on Twitter itself, but ideally it will be someday expanded to display and search your Tweets and likes as well.
