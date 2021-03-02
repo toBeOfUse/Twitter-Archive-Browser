@@ -1,5 +1,6 @@
 from DemoData.readme_messages import readme
 from DemoData.poetry_messages import poetry
+from DemoData.account_messages import accounts
 from DemoData.demo_constants import DEMO_ACCOUNT_ID, DEMO_ACCOUNT_USERNAME
 from pathlib import Path
 from tornado.ioloop import IOLoop
@@ -13,9 +14,13 @@ import json
 db_path: Final = Path.cwd() / "db" / (DEMO_ACCOUNT_USERNAME + ".db")
 
 
-async def create_demo_db():
+async def create_demo_db(overwrite, bearer_token):
     db_store = TwitterDataWriter(
-        db_path, DEMO_ACCOUNT_USERNAME, DEMO_ACCOUNT_ID, "", automatic_overwrite=True
+        db_path,
+        DEMO_ACCOUNT_USERNAME,
+        DEMO_ACCOUNT_ID,
+        bearer_token,
+        automatic_overwrite=overwrite,
     )
     for message in readme:
         db_store.add_message(message, True)
@@ -24,6 +29,10 @@ async def create_demo_db():
     for message in poetry:
         db_store.add_message(message, True)
     print("poetry messages added")
+
+    for message in accounts:
+        db_store.add_message(message, False)
+    print("real account messages added")
 
     await db_store.finalize()
 
@@ -35,6 +44,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "-b",
         "--bearer_token",
+    )
+    parser.add_argument(
+        "-o",
+        "--overwrite",
+        action="store_true",
     )
     parser.add_argument(
         "-pw",
@@ -63,7 +77,10 @@ if __name__ == "__main__":
 
     media_path = Path.cwd() / "DemoData" / "media"
 
-    IOLoop.current().run_sync(create_demo_db)
+    async def init():
+        await create_demo_db(args.overwrite, bearer_token)
+
+    IOLoop.current().run_sync(init)
 
     reader = TwitterDataReader(db_path, media_path, media_path)
     server = ArchiveAPIServer(

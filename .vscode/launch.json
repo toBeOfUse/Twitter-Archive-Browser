@@ -17,7 +17,7 @@
             "type": "python",
             "request": "launch",
             "program": "demo.py",
-            "args": ["-b", "api_keys.json", "-m", "dev"],
+            "args": ["-b", "api_keys.json", "-m", "dev", "-o"],
             "console": "integratedTerminal",
             "justMyCode": true
         },

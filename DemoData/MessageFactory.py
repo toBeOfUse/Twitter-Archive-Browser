@@ -10,12 +10,12 @@ class MessageFactory:
         self,
         conversation_id: str,
         first_message_time: datetime,
-        recipient: int = None,
+        recipients: tuple = None,
         minutes_apart=1,
     ):
         self.conversation_id = conversation_id
         self.next_message_time = first_message_time
-        self.recipient_id = recipient
+        self.recipient_ids = recipients
         self.minutes_apart = minutes_apart
 
     def get_next_date(self):
@@ -41,8 +41,10 @@ class MessageFactory:
             "type": "messageCreate",
             "urls": [],
         }
-        if self.recipient_id:
-            message["recipientId"] = str(self.recipient_id)
+        if self.recipient_ids:
+            message["recipientId"] = str(
+                next(x for x in self.recipient_ids if x != sender_id)
+            )
         return message
 
     def create_name_update(self, initiator_id: int, new_name: str):
