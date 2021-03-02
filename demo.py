@@ -1,4 +1,5 @@
 from DemoData.readme_messages import readme
+from DemoData.poetry_messages import poetry
 from DemoData.demo_constants import DEMO_ACCOUNT_ID, DEMO_ACCOUNT_USERNAME
 from pathlib import Path
 from tornado.ioloop import IOLoop
@@ -13,17 +14,18 @@ db_path: Final = Path.cwd() / "db" / (DEMO_ACCOUNT_USERNAME + ".db")
 
 
 async def create_demo_db():
-    if db_path.exists():
-        return db_path
-    else:
-        db_store = TwitterDataWriter(
-            db_path, DEMO_ACCOUNT_USERNAME, DEMO_ACCOUNT_ID, ""
-        )
-        for message in readme:
-            db_store.add_message(message, True)
-        print("readme messages added")
+    db_store = TwitterDataWriter(
+        db_path, DEMO_ACCOUNT_USERNAME, DEMO_ACCOUNT_ID, "", automatic_overwrite=True
+    )
+    for message in readme:
+        db_store.add_message(message, True)
+    print("readme messages added")
 
-        await db_store.finalize()
+    for message in poetry:
+        db_store.add_message(message, True)
+    print("poetry messages added")
+
+    await db_store.finalize()
 
 
 if __name__ == "__main__":

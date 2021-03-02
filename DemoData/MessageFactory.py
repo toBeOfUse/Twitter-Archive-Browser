@@ -11,14 +11,16 @@ class MessageFactory:
         conversation_id: str,
         first_message_time: datetime,
         recipient: int = None,
+        minutes_apart=1,
     ):
         self.conversation_id = conversation_id
         self.next_message_time = first_message_time
         self.recipient_id = recipient
+        self.minutes_apart = minutes_apart
 
     def get_next_date(self):
         next_date = self.next_message_time.strftime(self.DATE_FORMAT)[0:23] + "Z"
-        self.next_message_time += timedelta(minutes=1)
+        self.next_message_time += timedelta(minutes=self.minutes_apart)
         return next_date
 
     @classmethod
