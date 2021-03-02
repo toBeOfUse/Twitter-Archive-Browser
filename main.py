@@ -165,11 +165,16 @@ if __name__ == "__main__":
 
     IOLoop.current().run_sync(locate_or_create_db)
 
-    reader = TwitterDataReader(db_path, data_path)
+    # TODO: refactor so that only the TwitterDataReader needs these paths and the
+    # ArchiveAPIServer obtains media files through it
+    dm_media_path = Path(data_path) / "direct_messages_media"
+    group_media_path = Path(data_path) / "direct_messages_group_media"
+
+    reader = TwitterDataReader(db_path, dm_media_path, group_media_path)
     server = ArchiveAPIServer(
         reader,
-        Path(data_path) / "direct_messages_media",
-        Path(data_path) / "direct_messages_group_media",
+        dm_media_path,
+        group_media_path,
         build_mode=args.mode,
         port=args.port,
         password=args.password,

@@ -1,0 +1,2 @@
+DEMO_ACCOUNT_USERNAME = "twittermessagesdemo"
+DEMO_ACCOUNT_ID = 1

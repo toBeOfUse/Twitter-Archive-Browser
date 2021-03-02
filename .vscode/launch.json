@@ -13,6 +13,15 @@
             "justMyCode": true
         },
         {
+            "name": "Python: Demo",
+            "type": "python",
+            "request": "launch",
+            "program": "demo.py",
+            "args": ["-b", "api_keys.json", "-m", "dev"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: With Password",
             "type": "python",
             "request": "launch",

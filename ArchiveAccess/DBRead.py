@@ -547,7 +547,9 @@ class TwitterDataReader(sqlite3.Connection):
     """Provides an interface between the server that will create the API endpoints
     and the database."""
 
-    def __init__(self, db_path: PathLike, data_path: Pathlike):
+    def __init__(
+        self, db_path: PathLike, dm_media_path: Pathlike, group_media_path: Pathlike
+    ):
         """Takes in the path to a database created by DBWrite and opens it for
         querying."""
         super(TwitterDataReader, self).__init__(
@@ -563,8 +565,8 @@ class TwitterDataReader(sqlite3.Connection):
         # data is changed.
         self.user_data_in_conversations: dict[int, set[str]] = defaultdict(set)
 
-        Media.dm_media_path = Path(data_path) / "direct_messages_media"
-        Media.group_media_path = Path(data_path) / "direct_messages_group_media"
+        Media.dm_media_path = dm_media_path
+        Media.group_media_path = group_media_path
 
     def cache_user_conversation_dependency(self, user: int, conversation: str):
         """called in the Conversation.from_row method to register the fact that the
