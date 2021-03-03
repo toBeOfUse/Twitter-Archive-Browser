@@ -10,7 +10,7 @@ def poetry_gen():
     yield poetry_factory.create_name_update(DICKINSON_ID, "Poetry Slam")
     yield poetry_factory.create_message(
         DEMO_ACCOUNT_ID,
-        "Welcome to the poetry slam! This conversation contains many intermixed"
+        "Welcome to the poetry slam! This group conversation contains many intermixed"
         " stanzas from poetry in the public domain, to show how conversations with"
         " many messages will be displayed. Note that you can click on participant's"
         " names to view their info pages, change their nicknames, and view the"

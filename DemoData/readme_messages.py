@@ -37,3 +37,18 @@ for p in readme_text.split("\n\n"):
     readme.append(
         readme_factory.create_message(DEMO_ACCOUNT_ID, p.replace("\n", " ").strip())
     )
+
+github_link = readme_factory.create_message(
+    DEMO_ACCOUNT_ID,
+    "View the source code on Github here: https://t.co/githublinkhere",
+)
+
+github_link["urls"] = [
+    {
+        "url": "https://t.co/githublinkhere",
+        "expanded": "https://github.com/toBeOfUse/Twitter-Archive-Browser",
+        "display": "github.com/toBeOfUse/twit…",
+    }
+]
+
+readme.append(github_link)
