@@ -178,7 +178,7 @@ function App() {
       >
         <h1>Enter password:</h1>
         <input
-          onKeyPress={(e) => e.key == "Enter" && attemptAuth()}
+          onKeyDown={(e) => e.key == "Enter" && attemptAuth()}
           ref={passwordField}
           type="password"
         />

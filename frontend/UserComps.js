@@ -50,6 +50,7 @@ function NicknameSetter(userInfo) {
               style={{ marginLeft: 5 }}
               value={nickname}
               onChange={changeNickname}
+              onKeyDown={(e) => e.key == "Enter" && saveNickname()}
               type="text"
             />
             <button onClick={saveNickname}>Save</button>
