@@ -466,7 +466,7 @@ function MessagePage(props) {
             (props.search ? "&search=" + props.search : "")
           }
         >
-          Zoom to top
+          Go to beginning
         </Link>
         {" | "}
         <Link
@@ -480,10 +480,10 @@ function MessagePage(props) {
             (props.search ? "&search=" + props.search : "")
           }
         >
-          Sink to bottom
+          Go to end
         </Link>
         {" | "}
-        Double-click or double-tap messages for More
+        Double-click/tap messages for more context
       </div>
       <div
         ref={(n) => (DOMState.messagesPane = n)}
