@@ -348,7 +348,7 @@ class NameUpdate(MessageLike):
         from name_updates"""
     timestamp_field: ClassVar = "update_time"
 
-    id: int
+    id: str
     update_time: str
     initiator: str
     new_name: str
@@ -364,7 +364,7 @@ class NameUpdate(MessageLike):
 
     @classmethod
     def from_row(cls, cursor: sqlite3.Cursor, row: tuple) -> NameUpdate:
-        return cls(row[0], *(str(x) for x in row[1:]))
+        return cls("update"+str(row[0]), *(str(x) for x in row[1:]))
 
 
 @dataclass(frozen=True)
