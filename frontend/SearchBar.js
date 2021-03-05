@@ -317,7 +317,7 @@ function TimeTravelModal(props) {
             }}
             style={{ marginRight: 5 }}
           >
-            Zoom
+            Time Travel
           </button>
           <button onClick={props.close}>Cancel</button>
         </div>

@@ -887,7 +887,7 @@ function MessageInfoModal(message) {
             {zToLocaleDateTime(v.creation_time)}
           </p>
         ))}
-        <button onClick={() => message.closeModal()}>close</button>
+        <button onClick={() => message.closeModal()}>Close</button>
       </div>
     </div>
   );
