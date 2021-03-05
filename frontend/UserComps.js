@@ -167,6 +167,7 @@ function UserInfo() {
       <SearchBar
         baseURL={"/user/messages/" + info.id}
         timeSpan={[info.first_appearance, info.last_appearance]}
+        placeholder="Search user's messages..."
       />
     </>
   ) : (

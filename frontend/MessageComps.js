@@ -172,7 +172,10 @@ function MessagePage(props) {
     const currentPane = DOMState.messagesPane;
     console.log("MESSAGES: restoring scroll position for", locationKey);
     console.log("MESSAGES: it is currently", currentPane?.scrollTop);
-    console.log("MESSAGES: we are restoring it to its previous position,", savedState?.scrollTop);
+    console.log(
+      "MESSAGES: we are restoring it to its previous position,",
+      savedState?.scrollTop
+    );
     if (savedState?.scrollTop) {
       currentPane.scrollTop = savedState.scrollTop;
       dispatch({ type: "pageState/markScrollPosUsed", payload: locationKey });
@@ -493,6 +496,13 @@ function MessagePage(props) {
         baseURL={"/" + props.type + "/messages/" + props.id}
         timeSpan={timeSpan}
         getDefaultTime={findMiddleMessage}
+        placeholder={`Search ${
+          props.type == "conversation"
+            ? "conversation"
+            : props.type == "user"
+            ? "user's messages"
+            : "all messages"
+        }...`}
       />
     </>
   );

@@ -22,6 +22,7 @@ SearchBar.propTypes = {
   // list of messages, it is not done until it needs to be done (when this prop is
   // called)
   getDefaultTime: PropTypes.func,
+  placeholder: PropTypes.string.isRequired,
 };
 
 export default function SearchBar(props) {
@@ -64,7 +65,7 @@ export default function SearchBar(props) {
         onKeyDown={actOnSearch}
         style={{ width: "100%" }}
         type="search"
-        placeholder="Search all messages..."
+        placeholder={props.placeholder}
       />
       <button disabled={props.noSearch} onClick={actOnSearch}>
         Search

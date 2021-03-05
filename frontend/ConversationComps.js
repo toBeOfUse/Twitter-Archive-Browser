@@ -285,6 +285,7 @@ function ConversationInfo() {
       <SearchBar
         baseURL={"/conversation/messages/" + info.id}
         timeSpan={[info.first_time, info.last_time]}
+        placeholder="Search conversation..."
       />
     </>
   );
@@ -437,7 +438,11 @@ function ConversationList() {
         restoreHistoryState={restorePaneHistoryState}
         currentKey={url}
       />
-      <SearchBar timeSpan={timeSpan} baseURL="/messages" />
+      <SearchBar
+        placeholder="Search all messages..."
+        timeSpan={timeSpan}
+        baseURL="/messages"
+      />
     </>
   );
 }
