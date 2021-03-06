@@ -80,7 +80,8 @@ function SimpleNameUpdate(update) {
     <p key={update.update_time}>
       {update.new_name + " (set by "}
       <Link to={"/user/info/" + update.initiator}>
-        @{users[update.initiator]?.handle}
+        {users[update.initiator].nickname ||
+          "@" + users[update.initiator].handle}
       </Link>{" "}
       on{" "}
       <Link
