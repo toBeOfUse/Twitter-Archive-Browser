@@ -458,10 +458,9 @@ function MessagePage(props) {
         <Link
           replace
           to={
-            "/" +
-            props.type +
-            "/messages/" +
-            props.id +
+            (props.type ? "/" + props.type : "") +
+            "/messages" +
+            (props.id ? "/" + props.id : "") +
             "?start=beginning" +
             (props.search ? "&search=" + props.search : "")
           }
@@ -472,10 +471,9 @@ function MessagePage(props) {
         <Link
           replace
           to={
-            "/" +
-            props.type +
-            "/messages/" +
-            props.id +
+            (props.type ? "/" + props.type : "") +
+            "/messages" +
+            (props.id ? "/" + props.id : "") +
             "?start=end" +
             (props.search ? "&search=" + props.search : "")
           }
